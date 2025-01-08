@@ -311,77 +311,24 @@ def show_login_page():
             
             if submitted:
                 if login(username, password):
+                    st.session_state.logged_in = True
+                    st.query_params["page"] = "main"
                     st.rerun()
                 else:
                     st.error("Invalid username or password")
 
 def get_league_name(match):
-    """Extract league name from match data"""
-    # First try to get the name directly from the match data
-    competition_name = match.get('competition_name')
-    if competition_name:
-        return competition_name.strip()
-        
-    # Try to get it from the competition ID
+    """Get league name from match data using LEAGUE_IDS mapping"""
     competition_id = match.get('competition_id')
     if not competition_id:
         return "Unknown League"
         
-    # Map common competition IDs to names with country names
-    league_map = {
-        12325: "England - Premier League",
-        12326: "England - Championship",
-        12327: "England - League One",
-        12422: "England - League Two",
-        12476: "Spain - La Liga",
-        12477: "Spain - LaLiga2",
-        12447: "Italy - Serie A",
-        12448: "Italy - Serie B",
-        12452: "Germany - Bundesliga",
-        12453: "Germany - 2. Bundesliga",
-        12377: "France - Ligue 1",
-        12378: "France - Ligue 2",
-        12335: "Netherlands - Eredivisie",
-        12338: "Belgium - Jupiler Pro League",
-        12548: "Scotland - Premiership",
-        12549: "Scotland - Championship",
-        12928: "Turkey - Super Lig",
-        12929: "Turkey - 1. Lig",
-        12431: "Russia - Premier League",
-        12344: "Portugal - Primeira Liga",
-        12482: "Switzerland - Super League",
-        12419: "Austria - Bundesliga",
-        12501: "Greece - Super League 1",
-        12502: "Greece - Super League 2",
-        12426: "Czech Republic - First League",
-        12412: "Poland - Ekstraklasa",
-        12339: "Denmark - Superliga",
-        12392: "Norway - Eliteserien",
-        12398: "Sweden - Allsvenskan",
-        12341: "Brazil - Brasileirao",
-        12363: "Argentina - Primera Division",
-        12364: "Chile - Primera Division",
-        12365: "Uruguay - Primera Division",
-        12366: "Colombia - Primera A",
-        12384: "Mexico - Liga MX",
-        12506: "China - Super League",
-        12411: "Japan - J-League",
-        13703: "Australia - A-League",
-        12772: "Saudi Arabia - Pro League",
-        12440: "Ukraine - Premier League",
-        12397: "Finland - Veikkausliiga",
-        12301: "Europe - Champions League",
-        12302: "Europe - Europa League",
-        12303: "Europe - Conference League",
-        12304: "South America - Copa Libertadores",
-        12305: "Asia - AFC Champions League",
-        12306: "North America - CONCACAF Champions",
-        13293: "England - Premier League 2 Division One",
-        12446: "England - Premier League",
-        13624: "England - FA Women's Super League"
-    }
+    # Find the league name by competition ID
+    for league_name, league_id in LEAGUE_IDS.items():
+        if league_id == competition_id:
+            return league_name
     
-    return league_map.get(competition_id, f"League {competition_id}")
+    return f"League {competition_id}"
 
 # Load the saved model
 @st.cache_resource
@@ -1109,7 +1056,7 @@ def show_main_app():
     st.markdown('<div id="top"></div>', unsafe_allow_html=True)
     st.markdown("<h1>⚽ Football Match Predictor ⚽</h1>", unsafe_allow_html=True)
     
-    # Add date selector
+    # Date selector
     date = st.date_input(
         "Select Date",
         value=datetime.now().date(),
@@ -1162,23 +1109,11 @@ def show_main_app():
                 matches_by_league[league_name].append(match)
             
             # Display matches grouped by league
-            if matches_by_league:
-                for league_name, league_matches in matches_by_league.items():
-                    st.markdown(f"## {league_name} ({len(league_matches)} matches)")
-                    
-                    for match in league_matches:
-                        st.markdown(f"""
-                        <div style="padding: 15px; border-radius: 8px; background-color: #f8f9fa; margin: 15px 0; border: 1px solid #e5e7eb;">
-                            <h3 style="margin: 0; color: #1f2937;">{match.get('home_name', '')} vs {match.get('away_name', '')}</h3>
-                            <div style="color: #4b5563; margin-top: 5px;">Kickoff: {match.get('kickoff', 'Time TBD')}</div>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
-                        # Process and display prediction
-                        with st.spinner("Loading predictions..."):
-                            process_match_prediction(match)
-                            
-                        st.markdown('<div class="prediction-separator"></div>', unsafe_allow_html=True)
+            for league_name, league_matches in matches_by_league.items():
+                st.markdown(f"## {league_name}")
+                
+                for match in league_matches:
+                    process_match_prediction(match)
 
 # Add Navigation JavaScript
 st.markdown("""

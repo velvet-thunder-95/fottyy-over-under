@@ -152,16 +152,17 @@ print(f"LEAGUE_IDS defined as: {LEAGUE_IDS}")
 def get_matches(date_str):
     """Get matches for a specific date"""
     try:
-        # Use todays-matches endpoint for better results
-        url = f"{BASE_URL}/todays-matches?key={API_KEY}"
+        # Always use todays-matches endpoint with date parameter
+        params = {
+            'key': API_KEY,
+            'date': date_str,
+            'timezone': 'Asia/Kolkata'  # Using Indian timezone
+        }
         
-        # If date is not today, use the matches endpoint with date parameter
-        today = datetime.now().strftime('%Y-%m-%d')
-        if date_str != today:
-            url = f"{BASE_URL}/matches?key={API_KEY}&date={date_str}"
+        url = f"{BASE_URL}/todays-matches"
+        print(f"Fetching matches with params: {params}")
         
-        print(f"Fetching matches from: {url}")
-        response = requests.get(url)
+        response = requests.get(url, params=params)
         response.raise_for_status()
         data = response.json()
         
@@ -172,21 +173,27 @@ def get_matches(date_str):
         matches = data['data']
         print(f"Found {len(matches)} matches for {date_str}")
         
-        # Filter out matches without necessary data
+        # Get the list of league IDs we're interested in
+        league_ids = set(LEAGUE_IDS.values())
+        
+        # Filter matches by league IDs and required fields
         valid_matches = []
         for match in matches:
-            if all(key in match for key in ['home_name', 'away_name']):
+            if (all(key in match for key in ['home_name', 'away_name', 'competition_id']) and 
+                match['competition_id'] in league_ids):
                 valid_matches.append(match)
         
-        print(f"Found {len(valid_matches)} valid matches")
+        print(f"Found {len(valid_matches)} valid matches in selected leagues")
         
-        # Sort matches by league/competition
-        valid_matches.sort(key=lambda x: (x.get('competition_name', ''), x.get('kickoff', '')))
+        # Sort matches by competition and kickoff time
+        valid_matches.sort(key=lambda x: (x.get('competition_id', ''), x.get('kickoff', '')))
         
         return valid_matches
         
     except requests.exceptions.RequestException as e:
         print(f"Error fetching matches: {str(e)}")
+        if hasattr(e, 'response') and e.response is not None:
+            print(f"Response content: {e.response.text}")
         return []
     except Exception as e:
         print(f"Unexpected error: {str(e)}")
