@@ -140,104 +140,168 @@ class MatchAnalyzer:
         return [match[0] for match in matches]
     
     def analyze_match_result(self, match_data):
-        """Analyze the match result using Footystats API data"""
-        if not match_data:
-            print("No match data available")
-            return None
-            
+        """Analyze match result and determine winner"""
         try:
-            # Get basic match info
-            home_team = match_data.get("home_name")
-            away_team = match_data.get("away_name")
-            status = match_data.get("status")
+            print(f"Raw match data: {json.dumps(match_data, indent=2)}")  # Debug log
             
-            # Get goals
-            home_goals = match_data.get("homeGoalCount", 0)
-            away_goals = match_data.get("awayGoalCount", 0)
-            score = f"{home_goals} - {away_goals}"
+            # Get match status
+            status = match_data.get('status', '').lower()
+            print(f"Original status: {status}")  # Debug log
             
-            # Get winner based on winningTeam ID
-            winner = None
-            if status == "complete":
-                winning_team_id = match_data.get("winningTeam")
-                if winning_team_id == match_data.get("homeID"):
-                    winner = "HOME"
-                elif winning_team_id == match_data.get("awayID"):
-                    winner = "AWAY"
-                elif winning_team_id == -1:  # Draw
-                    winner = "DRAW"
-            
-            # Get detailed stats
-            stats = {
-                "corners": {
-                    "home": match_data.get("team_a_corners", 0),
-                    "away": match_data.get("team_b_corners", 0),
-                    "total": match_data.get("totalCornerCount", 0)
-                },
-                "shots": {
-                    "home": match_data.get("team_a_shots", 0),
-                    "away": match_data.get("team_b_shots", 0),
-                    "home_on_target": match_data.get("team_a_shotsOnTarget", 0),
-                    "away_on_target": match_data.get("team_b_shotsOnTarget", 0)
-                },
-                "possession": {
-                    "home": match_data.get("team_a_possession", 0),
-                    "away": match_data.get("team_b_possession", 0)
-                },
-                "cards": {
-                    "home_yellow": match_data.get("team_a_yellow_cards", 0),
-                    "away_yellow": match_data.get("team_b_yellow_cards", 0),
-                    "home_red": match_data.get("team_a_red_cards", 0),
-                    "away_red": match_data.get("team_b_red_cards", 0)
-                },
-                "xg": {
-                    "home": match_data.get("team_a_xg", 0),
-                    "away": match_data.get("team_b_xg", 0),
-                    "total": match_data.get("total_xg", 0)
-                }
+            # Map various status formats
+            status_mapping = {
+                'complete': 'complete',
+                'finished': 'complete',
+                'fulltime': 'complete',
+                'ft': 'complete',
+                'in_progress': 'in_progress',
+                'live': 'in_progress',
+                'pending': 'pending',
+                'scheduled': 'pending',
+                'postponed': 'postponed',
+                'cancelled': 'cancelled'
             }
             
-            # Get odds
+            mapped_status = status_mapping.get(status, status)
+            print(f"Mapped status from '{status}' to '{mapped_status}'")
+            
+            # If match is not complete, return early
+            if mapped_status != 'complete':
+                print(f"Match not complete, status: {mapped_status}")
+                return None, None
+            
+            print("Match complete - analyzing result")
+            
+            # Get home and away goals
+            home_goals = match_data.get('homeGoalCount', 0)
+            away_goals = match_data.get('awayGoalCount', 0)
+            
+            # Convert to int if needed
+            try:
+                home_goals = int(str(home_goals).strip())
+                away_goals = int(str(away_goals).strip())
+            except (ValueError, TypeError) as e:
+                print(f"Error converting goals to int: {e}")
+                return None, None
+            
+            print(f"Goals - Home: {home_goals}, Away: {away_goals}")
+            
+            # Determine winner
+            if home_goals > away_goals:
+                winner = "HOME"
+            elif away_goals > home_goals:
+                winner = "AWAY"
+            else:
+                winner = "DRAW"
+                
+            print(f"Match complete - Winner: {winner}")
+            
+            # Create odds dictionary
             odds = {
-                "home_odds": match_data.get("odds_ft_1", 0),
-                "draw_odds": match_data.get("odds_ft_x", 0),
-                "away_odds": match_data.get("odds_ft_2", 0),
-                "btts_yes": match_data.get("odds_btts_yes", 0),
-                "btts_no": match_data.get("odds_btts_no", 0),
-                "over25": match_data.get("odds_ft_over25", 0),
-                "under25": match_data.get("odds_ft_under25", 0)
+                "home_odds": float(match_data.get('odds_ft_1', 0)),
+                "draw_odds": float(match_data.get('odds_ft_x', 0)),
+                "away_odds": float(match_data.get('odds_ft_2', 0))
             }
             
-            return {
-                "date": datetime.fromtimestamp(match_data.get("date_unix", 0)).strftime('%Y-%m-%d'),
-                "home_team": home_team,
-                "away_team": away_team,
-                "score_line": score,
-                "status": status,
-                "winner": winner,
-                "stats": stats,
-                "odds": odds,
-                "match_id": match_data.get("id")
-            }
+            # Update match result in database
+            if 'id' in match_data:
+                match_id = str(match_data['id'])
+                predicted_outcome = self.get_prediction(match_id)
+                if predicted_outcome:
+                    profit_loss = self.calculate_profit_loss(predicted_outcome, winner, odds)
+                    self.update_match_result(match_id, winner, profit_loss)
+            
+            return mapped_status, winner
+            
         except Exception as e:
             print(f"Error analyzing match result: {str(e)}")
+            print(f"Match data: {match_data}")
+            return None, None
+
+    def get_prediction(self, match_id):
+        """Get prediction for a match from database"""
+        try:
+            print(f"Getting prediction for match ID: {match_id}")
+            
+            if match_id is None:
+                print("Cannot get prediction: Missing match ID")
+                return None
+                
+            # Convert match_id to string if it's not already
+            match_id = str(match_id)
+            
+            # Connect to database
+            connection = sqlite3.connect('predictions.db')
+            cursor = connection.cursor()
+            
+            # Get prediction
+            cursor.execute("""
+                SELECT predicted_outcome
+                FROM predictions 
+                WHERE match_id = ?
+            """, (match_id,))
+            result = cursor.fetchone()
+            
+            if result:
+                predicted_outcome = result[0]
+                print(f"Found prediction for match {match_id}: {predicted_outcome}")
+                return predicted_outcome
+            else:
+                print(f"No prediction found for match ID: {match_id}")
+                return None
+                
+        except Exception as e:
+            print(f"Error getting prediction: {str(e)}")
             return None
+        finally:
+            if 'connection' in locals():
+                connection.close()
 
     def calculate_profit_loss(self, predicted_outcome, actual_outcome, odds):
         """Calculate profit/loss for a bet using real odds from API"""
-        if not actual_outcome:
-            print("No actual outcome available")
-            return None
+        try:
+            print(f"Calculating P/L - Predicted: {predicted_outcome}, Actual: {actual_outcome}")
+            print(f"Odds data: {json.dumps(odds, indent=2)}")  # Debug log
             
-        if predicted_outcome == actual_outcome:
+            if not predicted_outcome or not actual_outcome:
+                print("Missing outcome data")
+                return -1.0
+                
+            # Get odds for predicted outcome
             if predicted_outcome == "HOME":
-                return round(float(odds["home_odds"]) - 1, 2)
+                bet_odds = odds.get("home_odds", 0)
             elif predicted_outcome == "AWAY":
-                return round(float(odds["away_odds"]) - 1, 2)
+                bet_odds = odds.get("away_odds", 0)
             else:  # DRAW
-                return round(float(odds["draw_odds"]) - 1, 2)
-        else:
-            return -1.0
+                bet_odds = odds.get("draw_odds", 0)
+                
+            # Convert odds to float
+            try:
+                bet_odds = float(bet_odds)
+            except (ValueError, TypeError):
+                print(f"Invalid odds value: {bet_odds}")
+                return -1.0
+                
+            print(f"Bet odds for {predicted_outcome}: {bet_odds}")
+            
+            # Calculate profit/loss
+            if predicted_outcome == actual_outcome:
+                if bet_odds <= 0:
+                    print(f"Invalid odds for {predicted_outcome}: {bet_odds}")
+                    return -1.0
+                    
+                profit = bet_odds - 1.0
+                print(f"Bet won! Odds: {bet_odds}, Profit: {profit}")
+                return round(profit, 2)
+            else:
+                print(f"Bet lost. Predicted {predicted_outcome}, Actual {actual_outcome}")
+                return -1.0
+                
+        except Exception as e:
+            print(f"Error calculating profit/loss: {str(e)}")
+            print(f"Inputs - Predicted: {predicted_outcome}, Actual: {actual_outcome}")
+            print(f"Odds data: {odds}")
+            return -1.0  # Return loss on error
 
     def print_match_analysis(self, result, prediction=None):
         """Print detailed match analysis including stats"""
@@ -328,21 +392,82 @@ class MatchAnalyzer:
 
     def update_match_result(self, match_id, actual_outcome, profit_loss):
         """Update match result and profit/loss in database"""
-        if actual_outcome is None or profit_loss is None:
-            print("Cannot update result: Missing outcome or profit/loss")
-            return
+        try:
+            print(f"Updating match result - ID: {match_id}, Outcome: {actual_outcome}, P/L: {profit_loss}")  # Debug log
             
-        connection = sqlite3.connect('predictions.db')
-        cursor = connection.cursor()
-        cursor.execute("""
-            UPDATE predictions 
-            SET actual_outcome = ?,
-                profit_loss = ?,
-                status = 'complete'
-            WHERE match_id = ?
-        """, (actual_outcome, profit_loss, match_id))
-        connection.commit()
-        connection.close()
+            if match_id is None:
+                print("Cannot update result: Missing match ID")
+                return
+                
+            # Convert match_id to string if it's not already
+            match_id = str(match_id)
+            
+            # Validate actual_outcome
+            valid_outcomes = ["HOME", "AWAY", "DRAW"]
+            if actual_outcome not in valid_outcomes and actual_outcome is not None:
+                print(f"Invalid outcome: {actual_outcome}")
+                return
+                
+            # Validate profit_loss is numeric
+            if profit_loss is not None:
+                try:
+                    profit_loss = float(profit_loss)
+                except (ValueError, TypeError):
+                    print(f"Invalid profit/loss value: {profit_loss}")
+                    return
+            
+            # Connect to database
+            connection = sqlite3.connect('predictions.db')
+            cursor = connection.cursor()
+            
+            # First check if the match exists and get its current status
+            cursor.execute("""
+                SELECT id, status, actual_outcome, profit_loss
+                FROM predictions 
+                WHERE match_id = ?
+            """, (match_id,))
+            result = cursor.fetchone()
+            
+            if not result:
+                print(f"No prediction found for match ID: {match_id}")
+                connection.close()
+                return
+                
+            pred_id, current_status, current_outcome, current_profit = result
+            
+            # Don't update if already completed with same outcome
+            if current_status == 'complete' and current_outcome == actual_outcome:
+                print(f"Match {match_id} already completed with same outcome: {current_outcome}")
+                connection.close()
+                return
+            
+            # Update the prediction
+            cursor.execute("""
+                UPDATE predictions 
+                SET actual_outcome = ?,
+                    profit_loss = ?,
+                    status = 'complete'
+                WHERE id = ?
+            """, (actual_outcome, profit_loss, pred_id))
+            
+            if cursor.rowcount > 0:
+                print(f"Successfully updated match {match_id}")
+                print(f"New status: complete")
+                print(f"New outcome: {actual_outcome}")
+                print(f"New profit/loss: {profit_loss}")
+                connection.commit()
+            else:
+                print(f"No rows updated for match {match_id}")
+            
+            connection.close()
+            
+        except Exception as e:
+            print(f"Error updating match result: {str(e)}")
+            print(f"Match ID: {match_id}")
+            print(f"Actual outcome: {actual_outcome}")
+            print(f"Profit/loss: {profit_loss}")
+            if 'connection' in locals():
+                connection.close()
 
     def get_prediction_details(self, match_id):
         """Get prediction details from database"""
@@ -393,8 +518,8 @@ def main():
             # Calculate profit/loss
             profit_loss = analyzer.calculate_profit_loss(
                 predicted_outcome, 
-                result['winner'], 
-                result.get('odds', odds)  # Use API odds if available, else DB odds
+                result[1], 
+                result[0]  # Use API odds if available, else DB odds
             )
             
             # Print analysis
@@ -410,7 +535,7 @@ def main():
             if profit_loss is not None:
                 total_profit_loss += profit_loss
                 matches_analyzed += 1
-                if predicted_outcome == result['winner']:
+                if predicted_outcome == result[1]:
                     correct_predictions += 1
         else:
             print("Failed to fetch match data")

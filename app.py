@@ -15,7 +15,7 @@ import logging
 import xgboost as xgb
 from history import show_history_page, PredictionHistory
 from session_state import init_session_state, check_login_state
-
+import json
 
 
 logging.basicConfig(level=logging.INFO)
@@ -726,139 +726,164 @@ def display_probability_bars(home_prob, draw_prob, away_prob, home_team, away_te
     """Display probability bars for match outcomes"""
     st.markdown("### Match Outcome Probabilities")
     
-    # Create a container with white background
-    with st.container():
-        st.markdown("""
-            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); margin: 1rem 0;">
-            </div>
-        """, unsafe_allow_html=True)
-        
-        # Create three columns for the probabilities
-        col1, col2, col3 = st.columns(3)
-        
-        # Home team probability
-        with col1:
-            st.markdown(f"""
-                <div style="text-align: center;">
-                    <div style="margin-bottom: 0.5rem;">
-                        <span style="color: #48bb78; font-weight: 600; font-size: 1.2rem;">{home_prob:.1%}</span>
-                    </div>
-                    <div style="color: #1a1a1a; font-weight: 500;">{home_team}</div>
-                </div>
-            """, unsafe_allow_html=True)
-        
-        # Draw probability
-        with col2:
-            st.markdown(f"""
-                <div style="text-align: center;">
-                    <div style="margin-bottom: 0.5rem;">
-                        <span style="color: #ed8936; font-weight: 600; font-size: 1.2rem;">{draw_prob:.1%}</span>
-                    </div>
-                    <div style="color: #1a1a1a; font-weight: 500;">Draw</div>
-                </div>
-            """, unsafe_allow_html=True)
-        
-        # Away team probability
-        with col3:
-            st.markdown(f"""
-                <div style="text-align: center;">
-                    <div style="margin-bottom: 0.5rem;">
-                        <span style="color: #3182ce; font-weight: 600; font-size: 1.2rem;">{away_prob:.1%}</span>
-                    </div>
-                    <div style="color: #1a1a1a; font-weight: 500;">{away_team}</div>
-                </div>
-            """, unsafe_allow_html=True)
-        
-        # Add the combined progress bar
+    # Create three columns for the probabilities
+    col1, col2, col3 = st.columns(3)
+    
+    # Home team probability
+    with col1:
         st.markdown(f"""
-            <div style="margin-top: 1rem; padding: 0 1rem;">
-                <div style="width: 100%; height: 20px; background: #e2e8f0; border-radius: 10px; overflow: hidden; display: flex;">
-                    <div style="width: {home_prob * 100}%; height: 100%; background-color: #48bb78;"></div>
-                    <div style="width: {draw_prob * 100}%; height: 100%; background-color: #ed8936;"></div>
-                    <div style="width: {away_prob * 100}%; height: 100%; background-color: #3182ce;"></div>
+            <div style="text-align: center;">
+                <div style="margin-bottom: 0.5rem;">
+                    <span style="color: #48bb78; font-weight: 600; font-size: 1.2rem;">{home_prob:.1%}</span>
                 </div>
-            </div>
-            
-            <div style="display: flex; justify-content: space-between; margin-top: 1rem; padding: 0 1rem;">
-                <div style="display: flex; align-items: center;">
-                    <div style="width: 10px; height: 10px; background: #48bb78; border-radius: 2px; margin-right: 5px;"></div>
-                    <span style="font-size: 0.8rem;">Home Win</span>
-                </div>
-                <div style="display: flex; align-items: center;">
-                    <div style="width: 10px; height: 10px; background: #ed8936; border-radius: 2px; margin-right: 5px;"></div>
-                    <span style="font-size: 0.8rem;">Draw</span>
-                </div>
-                <div style="display: flex; align-items: center;">
-                    <div style="width: 10px; height: 10px; background: #3182ce; border-radius: 2px; margin-right: 5px;"></div>
-                    <span style="font-size: 0.8rem;">Away Win</span>
-                </div>
+                <div style="color: #1a1a1a; font-weight: 500;">{home_team}</div>
             </div>
         """, unsafe_allow_html=True)
+    
+    # Draw probability
+    with col2:
+        st.markdown(f"""
+            <div style="text-align: center;">
+                <div style="margin-bottom: 0.5rem;">
+                    <span style="color: #ed8936; font-weight: 600; font-size: 1.2rem;">{draw_prob:.1%}</span>
+                </div>
+                <div style="color: #1a1a1a; font-weight: 500;">Draw</div>
+            </div>
+        """, unsafe_allow_html=True)
+    
+    # Away team probability
+    with col3:
+        st.markdown(f"""
+            <div style="text-align: center;">
+                <div style="margin-bottom: 0.5rem;">
+                    <span style="color: #3182ce; font-weight: 600; font-size: 1.2rem;">{away_prob:.1%}</span>
+                </div>
+                <div style="color: #1a1a1a; font-weight: 500;">{away_team}</div>
+            </div>
+        """, unsafe_allow_html=True)
+    
+    # Add the combined progress bar
+    st.markdown(f"""
+        <div style="margin-top: 1rem; padding: 0 1rem;">
+            <div style="width: 100%; height: 20px; background: #e2e8f0; border-radius: 10px; overflow: hidden; display: flex;">
+                <div style="width: {home_prob * 100}%; height: 100%; background-color: #48bb78;"></div>
+                <div style="width: {draw_prob * 100}%; height: 100%; background-color: #ed8936;"></div>
+                <div style="width: {away_prob * 100}%; height: 100%; background-color: #3182ce;"></div>
+            </div>
+        </div>
+        
+        <div style="display: flex; justify-content: space-between; margin-top: 1rem; padding: 0 1rem;">
+            <div style="display: flex; align-items: center;">
+                <div style="width: 10px; height: 10px; background: #48bb78; border-radius: 2px; margin-right: 5px;"></div>
+                <span style="font-size: 0.8rem;">Home Win</span>
+            </div>
+            <div style="display: flex; align-items: center;">
+                <div style="width: 10px; height: 10px; background: #ed8936; border-radius: 2px; margin-right: 5px;"></div>
+                <span style="font-size: 0.8rem;">Draw</span>
+            </div>
+            <div style="display: flex; align-items: center;">
+                <div style="width: 10px; height: 10px; background: #3182ce; border-radius: 2px; margin-right: 5px;"></div>
+                <span style="font-size: 0.8rem;">Away Win</span>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
 
 def display_match_odds(match_data):
     """Display FootyStats match odds in an organized box."""
-    # Display match stats in columns using Streamlit's column layout
     st.markdown("""
         <h3 style="text-align: center; color: #1f2937; margin: 20px 0; font-size: 1.5rem;">Match Stats & Odds</h3>
     """, unsafe_allow_html=True)
     
-    col1, col2 = st.columns(2)
+    # Create 4 columns for 8 boxes (2 rows of 4)
+    col1, col2, col3, col4 = st.columns(4)
     
+    # First row
     with col1:
-        st.markdown("""
-            <div style="background-color: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                <h4 style="color: #1f2937; font-size: 1.2rem; font-weight: 600; margin-bottom: 15px; text-align: center;">Match Result</h4>
-            </div>
-        """, unsafe_allow_html=True)
-        
-        # Match Result odds
-        home_win = match_data.get('odds_ft_1', 'N/A')
-        draw = match_data.get('odds_ft_x', 'N/A')
-        away_win = match_data.get('odds_ft_2', 'N/A')
-        
+        home_xg = match_data.get('team_a_xg_prematch', 'N/A')
         st.markdown(f"""
-            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
-                <div style="background-color: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                    <div style="color: #1f2937; font-weight: 500;">Home Win</div>
-                    <div style="color: #2563eb; font-size: 1.2rem; font-weight: 600;">{home_win}</div>
-                </div>
-                <div style="background-color: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                    <div style="color: #1f2937; font-weight: 500;">Draw</div>
-                    <div style="color: #2563eb; font-size: 1.2rem; font-weight: 600;">{draw}</div>
-                </div>
-                <div style="background-color: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                    <div style="color: #1f2937; font-weight: 500;">Away Win</div>
-                    <div style="color: #2563eb; font-size: 1.2rem; font-weight: 600;">{away_win}</div>
-                </div>
+            <div style="background-color: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 10px;">
+                <div style="color: #1f2937; font-weight: 500; text-align: center;">Home xG</div>
+                <div style="color: #2563eb; font-size: 1.2rem; font-weight: 600; text-align: center;">{home_xg}</div>
             </div>
         """, unsafe_allow_html=True)
-
+    
     with col2:
-        st.markdown("""
-            <div style="background-color: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                <h4 style="color: #1f2937; font-size: 1.2rem; font-weight: 600; margin-bottom: 15px; text-align: center;">Goals Markets</h4>
+        away_xg = match_data.get('team_b_xg_prematch', 'N/A')
+        st.markdown(f"""
+            <div style="background-color: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 10px;">
+                <div style="color: #1f2937; font-weight: 500; text-align: center;">Away xG</div>
+                <div style="color: #2563eb; font-size: 1.2rem; font-weight: 600; text-align: center;">{away_xg}</div>
             </div>
         """, unsafe_allow_html=True)
-        
-        # Goals Markets odds
+    
+    with col3:
         over = match_data.get('odds_ft_over25', 'N/A')
-        under = match_data.get('odds_ft_under25', 'N/A')
-        btts = match_data.get('odds_btts_yes', 'N/A')
+        # Calculate over 2.5 probability
+        over_prob = (1 / float(over)) * 100 if over != 'N/A' else 'N/A'
+        over_prob_display = f"{over_prob:.1f}%" if over_prob != 'N/A' else 'N/A'
         
         st.markdown(f"""
-            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
-                <div style="background-color: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                    <div style="color: #1f2937; font-weight: 500;">Over 2.5</div>
-                    <div style="color: #2563eb; font-size: 1.2rem; font-weight: 600;">{over}</div>
-                </div>
-                <div style="background-color: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                    <div style="color: #1f2937; font-weight: 500;">Under 2.5</div>
-                    <div style="color: #2563eb; font-size: 1.2rem; font-weight: 600;">{under}</div>
-                </div>
-                <div style="background-color: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                    <div style="color: #1f2937; font-weight: 500;">BTTS</div>
-                    <div style="color: #2563eb; font-size: 1.2rem; font-weight: 600;">{btts}</div>
-                </div>
+            <div style="background-color: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 10px;">
+                <div style="color: #1f2937; font-weight: 500; text-align: center;">Over 2.5</div>
+                <div style="color: #2563eb; font-size: 1.2rem; font-weight: 600; text-align: center;">{over} ({over_prob_display})</div>
+            </div>
+        """, unsafe_allow_html=True)
+    
+    with col4:
+        under = match_data.get('odds_ft_under25', 'N/A')
+        # Calculate under 2.5 probability
+        under_prob = (1 / float(under)) * 100 if under != 'N/A' else 'N/A'
+        under_prob_display = f"{under_prob:.1f}%" if under_prob != 'N/A' else 'N/A'
+        
+        st.markdown(f"""
+            <div style="background-color: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 10px;">
+                <div style="color: #1f2937; font-weight: 500; text-align: center;">Under 2.5</div>
+                <div style="color: #2563eb; font-size: 1.2rem; font-weight: 600; text-align: center;">{under} ({under_prob_display})</div>
+            </div>
+        """, unsafe_allow_html=True)
+    
+    # Second row
+    with col1:
+        btts_yes = match_data.get('odds_btts_yes', 'N/A')
+        # Calculate BTTS probability
+        btts_prob = (1 / float(btts_yes)) * 100 if btts_yes != 'N/A' else 'N/A'
+        btts_prob_display = f"{btts_prob:.1f}%" if btts_prob != 'N/A' else 'N/A'
+        
+        st.markdown(f"""
+            <div style="background-color: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                <div style="color: #1f2937; font-weight: 500; text-align: center;">BTTS</div>
+                <div style="color: #2563eb; font-size: 1.2rem; font-weight: 600; text-align: center;">{btts_yes} ({btts_prob_display})</div>
+            </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        btts_no = match_data.get('odds_btts_no', 'N/A')
+        # Calculate BTTS No probability
+        btts_no_prob = (1 / float(btts_no)) * 100 if btts_no != 'N/A' else 'N/A'
+        btts_no_prob_display = f"{btts_no_prob:.1f}%" if btts_no_prob != 'N/A' else 'N/A'
+        
+        st.markdown(f"""
+            <div style="background-color: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                <div style="color: #1f2937; font-weight: 500; text-align: center;">BTTS No</div>
+                <div style="color: #2563eb; font-size: 1.2rem; font-weight: 600; text-align: center;">{btts_no} ({btts_no_prob_display})</div>
+            </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        dc_1x = match_data.get('odds_doublechance_1x', 'N/A')
+        st.markdown(f"""
+            <div style="background-color: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                <div style="color: #1f2937; font-weight: 500; text-align: center;">DC 1X</div>
+                <div style="color: #2563eb; font-size: 1.2rem; font-weight: 600; text-align: center;">{dc_1x}</div>
+            </div>
+        """, unsafe_allow_html=True)
+    
+    with col4:
+        dc_x2 = match_data.get('odds_doublechance_x2', 'N/A')
+        st.markdown(f"""
+            <div style="background-color: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                <div style="color: #1f2937; font-weight: 500; text-align: center;">DC X2</div>
+                <div style="color: #2563eb; font-size: 1.2rem; font-weight: 600; text-align: center;">{dc_x2}</div>
             </div>
         """, unsafe_allow_html=True)
 
@@ -1002,6 +1027,49 @@ def process_match_prediction(match):
                 'match_date': match.get('date', datetime.now().strftime('%Y-%m-%d')),
                 'match_id': str(match.get('id', ''))
             }
+
+            # Display league name and prediction first
+            st.markdown(f"### {prediction_data['league']}")
+            prediction = f"Prediction: {match.get('home_name', '')} vs {match.get('away_name', '')} - {predicted_outcome}"
+            display_prediction(prediction, max_prob)
+
+            # Display date and kickoff time
+            match_date = match.get('date', '')
+            kickoff = match.get('time', match.get('kickoff_time', match.get('kickoff', '')))  # Try all possible time fields
+            print(f"Raw match data: {json.dumps(match, indent=2)}")  # Debug the entire match data
+            if match_date and kickoff:
+                try:
+                    # Parse the date
+                    date_obj = datetime.strptime(match_date, "%Y-%m-%d")
+                    formatted_date = date_obj.strftime("%d %b %Y")
+                    
+                    # Clean up the kickoff time
+                    if isinstance(kickoff, bytes):
+                        kickoff = kickoff.decode('utf-8')
+                    kickoff = str(kickoff).strip()
+                    
+                    # Get kickoff time in CET
+                    cet_time = convert_to_cet(kickoff)
+                    print(f"Formatted time - Date: {formatted_date}, Time: {cet_time}")  # Debug log
+                    
+                    # Display both in a box
+                    st.markdown(f"""
+                        <div style="display: inline-block;
+                                    background-color: #f0f9ff;
+                                    border: 2px solid #0ea5e9;
+                                    border-radius: 8px;
+                                    padding: 10px 16px;
+                                    margin: 12px 0;
+                                    font-family: 'SF Mono', monospace;
+                                    font-size: 0.95rem;
+                                    font-weight: 500;
+                                    color: #0369a1;
+                                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
+                            📅 {formatted_date} &nbsp;|&nbsp; 🕒 {cet_time}
+                        </div>
+                    """, unsafe_allow_html=True)
+                except Exception as e:
+                    print(f"Error displaying date/time: {str(e)}, Match data: {json.dumps(match, indent=2)}")  # Enhanced error log
             
             # Check for existing prediction
             history = PredictionHistory()
@@ -1023,7 +1091,7 @@ def process_match_prediction(match):
             if not match_exists:
                 history.add_prediction(prediction_data)
             
-            # Display prediction information
+            # Display probability bars
             display_probability_bars(
                 home_prob, 
                 draw_prob, 
@@ -1035,9 +1103,8 @@ def process_match_prediction(match):
             # Display match odds
             display_match_odds(match)
             
-            # Display prediction text
-            prediction = f"Prediction: {predicted_outcome}"
-            display_prediction(prediction, max_prob)
+            # Add separator between predictions
+            st.markdown("---")
             
             return True
     except Exception as e:
@@ -1045,6 +1112,97 @@ def process_match_prediction(match):
         return False
     
     return False
+
+
+def convert_to_cet(kickoff_time):
+    """Convert kickoff time from IST to CET"""
+    try:
+        print(f"Converting time: {kickoff_time} (type: {type(kickoff_time)})")  # Debug log
+        
+        # Handle empty or invalid input
+        if not kickoff_time:
+            print("Empty kickoff time")
+            return "Time not available"
+            
+        # If it's bytes, decode it
+        if isinstance(kickoff_time, bytes):
+            kickoff_time = kickoff_time.decode('utf-8')
+        
+        # Convert to string and clean up
+        kickoff_time = str(kickoff_time).strip()
+        print(f"Cleaned time: {kickoff_time}")
+            
+        # Try different time formats
+        time_formats = [
+            "%H:%M",      # 14:30
+            "%H.%M",      # 14.30
+            "%I:%M %p",   # 02:30 PM
+            "%H:%M:%S",   # 14:30:00
+            "%H-%M",      # 14-30
+        ]
+        
+        kickoff_dt = None
+        for fmt in time_formats:
+            try:
+                # Replace any separators with colons
+                cleaned_time = kickoff_time.replace('.', ':').replace('-', ':')
+                if ':' not in cleaned_time and len(cleaned_time) == 4:
+                    # Handle format like "1430" -> "14:30"
+                    cleaned_time = f"{cleaned_time[:2]}:{cleaned_time[2:]}"
+                
+                print(f"Trying format {fmt} with cleaned time: {cleaned_time}")
+                kickoff_dt = datetime.strptime(cleaned_time, fmt.replace('.', ':').replace('-', ':'))
+                print(f"Successfully parsed time with format: {fmt}")
+                break
+            except ValueError as e:
+                print(f"Failed with format {fmt}: {str(e)}")
+                continue
+        
+        if not kickoff_dt:
+            print(f"Could not parse time with any format: {kickoff_time}")
+            return "Time not available"
+        
+        # Create a datetime object for today with the parsed time
+        now = datetime.now()
+        kickoff_dt = now.replace(
+            hour=kickoff_dt.hour,
+            minute=kickoff_dt.minute,
+            second=0,
+            microsecond=0
+        )
+        
+        # Convert from IST to CET (IST is UTC+5:30, CET is UTC+1)
+        # So we need to subtract 4 hours and 30 minutes
+        cet_dt = kickoff_dt - timedelta(hours=4, minutes=30)
+        
+        # Format the time
+        formatted_time = cet_dt.strftime("%H:%M CET")
+        print(f"Final formatted time: {formatted_time}")
+        return formatted_time
+        
+    except Exception as e:
+        print(f"Error converting time: {str(e)}, Input: {kickoff_time}")
+        return "Time not available"
+
+def display_kickoff_time(match_data):
+    """Display kickoff time in a styled box"""
+    kickoff = match_data.get('kickoff', '')
+    if kickoff:
+        cet_time = convert_to_cet(kickoff)
+        st.markdown(f"""
+            <div style="display: inline-block;
+                        background-color: #f0f9ff;
+                        border: 2px solid #0ea5e9;
+                        border-radius: 8px;
+                        padding: 10px 16px;
+                        margin: 12px 0;
+                        font-family: 'SF Mono', monospace;
+                        font-size: 0.95rem;
+                        font-weight: 500;
+                        color: #0369a1;">
+                🕒 {cet_time}
+            </div>
+        """, unsafe_allow_html=True)
 
 def show_main_app():
     # Update results automatically
@@ -1060,9 +1218,9 @@ def show_main_app():
     date = st.date_input(
         "Select Date",
         value=datetime.now().date(),
-        min_value=datetime.now().date() - timedelta(days=1),
-        max_value=datetime.now().date() + timedelta(days=3),
-        help="Select a date to view matches. Only showing matches from yesterday up to 3 days in the future."
+        min_value=datetime.now().date(),
+        max_value=datetime.now().date() + timedelta(days=14),
+        help="Select a date to view matches. Showing matches from today up to 2 weeks in the future."
     )
     
     if date:
@@ -1113,6 +1271,7 @@ def show_main_app():
                 st.markdown(f"## {league_name}")
                 
                 for match in league_matches:
+                    display_kickoff_time(match)
                     process_match_prediction(match)
 
 # Add Navigation JavaScript

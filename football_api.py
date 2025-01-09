@@ -179,6 +179,7 @@ def get_matches(date_str):
         # Filter matches by league IDs and required fields
         valid_matches = []
         for match in matches:
+            print(f"Raw match data: {json.dumps(match, indent=2)}")  # Debug log
             if (all(key in match for key in ['home_name', 'away_name', 'competition_id']) and 
                 match['competition_id'] in league_ids):
                 valid_matches.append(match)
