@@ -19,16 +19,29 @@ BASE_URL = "https://api.football-data-api.com"
 # Define all league IDs we want to fetch
 LEAGUE_IDS = {
     # England
-    'England - Premier League': 12325,
+    'England - Premier League': 12446,  # Current Premier League ID
+    'England - Premier League (Alt)': 12325,  # Alternative Premier League ID
     'England - Championship': 12326,
     'England - League One': 12327,
     'England - League Two': 12422,
     'England - FA Cup': 12328,
     'England - EFL Cup': 12329,
     'England - Premier League 2 Division One': 13293,
-    'England - Premier League' : 12446,
-    'England - FA Womens Super League' : 13624,
-    'England - FA Womens Championship' : 13625,
+    'England - FA Womens Super League': 13624,
+    'England - FA Womens Championship': 13625,
+
+    # European Competitions
+    'UEFA Champions League': 12301,
+    'UEFA Europa League': 12302,
+    'UEFA Europa Conference League': 12303,
+    'AFC Champions League': 12305,
+    
+    # International Competitions
+    'UEFA Euro Qualifiers': 12308,
+    'UEFA Nations League': 12309,
+    'Africa Cup of Nations': 12310,
+    'WC Qualification Europe': 12311,
+    'International Friendlies': 12316,  # Added International Friendlies
     
     # Spain
     'Spain - La Liga': 12476,
@@ -44,14 +57,19 @@ LEAGUE_IDS = {
     'Germany - Bundesliga': 12452,
     'Germany - 2. Bundesliga': 12453,
     'Germany - DFB-Pokal': 12454,
+    'Germany - 3. Liga': 12455,  # Added German 3rd tier
+    'Germany - Regional Leagues': 12451,  # Added German Regional Leagues
     
     # France
     'France - Ligue 1': 12377,
     'France - Ligue 2': 12378,
     'France - Coupe de France': 12379,
+    'France - National': 12529,  # Added French 3rd tier
+    'France - National 2': 12530,  # Added French 4th tier
     
     # Netherlands
     'Netherlands - Eredivisie': 12335,
+    'Netherlands - Eerste Divisie': 13698,  # Added Dutch 2nd tier
     
     # Belgium
     'Belgium - Jupiler Pro League': 12338,
@@ -134,15 +152,15 @@ LEAGUE_IDS = {
     # Finland
     'Finland - Veikkausliiga': 12397,
     
-    # European Competitions
-    'Europe - Champions League': 12301,
-    'Europe - Europa League': 12302,
-    'Europe - Conference League': 12303,
-    
     # Other Continental Competitions
     'South America - Copa Libertadores': 12304,
-    'Asia - AFC Champions League': 12305,
-    'North America - CONCACAF Champions': 12306
+    'CONCACAF Champions League': 12306,
+    
+    # Romania
+    'Romania - Liga I': 12467,  # Added Romanian top flight
+    
+    # Israel
+    'Israel - Premier League': 12621,  # Added Israeli top flight
 }
 
 print("Loading football_api.py")
@@ -180,11 +198,22 @@ def get_matches(date_str):
         valid_matches = []
         for match in matches:
             print(f"Raw match data: {json.dumps(match, indent=2)}")  # Debug log
-            if (all(key in match for key in ['home_name', 'away_name', 'competition_id']) and 
-                match['competition_id'] in league_ids):
-                valid_matches.append(match)
+            missing_fields = [field for field in ['home_name', 'away_name', 'competition_id'] if field not in match]
+            competition_id = match.get('competition_id')
+            
+            if missing_fields:
+                print(f"Match missing required fields: {missing_fields}")
+                continue
+                
+            if competition_id not in league_ids:
+                print(f"Match competition_id {competition_id} not in tracked leagues")
+                continue
+            
+            valid_matches.append(match)
         
         print(f"Found {len(valid_matches)} valid matches in selected leagues")
+        if len(valid_matches) < len(matches):
+            print(f"Filtered out {len(matches) - len(valid_matches)} matches")
         
         # Sort matches by competition and kickoff time
         valid_matches.sort(key=lambda x: (x.get('competition_id', ''), x.get('kickoff', '')))
@@ -203,8 +232,33 @@ def get_matches(date_str):
 
 def get_match_result(match_id):
     """Get match result from database instead of API"""
-    # This function should be implemented to get results from your local database
-    return None
+    try:
+        # Make API request to get match result
+        url = f"{BASE_URL}/match/{match_id}"
+        params = {
+            "key": API_KEY
+        }
+        
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+        
+        data = response.json()
+        
+        if not data.get("success"):
+            return None
+            
+        match_data = data.get("data", {})
+        
+        # Return formatted match result
+        return {
+            "status": "FINISHED" if match_data.get("status") == "complete" else match_data.get("status", "SCHEDULED"),
+            "home_score": match_data.get("home_score", 0),
+            "away_score": match_data.get("away_score", 0)
+        }
+        
+    except Exception as e:
+        print(f"Error getting match result: {str(e)}")
+        return None
 
 
 def get_results_by_date(date_str):
@@ -221,5 +275,42 @@ def get_team_stats(team_id, league_id=None):
 
 def get_match_by_teams(home_team, away_team, date_str):
     """Find a match by teams from database instead of API"""
-    # This function should be implemented to find matches from your local database
-    return None
+    try:
+        # Convert date string to required format (YYYY-MM-DD)
+        match_date = datetime.strptime(date_str, '%Y-%m-%d').strftime('%Y-%m-%d')
+        
+        # Make API request to get matches for the date
+        url = f"{BASE_URL}/matches"
+        params = {
+            "key": API_KEY,
+            "date_from": match_date,
+            "date_to": match_date
+        }
+        
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+        
+        data = response.json()
+        
+        if not data.get("success"):
+            return None
+            
+        matches = data.get("data", [])
+        
+        # Find the specific match with matching teams
+        for match in matches:
+            if (match.get("home_team", "").lower() == home_team.lower() and 
+                match.get("away_team", "").lower() == away_team.lower()):
+                return {
+                    "id": match.get("id"),
+                    "home_team": match.get("home_team"),
+                    "away_team": match.get("away_team"),
+                    "date": match_date,
+                    "status": match.get("status", "SCHEDULED")
+                }
+        
+        return None
+        
+    except Exception as e:
+        print(f"Error finding match by teams: {str(e)}")
+        return None

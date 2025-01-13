@@ -17,7 +17,7 @@ from history import show_history_page, PredictionHistory
 from session_state import init_session_state, check_login_state
 import json
 from scipy.stats import poisson
-
+import pytz
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -458,9 +458,9 @@ def create_match_features_from_api(match_data):
         features['away_momentum'] = features['away_form_points'] * features['away_win_rate'] * o15_potential
         
         # Odds and probabilities with margin adjustment
-        features['odds_home_win'] = match_data.get('odds_ft_1', 3.0)
-        features['odds_draw'] = match_data.get('odds_ft_x', 3.0)
-        features['odds_away_win'] = match_data.get('odds_ft_2', 3.0)
+        features['odds_home_win'] = match_data.get('odds_ft_1', 0)
+        features['odds_draw'] = match_data.get('odds_ft_x', 0)
+        features['odds_away_win'] = match_data.get('odds_ft_2', 0)
         
         # Calculate implied probabilities with dynamic margin based on league level
         margin = 1.07 - (0.02 * (match_data.get('competition_id', 0) % 3))  # Adjust margin by competition level
@@ -1062,12 +1062,20 @@ def update_match_results():
                 pred['date']
             )
             
-            if match:
-                # Get the result
-                match_data = get_match_result(match['id'])
+            if not match:
+                logger.warning(f"Match not found for {pred['home_team']} vs {pred['away_team']} on {pred['date']}")
+                continue
                 
-                if match_data and match_data['status'] == 'FINISHED':
-                    # Determine winner
+            # Get the result
+            match_data = get_match_result(match['id'])
+            
+            if not match_data:
+                logger.warning(f"No result data for match ID {match['id']}")
+                continue
+                
+            if match_data['status'] == 'FINISHED':
+                # Determine winner
+                try:
                     home_score = int(match_data['home_score'])
                     away_score = int(match_data['away_score'])
                     
@@ -1081,11 +1089,11 @@ def update_match_results():
                     # Calculate profit/loss with fixed bet amount
                     if actual_outcome == pred['predicted_outcome']:
                         if actual_outcome == "HOME":
-                            profit = pred['home_odds'] - 1
+                            profit = float(pred['home_odds']) - 1
                         elif actual_outcome == "AWAY":
-                            profit = pred['away_odds'] - 1
+                            profit = float(pred['away_odds']) - 1
                         else:
-                            profit = pred['draw_odds'] - 1
+                            profit = float(pred['draw_odds']) - 1
                     else:
                         profit = -1
                     
@@ -1095,7 +1103,12 @@ def update_match_results():
                         actual_outcome,
                         profit
                     )
-                    
+                except (ValueError, TypeError) as e:
+                    logger.error(f"Error processing scores for match {match['id']}: {str(e)}")
+                    continue
+            else:
+                logger.info(f"Match not complete, status: {match_data['status']}")
+                
         except Exception as e:
             logger.error(f"Error updating match result: {str(e)}")
             continue
@@ -1204,80 +1217,33 @@ def process_match_prediction(match):
             # Add separator between predictions
             st.markdown("---")
             
-            return True
+            return max_prob  # Return the confidence level
             
     except Exception as e:
         logger.error(f"Error processing prediction for match: {str(e)}", exc_info=True)
-        return False
+        return None
     
-    return False
-
-def convert_to_cet(kickoff_time):
-    """Convert kickoff time from IST to CET"""
-    try:
-        # Handle empty or invalid input
-        if not kickoff_time:
-            return "Time not available"
-            
-        # If it's bytes, decode it
-        if isinstance(kickoff_time, bytes):
-            kickoff_time = kickoff_time.decode('utf-8')
-        
-        # Convert to string and clean up
-        kickoff_time = str(kickoff_time).strip()
-            
-        # Try different time formats
-        time_formats = [
-            "%H:%M",      # 14:30
-            "%H.%M",      # 14.30
-            "%I:%M %p",   # 02:30 PM
-            "%H:%M:%S",   # 14:30:00
-            "%H-%M",      # 14-30
-        ]
-        
-        kickoff_dt = None
-        for fmt in time_formats:
-            try:
-                # Replace any separators with colons
-                cleaned_time = kickoff_time.replace('.', ':').replace('-', ':')
-                if ':' not in cleaned_time and len(cleaned_time) == 4:
-                    # Handle format like "1430" -> "14:30"
-                    cleaned_time = f"{cleaned_time[:2]}:{cleaned_time[2:]}"
-                
-                kickoff_dt = datetime.strptime(cleaned_time, fmt.replace('.', ':').replace('-', ':'))
-                break
-            except ValueError as e:
-                continue
-        
-        if not kickoff_dt:
-            return "Time not available"
-        
-        # Create a datetime object for today with the parsed time
-        now = datetime.now()
-        kickoff_dt = now.replace(
-            hour=kickoff_dt.hour,
-            minute=kickoff_dt.minute,
-            second=0,
-            microsecond=0
-        )
-        
-        # Convert from IST to CET (IST is UTC+5:30, CET is UTC+1)
-        # So we need to subtract 4 hours and 30 minutes
-        cet_dt = kickoff_dt - timedelta(hours=4, minutes=30)
-        
-        # Format the time
-        formatted_time = cet_dt.strftime("%H:%M CET")
-        return formatted_time
-        
-    except Exception as e:
-        print(f"Error converting time: {str(e)}, Input: {kickoff_time}")
-        return "Time not available"
+    return None
 
 def display_kickoff_time(match_data):
-    """Display kickoff time in a styled box"""
-    kickoff = match_data.get('kickoff', '')
-    if kickoff:
-        cet_time = convert_to_cet(kickoff)
+    """Display kickoff time in German timezone"""
+    try:
+        # Get unix timestamp from match data
+        unix_timestamp = match_data.get('date_unix')
+        if not unix_timestamp:
+            st.warning("Kickoff time not available")
+            return
+
+        # Convert unix timestamp to datetime in German timezone
+        german_tz = pytz.timezone('Europe/Berlin')
+        utc_dt = datetime.utcfromtimestamp(unix_timestamp)
+        utc_dt = pytz.utc.localize(utc_dt)
+        german_dt = utc_dt.astimezone(german_tz)
+
+        # Format the time
+        formatted_time = german_dt.strftime('%A, %d %B %Y %H:%M')
+        
+        # Display kickoff time with styled box
         st.markdown(f"""
             <div style="display: inline-block;
                         background-color: #f0f9ff;
@@ -1290,9 +1256,13 @@ def display_kickoff_time(match_data):
                         font-weight: 500;
                         color: #0369a1;
                         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
-                🕒 {cet_time}
+                🕒 {formatted_time} (German Time)
             </div>
         """, unsafe_allow_html=True)
+        
+    except Exception as e:
+        logging.error(f"Error displaying kickoff time: {str(e)}")
+        st.warning("Error displaying kickoff time")
 
 def get_ev_color(ev_percentage):
     """Get color based on EV percentage"""
@@ -1359,6 +1329,14 @@ def show_main_app():
                 help="Filter matches by competition"
             )
             
+            # Confidence filter
+            confidence_level = st.selectbox(
+                "Filter by Confidence Level",
+                options=["All", "High", "Medium", "Low"],
+                index=0,
+                help="Filter predictions by confidence level (High: ≥60%, Medium: 40-59%, Low: <40%)"
+            )
+            
             # Filter matches by selected league
             if selected_league != "All Matches":
                 matches = [m for m in all_matches if get_league_name(m) == selected_league]
@@ -1380,10 +1358,29 @@ def show_main_app():
             # Display matches grouped by league
             for league_name, league_matches in matches_by_league.items():
                 st.markdown(f"## {league_name}")
+                matches_displayed = False
                 
                 for match in league_matches:
-                    display_kickoff_time(match)
-                    process_match_prediction(match)
+                    display_kickoff_time(match)  # Display kickoff time before prediction
+                    confidence = process_match_prediction(match)
+                    
+                    # Filter based on confidence level
+                    if confidence is not None:
+                        show_match = True
+                        if confidence_level != "All":
+                            if confidence_level == "High" and confidence < 0.6:
+                                show_match = False
+                            elif confidence_level == "Medium" and (confidence < 0.4 or confidence >= 0.6):
+                                show_match = False
+                            elif confidence_level == "Low" and confidence >= 0.4:
+                                show_match = False
+                        
+                        if show_match:
+                            matches_displayed = True
+                
+                if not matches_displayed:
+                    st.info(f"No matches with {confidence_level.lower()} confidence predictions found in {league_name}.")
+                    
 
 # Add Navigation JavaScript
 st.markdown("""
@@ -1596,3 +1593,53 @@ def calculate_btts_probability(home_xg, away_xg):
     prob_home_scoring = 1 - poisson.pmf(0, home_xg)
     prob_away_scoring = 1 - poisson.pmf(0, away_xg)
     return prob_home_scoring * prob_away_scoring
+
+def create_match_features_from_api(match_data):
+    """Create features DataFrame from match data with error handling"""
+    try:
+        features = {}
+
+        # Extract odds from match data
+        features['odds_home_win'] = match_data.get('odds_ft_1', 0)
+        features['odds_draw'] = match_data.get('odds_ft_x', 0)
+        features['odds_away_win'] = match_data.get('odds_ft_2', 0)
+        
+        # Calculate probabilities from odds, handling zero odds
+        total_prob = 0
+        raw_probs = {'home': 0, 'draw': 0, 'away': 0}
+        
+        # Calculate raw probabilities if odds are available
+        if features['odds_home_win'] > 0:
+            raw_probs['home'] = 1 / features['odds_home_win']
+            total_prob += raw_probs['home']
+        if features['odds_draw'] > 0:
+            raw_probs['draw'] = 1 / features['odds_draw']
+            total_prob += raw_probs['draw']
+        if features['odds_away_win'] > 0:
+            raw_probs['away'] = 1 / features['odds_away_win']
+            total_prob += raw_probs['away']
+        
+        # If no valid odds are available, use default probabilities
+        if total_prob == 0:
+            features['prob_home_win'] = 0.4
+            features['prob_draw'] = 0.3
+            features['prob_away_win'] = 0.3
+        else:
+            # Normalize probabilities
+            features['prob_home_win'] = raw_probs['home'] / total_prob
+            features['prob_draw'] = raw_probs['draw'] / total_prob
+            features['prob_away_win'] = raw_probs['away'] / total_prob
+        
+        # Add other features
+        features['home_ppg'] = match_data.get('home_ppg', 0)
+        features['away_ppg'] = match_data.get('away_ppg', 0)
+        features['home_xg'] = match_data.get('team_a_xg_prematch', 0)
+        features['away_xg'] = match_data.get('team_b_xg_prematch', 0)
+        
+        # Convert to DataFrame
+        return pd.DataFrame([features])
+        
+    except Exception as e:
+        logging.error(f"Error creating features: {str(e)}")
+        traceback.print_exc()
+        raise ValueError(f"Failed to create features: {str(e)}")
