@@ -19,9 +19,9 @@ BASE_URL = "https://api.football-data-api.com"
 # Define all league IDs we want to fetch
 LEAGUE_IDS = {
     # England
-    'England - Premier League': 12446,  # Current Premier League ID
-    'England - Premier League (Alt)': 12325,  # Alternative Premier League ID
-    'England - Championship': 12326,
+    'England - EFL League One': 12446,  
+    'England - Premier League ': 12325, 
+    'England - Championship': 12451,
     'England - League One': 12327,
     'England - League Two': 12422,
     'England - FA Cup': 12328,
@@ -41,12 +41,13 @@ LEAGUE_IDS = {
     'UEFA Nations League': 12309,
     'Africa Cup of Nations': 12310,
     'WC Qualification Europe': 12311,
-    'International Friendlies': 12316,  # Added International Friendlies
     
     # Spain
     'Spain - La Liga': 12476,
+    'Spain - La Ligas': 12316,
     'Spain - LaLiga2': 12477,
     'Spain - Copa del Rey': 12478,
+    'Spain - Segunda División': 12467,
     
     # Italy
     'Italy - Serie A': 12447,
@@ -59,14 +60,14 @@ LEAGUE_IDS = {
     'Germany 2. Bundesliga': 12528,
     'Germany - DFB-Pokal': 12454,
     'Germany - 3. Liga': 12623,  # Added German 3rd tier
-    'Germany - Regional Leagues': 12451,  # Added German Regional Leagues
+
     
     # France
     'France - Ligue 1': 12377,
-    'France - Ligue 2': 12378,
+    'France - Ligue 2': 12338,
     'France - Coupe de France': 12379,
-    'France - National': 12529,  # Added French 3rd tier
-    'France - National 2': 12530,  # Added French 4th tier
+    'Germany - Bundesliga': 12529,  # Added French 3rd tier
+    'Italy - Serie A': 12530,  # Added French 4th tier
     
     # Netherlands
     'Netherlands - Eredivisie': 12322,
@@ -74,7 +75,7 @@ LEAGUE_IDS = {
 
 
     # Belgium
-    'Belgium - Jupiler Pro League': 12338,
+
     'Belgium Pro League':12137,
     
     # Scotland
@@ -82,8 +83,7 @@ LEAGUE_IDS = {
     'Scotland - Championship': 12549,
     
     # Turkey
-    'Turkey - Super Lig': 12928,
-    'Turkey - 1. Lig': 12929,
+    'Turkey - 1. Lig': 12928,
     'Turkey Süper Lig':12641,
 
 
@@ -163,11 +163,9 @@ LEAGUE_IDS = {
     'South America - Copa Libertadores': 12304,
     'CONCACAF Champions League': 12306,
     
-    # Romania
-    'Romania - Liga I': 12467,  # Added Romanian top flight
     
     # Israel
-    'Israel - Premier League': 12621,  # Added Israeli top flight
+    'Italy - Serie B': 12621,
 }
 
 print("Loading football_api.py")
