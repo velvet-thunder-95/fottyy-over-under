@@ -581,7 +581,6 @@ def show_history_page():
                         'actual_outcome': 'Actual Outcome',
                         'Result': 'Result',
                         'profit_loss': 'Profit/Loss',
-                        'confidence': 'Confidence',
                         'status': 'Status'
                     }
                     
@@ -589,7 +588,7 @@ def show_history_page():
                     display_df = display_df[display_columns.keys()].rename(columns=display_columns)
                     
                     # Convert numeric columns
-                    numeric_cols = ['Profit/Loss', 'Confidence']
+                    numeric_cols = ['Profit/Loss']
                     display_df[numeric_cols] = display_df[numeric_cols].apply(pd.to_numeric, errors='coerce')
                     
                     # Fill missing values with appropriate defaults
@@ -602,7 +601,6 @@ def show_history_page():
                         'Actual Outcome': 'Pending',
                         'Result': '⏳ Pending',
                         'Profit/Loss': 0.0,
-                        'Confidence': 0.0,
                         'Status': 'Pending'
                     }
                     

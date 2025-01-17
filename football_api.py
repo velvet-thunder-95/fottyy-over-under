@@ -56,8 +56,9 @@ LEAGUE_IDS = {
     # Germany
     'Germany - Bundesliga': 12452,
     'Germany - 2. Bundesliga': 12453,
+    'Germany 2. Bundesliga': 12528,
     'Germany - DFB-Pokal': 12454,
-    'Germany - 3. Liga': 12455,  # Added German 3rd tier
+    'Germany - 3. Liga': 12623,  # Added German 3rd tier
     'Germany - Regional Leagues': 12451,  # Added German Regional Leagues
     
     # France
@@ -68,25 +69,30 @@ LEAGUE_IDS = {
     'France - National 2': 12530,  # Added French 4th tier
     
     # Netherlands
-    'Netherlands - Eredivisie': 12335,
+    'Netherlands - Eredivisie': 12322,
     'Netherlands - Eerste Divisie': 13698,  # Added Dutch 2nd tier
-    
+
+
     # Belgium
     'Belgium - Jupiler Pro League': 12338,
+    'Belgium Pro League':12137,
     
     # Scotland
-    'Scotland - Premiership': 12548,
+    'Scotland - Premiership': 12455,
     'Scotland - Championship': 12549,
     
     # Turkey
     'Turkey - Super Lig': 12928,
     'Turkey - 1. Lig': 12929,
-    
+    'Turkey Süper Lig':12641,
+
+
     # Russia
     'Russia - Premier League': 12431,
     
     # Portugal
     'Portugal - Primeira Liga': 12344,
+    'Portugal Liga NOS': 12931,
     
     # Switzerland
     'Switzerland - Super League': 12482,
@@ -97,6 +103,7 @@ LEAGUE_IDS = {
     # Greece
     'Greece - Super League 1': 12501,
     'Greece - Super League 2': 12502,
+    'Greece Super League': 12734,
     
     # Czech Republic
     'Czech Republic - First League': 12426,
@@ -129,7 +136,7 @@ LEAGUE_IDS = {
     'Colombia - Primera A': 12366,
     
     # Mexico
-    'Mexico - Liga MX': 12384,
+    'Mexico - Liga MX': 12136,
     
     # USA
     'USA - MLS': 12384,

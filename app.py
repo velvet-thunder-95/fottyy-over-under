@@ -18,6 +18,7 @@ from session_state import init_session_state, check_login_state
 import json
 from scipy.stats import poisson
 import pytz
+from zoneinfo import ZoneInfo
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -796,13 +797,9 @@ def display_match_odds(match_data):
     """, unsafe_allow_html=True)
     
     # Get predicted probabilities for all markets
-    home_pred = float(match_data.get('pred_home_win', 0))
-    draw_pred = float(match_data.get('pred_draw', 0))
-    away_pred = float(match_data.get('pred_away_win', 0))
-    over_pred = float(match_data.get('pred_over25', 0))
-    under_pred = float(match_data.get('pred_under25', 0))
-    btts_pred = float(match_data.get('pred_btts', 0))
-    btts_no_pred = float(match_data.get('pred_btts_no', 0))
+    home_pred = float(match_data.get('home_prob', 0)) * 100  # Convert to percentage
+    draw_pred = float(match_data.get('draw_prob', 0)) * 100
+    away_pred = float(match_data.get('away_prob', 0)) * 100
     
     # Match outcome odds
     home_odds = float(match_data.get('odds_ft_1', 0))
@@ -816,161 +813,114 @@ def display_match_odds(match_data):
         draw_implied = (1/draw_odds) / total_implied * 100
         away_implied = (1/away_odds) / total_implied * 100
         
-        home_ev = calculate_ev(home_pred, home_implied)
-        draw_ev = calculate_ev(draw_pred, draw_implied)
-        away_ev = calculate_ev(away_pred, away_implied)
+        home_ev = calculate_ev(home_pred, home_odds)
+        draw_ev = calculate_ev(draw_pred, draw_odds)
+        away_ev = calculate_ev(away_pred, away_odds)
     else:
         home_implied = draw_implied = away_implied = 0
         home_ev = draw_ev = away_ev = 0
     
-    # Create columns for match outcome odds
+    # Display match information
+    st.markdown("""
+        <style>
+            .odds-container {
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 20px;
+            }
+            .odds-box {
+                flex: 1;
+                margin: 0 10px;
+                padding: 15px;
+                border-radius: 8px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+        </style>
+    """, unsafe_allow_html=True)
+
+    # Display match odds
+    st.markdown("<h3>Match Odds</h3>", unsafe_allow_html=True)
     col1, col2, col3 = st.columns(3)
-    
-    # Home win odds
     with col1:
-        st.markdown(f"""
-            <div style="background-color: {get_ev_color(home_ev)}; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 10px;">
-                <div style="color: #1f2937; font-weight: 500; text-align: center;">Home Win</div>
-                <div style="color: #2563eb; font-size: 1.2rem; font-weight: 600; text-align: center;">
-                    {home_odds:.2f} ({home_implied:.1f}%)
-                </div>
-                <div style="color: #1f2937; font-size: 0.9rem; text-align: center;">EV: {home_ev:+.1f}%</div>
-            </div>
-        """, unsafe_allow_html=True)
-    
-    # Draw odds
+        display_odds_box("Home Win", home_odds, home_implied, home_ev)
     with col2:
-        st.markdown(f"""
-            <div style="background-color: {get_ev_color(draw_ev)}; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 10px;">
-                <div style="color: #1f2937; font-weight: 500; text-align: center;">Draw</div>
-                <div style="color: #2563eb; font-size: 1.2rem; font-weight: 600; text-align: center;">
-                    {draw_odds:.2f} ({draw_implied:.1f}%)
-                </div>
-                <div style="color: #1f2937; font-size: 0.9rem; text-align: center;">EV: {draw_ev:+.1f}%</div>
-            </div>
-        """, unsafe_allow_html=True)
-    
-    # Away win odds
+        display_odds_box("Draw", draw_odds, draw_implied, draw_ev)
     with col3:
-        st.markdown(f"""
-            <div style="background-color: {get_ev_color(away_ev)}; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 10px;">
-                <div style="color: #1f2937; font-weight: 500; text-align: center;">Away Win</div>
-                <div style="color: #2563eb; font-size: 1.2rem; font-weight: 600; text-align: center;">
-                    {away_odds:.2f} ({away_implied:.1f}%)
-                </div>
-                <div style="color: #1f2937; font-size: 0.9rem; text-align: center;">EV: {away_ev:+.1f}%</div>
-            </div>
-        """, unsafe_allow_html=True)
-    
-    # Create 4 columns for other stats
-    col1, col2, col3, col4 = st.columns(4)
-    
-    # First row - xG stats with color coding based on comparison
-    with col1:
+        display_odds_box("Away Win", away_odds, away_implied, away_ev)
+
+    # Display xG
+    st.markdown("<h3>Expected Goals</h3>", unsafe_allow_html=True)
+    col4, col5 = st.columns(2)
+    with col4:
         home_xg = float(match_data.get('team_a_xg_prematch', 0))
         away_xg = float(match_data.get('team_b_xg_prematch', 0))
-        xg_diff = home_xg - away_xg
-        xg_ev = xg_diff * 20  # Scale the xG difference to match EV scale
-        
-        st.markdown(f"""
-            <div style="background-color: {get_ev_color(xg_ev)}; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 10px;">
-                <div style="color: #1f2937; font-weight: 500; text-align: center;">Home xG</div>
-                <div style="color: #2563eb; font-size: 1.2rem; font-weight: 600; text-align: center;">{home_xg:.2f}</div>
-            </div>
-        """, unsafe_allow_html=True)
-    
-    with col2:
-        away_xg_ev = -xg_ev  # Inverse of home xG EV
-        st.markdown(f"""
-            <div style="background-color: {get_ev_color(away_xg_ev)}; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 10px;">
-                <div style="color: #1f2937; font-weight: 500; text-align: center;">Away xG</div>
-                <div style="color: #2563eb; font-size: 1.2rem; font-weight: 600; text-align: center;">{away_xg:.2f}</div>
-            </div>
-        """, unsafe_allow_html=True)
-    
-    # Over/Under odds with EV
-    with col3:
-        over = match_data.get('odds_ft_over25', 0)
-        under = match_data.get('odds_ft_under25', 0)
-        over_implied = under_implied = 0
-        over_ev = under_ev = 0
-        
-        try:
-            over = float(over)
-            under = float(under)
-            if over > 0 and under > 0:
-                over_raw_prob = 1 / over
-                under_raw_prob = 1 / under
-                total_prob = over_raw_prob + under_raw_prob
-                over_implied = (over_raw_prob / total_prob) * 100
-                under_implied = (under_raw_prob / total_prob) * 100
-                over_ev = calculate_ev(over_pred, over_implied)
-                under_ev = calculate_ev(under_pred, under_implied)
-        except:
-            pass
+        display_xg_box("Home xG", home_xg, away_xg)
+    with col5:
+        display_xg_box("Away xG", away_xg, home_xg)
+
+    # Calculate and display Over/Under odds
+    try:
+        over = float(match_data.get('odds_ft_over25', 0))
+        under = float(match_data.get('odds_ft_under25', 0))
+        if over > 0 and under > 0:
+            over_raw_prob = 1 / over
+            under_raw_prob = 1 / under
+            total_prob = over_raw_prob + under_raw_prob
+            over_implied = (over_raw_prob / total_prob) * 100
+            under_implied = (under_raw_prob / total_prob) * 100
             
-        st.markdown(f"""
-            <div style="background-color: {get_ev_color(over_ev)}; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 10px;">
-                <div style="color: #1f2937; font-weight: 500; text-align: center;">Over 2.5</div>
-                <div style="color: #2563eb; font-size: 1.2rem; font-weight: 600; text-align: center;">
-                    {over:.2f} ({over_implied:.1f}%)
-                </div>
-                <div style="color: #1f2937; font-size: 0.9rem; text-align: center;">EV: {over_ev:+.1f}%</div>
-            </div>
-        """, unsafe_allow_html=True)
-    
-    with col4:
-        st.markdown(f"""
-            <div style="background-color: {get_ev_color(under_ev)}; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 10px;">
-                <div style="color: #1f2937; font-weight: 500; text-align: center;">Under 2.5</div>
-                <div style="color: #2563eb; font-size: 1.2rem; font-weight: 600; text-align: center;">
-                    {under:.2f} ({under_implied:.1f}%)
-                </div>
-                <div style="color: #1f2937; font-size: 0.9rem; text-align: center;">EV: {under_ev:+.1f}%</div>
-            </div>
-        """, unsafe_allow_html=True)
-    
-    # Second row - BTTS odds with EV
-    with col1:
-        btts_yes = match_data.get('odds_btts_yes', 0)
-        btts_no = match_data.get('odds_btts_no', 0)
-        btts_implied = btts_no_implied = 0
-        btts_ev = btts_no_ev = 0
-        
-        try:
-            btts_yes = float(btts_yes)
-            btts_no = float(btts_no)
-            if btts_yes > 0 and btts_no > 0:
-                btts_raw_prob = 1 / btts_yes
-                btts_no_raw_prob = 1 / btts_no
-                total_btts_prob = btts_raw_prob + btts_no_raw_prob
-                btts_implied = (btts_raw_prob / total_btts_prob) * 100
-                btts_no_implied = (btts_no_raw_prob / total_btts_prob) * 100
-                btts_ev = calculate_ev(btts_pred, btts_implied)
-                btts_no_ev = calculate_ev(btts_no_pred, btts_no_implied)
-        except:
-            pass
+            # Calculate Over/Under probabilities from xG
+            over_pred = calculate_over25_probability(match_data.get('team_a_xg_prematch', 0), match_data.get('team_b_xg_prematch', 0))
             
-        st.markdown(f"""
-            <div style="background-color: {get_ev_color(btts_ev)}; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                <div style="color: #1f2937; font-weight: 500; text-align: center;">BTTS</div>
-                <div style="color: #2563eb; font-size: 1.2rem; font-weight: 600; text-align: center;">
-                    {btts_yes:.2f} ({btts_implied:.1f}%)
-                </div>
-                <div style="color: #1f2937; font-size: 0.9rem; text-align: center;">EV: {btts_ev:+.1f}%</div>
-            </div>
-        """, unsafe_allow_html=True)
-    
-    with col2:
-        st.markdown(f"""
-            <div style="background-color: {get_ev_color(btts_no_ev)}; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                <div style="color: #1f2937; font-weight: 500; text-align: center;">BTTS No</div>
-                <div style="color: #2563eb; font-size: 1.2rem; font-weight: 600; text-align: center;">
-                    {btts_no:.2f} ({btts_no_implied:.1f}%)
-                </div>
-                <div style="color: #1f2937; font-size: 0.9rem; text-align: center;">EV: {btts_no_ev:+.1f}%</div>
-            </div>
-        """, unsafe_allow_html=True)
+            if over_pred is not None:
+                over_pred *= 100  # Convert to percentage
+                under_pred = 100 - over_pred
+                
+                # Calculate EV using the helper function
+                over_ev = calculate_ev(over_pred, over)
+                under_ev = calculate_ev(under_pred, under)
+                
+                # Display Over/Under odds
+                st.markdown("<h3>Over/Under 2.5 Goals</h3>", unsafe_allow_html=True)
+                col6, col7 = st.columns(2)
+                with col6:
+                    display_odds_box("Over 2.5", over, over_implied, over_ev)
+                with col7:
+                    display_odds_box("Under 2.5", under, under_implied, under_ev)
+    except Exception as e:
+        print(f"Error processing Over/Under: {str(e)}")
+
+    # Calculate and display BTTS odds
+    try:
+        btts_yes = float(match_data.get('odds_btts_yes', 0))
+        btts_no = float(match_data.get('odds_btts_no', 0))
+        if btts_yes > 0 and btts_no > 0:
+            btts_raw_prob = 1 / btts_yes
+            btts_no_raw_prob = 1 / btts_no
+            total_btts_prob = btts_raw_prob + btts_no_raw_prob
+            btts_implied = (btts_raw_prob / total_btts_prob) * 100
+            btts_no_implied = (btts_no_raw_prob / total_btts_prob) * 100
+            
+            # Calculate BTTS probability from xG
+            btts_pred = calculate_btts_probability(match_data.get('team_a_xg_prematch', 0), match_data.get('team_b_xg_prematch', 0))
+            
+            if btts_pred is not None:
+                btts_pred *= 100  # Convert to percentage
+                btts_no_pred = 100 - btts_pred
+                
+                # Calculate EV using the helper function
+                btts_ev = calculate_ev(btts_pred, btts_yes)
+                btts_no_ev = calculate_ev(btts_no_pred, btts_no)
+                
+                # Display BTTS odds
+                st.markdown("<h3>Both Teams To Score</h3>", unsafe_allow_html=True)
+                col8, col9 = st.columns(2)
+                with col8:
+                    display_odds_box("BTTS Yes", btts_yes, btts_implied, btts_ev)
+                with col9:
+                    display_odds_box("BTTS No", btts_no, btts_no_implied, btts_no_ev)
+    except Exception as e:
+        print(f"Error processing BTTS: {str(e)}")
 
 def get_ev_color(ev_percentage):
     """Get color based on EV percentage"""
@@ -987,14 +937,45 @@ def get_ev_color(ev_percentage):
     else:
         return "#00AF50"  # PLUS EV Bet (over 25% positive EV)
 
-def calculate_ev(predicted_prob, implied_prob):
-    """Calculate EV percentage"""
+def calculate_ev(predicted_prob, odds):
+    """Calculate EV for a bet"""
     try:
-        if predicted_prob == 0 or implied_prob == 0:
+        if predicted_prob is None or odds <= 1:
             return 0
-        return ((predicted_prob / 100) * (1 / (implied_prob / 100)) - 1) * 100
-    except:
+            
+        # Convert probability to decimal (0-1)
+        prob = predicted_prob / 100
+        
+        # Calculate EV: (probability * potential_profit) - (1 - probability)
+        potential_profit = odds - 1
+        ev = (prob * potential_profit) - (1 - prob)
+        
+        # Convert to percentage
+        ev *= 100
+        
+        print(f"EV Calculation Debug:")
+        print(f"Predicted Prob: {prob:.4f}")
+        print(f"Odds: {odds:.2f}")
+        print(f"Potential Profit: {potential_profit:.2f}")
+        print(f"Calculated EV: {ev:.2f}%")
+        
+        return ev
+    except Exception as e:
+        print(f"Error calculating EV: {str(e)}")
         return 0
+
+def get_ev_color(ev):
+    """Get background color based on EV value"""
+    if ev == 0:
+        return "#FEF9C3"  # Yellow for zero/invalid EV
+    elif ev <= -10:
+        return "#DC2626"  # Strong negative EV (dark red)
+    elif ev < 0:
+        return "#FCA5A5"  # Slight negative EV (light red)
+    elif ev >= 10:
+        return "#059669"  # Strong positive EV (dark green)
+    else:
+        return "#86EFAC"  # Slight positive EV (light green)
 
 def get_match_prediction(match_data):
     """Calculate match prediction using the loaded model"""
@@ -1114,7 +1095,7 @@ def update_match_results():
             continue
 
 def process_match_prediction(match):
-    """Process and save prediction for a match"""
+    """Process and save prediction for a match. Returns (prediction_data, confidence) tuple if successful, None otherwise"""
     try:
         # Convert unix timestamp to datetime
         match_date = datetime.fromtimestamp(match['date_unix']).date()
@@ -1127,6 +1108,11 @@ def process_match_prediction(match):
             # Normalize probabilities
             probs = normalize_probabilities([home_prob, draw_prob, away_prob])
             home_prob, draw_prob, away_prob = probs
+            
+            # Store probabilities in match data for later use
+            match['home_prob'] = home_prob
+            match['draw_prob'] = draw_prob
+            match['away_prob'] = away_prob
             
             # Determine predicted outcome
             max_prob = max(home_prob, draw_prob, away_prob)
@@ -1176,54 +1162,61 @@ def process_match_prediction(match):
                 if not match_exists:
                     history.add_prediction(prediction_data)
             
-            # Display league name and prediction first
-            st.markdown(f"### {prediction_data['league']}")
-            prediction = f"Prediction: {match.get('home_name', '')} vs {match.get('away_name', '')} - {predicted_outcome}"
-            display_prediction(prediction, max_prob)
-
-            # Display date and kickoff time
-            match_date_str = match_date.strftime('%Y-%m-%d')
-            kickoff = match.get('kickoff', '')
-            if kickoff:
-                cet_time = convert_to_cet(kickoff)
-                st.markdown(f"""
-                    <div style="display: inline-block;
-                                background-color: #f0f9ff;
-                                border: 2px solid #0ea5e9;
-                                border-radius: 8px;
-                                padding: 10px 16px;
-                                margin: 12px 0;
-                                font-family: 'SF Mono', monospace;
-                                font-size: 0.95rem;
-                                font-weight: 500;
-                                color: #0369a1;
-                                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
-                        📅 {match_date_str} &nbsp;|&nbsp; 🕒 {cet_time}
-                    </div>
-                """, unsafe_allow_html=True)
-            
-            # Display probability bars
-            display_probability_bars(
-                home_prob, 
-                draw_prob, 
-                away_prob, 
-                match.get('home_name', ''), 
-                match.get('away_name', '')
-            )
-            
-            # Display match odds
-            display_match_odds(match)
-            
-            # Add separator between predictions
-            st.markdown("---")
-            
-            return max_prob  # Return the confidence level
+            return prediction_data, max_prob
             
     except Exception as e:
         logger.error(f"Error processing prediction for match: {str(e)}", exc_info=True)
         return None
     
     return None
+
+def display_match_details(match, prediction_data, confidence):
+    """Display match details, prediction, and odds"""
+    try:
+        # Display league name and prediction
+        st.markdown(f"### {prediction_data['league']}")
+        prediction = f"Prediction: {match.get('home_name', '')} vs {match.get('away_name', '')} - {prediction_data['predicted_outcome']}"
+        display_prediction(prediction, confidence)
+
+        # Display date and kickoff time
+        match_date = datetime.fromtimestamp(match['date_unix']).date()
+        match_date_str = match_date.strftime('%Y-%m-%d')
+        kickoff = match.get('kickoff', '')
+        if kickoff:
+            cet_time = convert_to_cet(kickoff)
+            st.markdown(f"""
+                <div style="display: inline-block;
+                            background-color: #f0f9ff;
+                            border: 2px solid #0ea5e9;
+                            border-radius: 8px;
+                            padding: 10px 16px;
+                            margin: 12px 0;
+                            font-family: 'SF Mono', monospace;
+                            font-size: 0.95rem;
+                            font-weight: 500;
+                            color: #0369a1;
+                            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
+                    📅 {match_date_str} &nbsp;|&nbsp; 🕒 {cet_time}
+                </div>
+            """, unsafe_allow_html=True)
+        
+        # Display probability bars
+        display_probability_bars(
+            match.get('home_prob', 0), 
+            match.get('draw_prob', 0), 
+            match.get('away_prob', 0), 
+            match.get('home_name', ''), 
+            match.get('away_name', '')
+        )
+        
+        # Display match odds
+        display_match_odds(match)
+        
+        # Add separator between predictions
+        st.markdown("---")
+        
+    except Exception as e:
+        logger.error(f"Error displaying match details: {str(e)}", exc_info=True)
 
 def display_kickoff_time(match_data):
     """Display kickoff time in German timezone"""
@@ -1264,26 +1257,114 @@ def display_kickoff_time(match_data):
         logging.error(f"Error displaying kickoff time: {str(e)}")
         st.warning("Error displaying kickoff time")
 
-def get_ev_color(ev_percentage):
-    """Get color based on EV percentage"""
-    if ev_percentage < -15:
-        return "#FE0000"  # MINUS EV Bet (over 15% negative EV)
-    elif -15 <= ev_percentage < -5:
-        return "#F4AF84"  # MINUS EV Bet (between 5% and 15% negative EV)
-    elif -5 <= ev_percentage <= 5:
-        return "#FFFF00"  # Breakevenish Bet (between -5% and 5% EV)
-    elif 5 < ev_percentage <= 15:
-        return "#E2EFDB"  # PLUS EV Bet (between 5% and 15% positive EV)
-    elif 15 < ev_percentage <= 25:
-        return "#A9D08F"  # PLUS EV Bet (between 15% and 25% positive EV)
-    else:
-        return "#00AF50"  # PLUS EV Bet (over 25% positive EV)
+def calculate_over25_probability(home_xg, away_xg):
+    """Calculate probability of over 2.5 goals using Poisson distribution"""
+    try:
+        from scipy.stats import poisson
+        import numpy as np
+        
+        print(f"Calculating Over 2.5 probability with xG: home={home_xg}, away={away_xg}")
+        
+        # Convert xG to float and handle None/invalid values
+        try:
+            home_xg = float(home_xg)
+            away_xg = float(away_xg)
+        except (TypeError, ValueError) as e:
+            print(f"Error converting xG values: {str(e)}")
+            return None
+            
+        if home_xg <= 0 or away_xg <= 0:
+            print("Invalid xG values (<=0)")
+            return None
+        
+        # Calculate probability matrix for total goals
+        max_goals = 10
+        total_prob = 0
+        
+        # Calculate probability of 3 or more goals
+        for i in range(max_goals):
+            for j in range(max_goals):
+                if i + j > 2:  # Over 2.5 goals
+                    p1 = poisson.pmf(i, home_xg)
+                    p2 = poisson.pmf(j, away_xg)
+                    total_prob += p1 * p2
+        
+        print(f"Calculated Over 2.5 probability: {total_prob:.4f}")
+        return total_prob
+    except Exception as e:
+        print(f"Error in Over 2.5 calculation: {str(e)}")
+        return None
 
-def calculate_ev(predicted_prob, implied_prob):
-    """Calculate EV percentage"""
-    if predicted_prob == 0 or implied_prob == 0:
-        return 0
-    return ((predicted_prob / 100) * (1 / (implied_prob / 100)) - 1) * 100
+def calculate_btts_probability(home_xg, away_xg):
+    """Calculate probability of both teams scoring using Poisson distribution"""
+    try:
+        from scipy.stats import poisson
+        import numpy as np
+        
+        print(f"Calculating BTTS probability with xG: home={home_xg}, away={away_xg}")
+        
+        # Convert xG to float and handle None/invalid values
+        try:
+            home_xg = float(home_xg)
+            away_xg = float(away_xg)
+        except (TypeError, ValueError) as e:
+            print(f"Error converting xG values: {str(e)}")
+            return None
+            
+        if home_xg <= 0 or away_xg <= 0:
+            print("Invalid xG values (<=0)")
+            return None
+        
+        # Probability of home team scoring at least 1
+        home_scoring_prob = 1 - poisson.pmf(0, home_xg)
+        print(f"Home team scoring prob: {home_scoring_prob:.4f}")
+        
+        # Probability of away team scoring at least 1
+        away_scoring_prob = 1 - poisson.pmf(0, away_xg)
+        print(f"Away team scoring prob: {away_scoring_prob:.4f}")
+        
+        # Probability of both teams scoring = P(Home scores) * P(Away scores)
+        btts_prob = home_scoring_prob * away_scoring_prob
+        print(f"Calculated BTTS probability: {btts_prob:.4f}")
+        
+        return btts_prob
+    except Exception as e:
+        print(f"Error in BTTS calculation: {str(e)}")
+        return None
+
+def display_odds_box(title, odds, implied_prob, ev):
+    """Helper function to display odds box with consistent styling"""
+    # Get background color based on EV
+    bg_color = get_ev_color(ev)
+    
+    st.markdown(f"""
+        <div style="background-color: {bg_color}; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 10px;">
+            <div style="color: #1f2937; font-weight: 500; text-align: center;">{title}</div>
+            <div style="color: #2563eb; font-size: 1.2rem; font-weight: 600; text-align: center;">
+                {odds:.2f} ({implied_prob:.1f}%)
+            </div>
+            <div style="color: #1f2937; font-size: 0.9rem; text-align: center;">EV: {ev:+.1f}%</div>
+        </div>
+    """, unsafe_allow_html=True)
+
+def display_xg_box(title, xg, opponent_xg):
+    """Helper function to display xG box with consistent styling"""
+    # Calculate EV based on xG difference
+    xg_diff = xg - opponent_xg
+    xg_ev = xg_diff * 20  # Scale the xG difference to match EV scale
+    
+    # Get background color based on xG comparison
+    bg_color = get_ev_color(xg_ev)
+    
+    st.markdown(f"""
+        <div style="background-color: {bg_color}; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 10px;">
+            <div style="color: #1f2937; font-weight: 500; text-align: center;">{title}</div>
+            <div style="color: #2563eb; font-size: 1.2rem; font-weight: 600; text-align: center;">
+                {xg:.2f}
+            </div>
+            <div style="color: #1f2937; font-size: 0.9rem; text-align: center;">xG Diff: {xg_diff:+.2f}</div>
+        </div>
+    """, unsafe_allow_html=True)
 
 def show_main_app():
     # Update results automatically
@@ -1295,12 +1376,17 @@ def show_main_app():
     st.markdown('<div id="top"></div>', unsafe_allow_html=True)
     st.markdown("<h1>⚽ Football Match Predictor ⚽</h1>", unsafe_allow_html=True)
     
-    # Date selector
+    germany_tz = ZoneInfo("Europe/Berlin")
+
+    # Get the current time in Germany's timezone
+    now = datetime.now(germany_tz)
+
+    # Streamlit date input with Germany's timezone
     date = st.date_input(
-        "Select Date",
-        value=datetime.now().date(),
-        min_value=datetime.now().date(),
-        max_value=datetime.now().date() + timedelta(days=14),
+       "Select Date",
+        value=now.date(),
+        min_value=now.date(),
+        max_value=now.date() + timedelta(days=14),
         help="Select a date to view matches. Showing matches from today up to 2 weeks in the future."
     )
     
@@ -1357,16 +1443,15 @@ def show_main_app():
             
             # Display matches grouped by league
             for league_name, league_matches in matches_by_league.items():
-                st.markdown(f"## {league_name}")
-                matches_displayed = False
+                matches_to_display = []
                 
+                # First pass: process all matches and store those that meet confidence criteria
                 for match in league_matches:
-                    display_kickoff_time(match)  # Display kickoff time before prediction
-                    confidence = process_match_prediction(match)
-                    
-                    # Filter based on confidence level
-                    if confidence is not None:
+                    result = process_match_prediction(match)
+                    if result:
+                        prediction_data, confidence = result
                         show_match = True
+                        
                         if confidence_level != "All":
                             if confidence_level == "High" and confidence < 0.6:
                                 show_match = False
@@ -1376,9 +1461,17 @@ def show_main_app():
                                 show_match = False
                         
                         if show_match:
-                            matches_displayed = True
+                            matches_to_display.append((match, prediction_data, confidence))
                 
-                if not matches_displayed:
+                # Only show league header if there are matches to display
+                if matches_to_display:
+                    st.markdown(f"## {league_name}")
+                    
+                    # Second pass: display filtered matches
+                    for match, prediction_data, confidence in matches_to_display:
+                        display_kickoff_time(match)
+                        display_match_details(match, prediction_data, confidence)
+                else:
                     st.info(f"No matches with {confidence_level.lower()} confidence predictions found in {league_name}.")
                     
 
@@ -1445,201 +1538,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-def display_match_odds(home_odds, draw_odds, away_odds, btts_yes_odds, btts_no_odds, home_xg, away_xg):
-    """Display match odds with implied probabilities and EV"""
-    
-    def calculate_ev(odds, true_prob):
-        """Calculate Expected Value"""
-        implied_prob = 1 / odds
-        ev = (true_prob * (odds - 1)) - ((1 - true_prob) * 1)
-        return ev * 100  # Convert to percentage
-    
-    def get_color(ev):
-        """Get color based on EV value"""
-        if ev > 5:
-            return "#28a745"  # Strong positive EV - Green
-        elif ev > 0:
-            return "#98FB98"  # Slight positive EV - Light green
-        elif ev < -5:
-            return "#dc3545"  # Strong negative EV - Red
-        elif ev < 0:
-            return "#FFB6C6"  # Slight negative EV - Light red
-        return "#6c757d"  # Neutral EV - Gray
-    
-    # Calculate true probabilities from xG using Poisson distribution
-    home_true_prob = calculate_win_probability(home_xg, away_xg)
-    draw_true_prob = calculate_draw_probability(home_xg, away_xg)
-    away_true_prob = calculate_win_probability(away_xg, home_xg)
-    
-    # Calculate BTTS probabilities
-    btts_true_prob = calculate_btts_probability(home_xg, away_xg)
-    btts_no_true_prob = 1 - btts_true_prob
-    
-    # Calculate EVs
-    home_ev = calculate_ev(home_true_prob, home_odds)
-    draw_ev = calculate_ev(draw_true_prob, draw_odds)
-    away_ev = calculate_ev(away_true_prob, away_odds)
-    btts_ev = calculate_ev(btts_true_prob, btts_yes_odds)
-    btts_no_ev = calculate_ev(btts_no_true_prob, btts_no_odds)
-    
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.markdown(f"""
-            <div style='text-align: center;'>
-                <p style='margin-bottom: 5px;'>Home Win</p>
-                <p style='color: {get_color(home_ev)}; font-size: 1.2em; font-weight: bold; margin-bottom: 5px;'>
-                    {home_odds:.2f} ({(100/home_odds):.1f}%)
-                </p>
-                <p style='color: {get_color(home_ev)}; margin-bottom: 15px;'>EV: {home_ev:+.1f}%</p>
-            </div>
-        """, unsafe_allow_html=True)
-    
-    with col2:
-        st.markdown(f"""
-            <div style='text-align: center;'>
-                <p style='margin-bottom: 5px;'>Draw</p>
-                <p style='color: {get_color(draw_ev)}; font-size: 1.2em; font-weight: bold; margin-bottom: 5px;'>
-                    {draw_odds:.2f} ({(100/draw_odds):.1f}%)
-                </p>
-                <p style='color: {get_color(draw_ev)}; margin-bottom: 15px;'>EV: {draw_ev:+.1f}%</p>
-            </div>
-        """, unsafe_allow_html=True)
-    
-    with col3:
-        st.markdown(f"""
-            <div style='text-align: center;'>
-                <p style='margin-bottom: 5px;'>Away Win</p>
-                <p style='color: {get_color(away_ev)}; font-size: 1.2em; font-weight: bold; margin-bottom: 5px;'>
-                    {away_odds:.2f} ({(100/away_odds):.1f}%)
-                </p>
-                <p style='color: {get_color(away_ev)}; margin-bottom: 15px;'>EV: {away_ev:+.1f}%</p>
-            </div>
-        """, unsafe_allow_html=True)
-    
-    col4, col5, col6, col7 = st.columns(4)
-    
-    with col4:
-        st.markdown(f"""
-            <div style='text-align: center;'>
-                <p style='margin-bottom: 5px;'>Home xG</p>
-                <p style='font-size: 1.2em; font-weight: bold; color: {"#28a745" if home_xg > away_xg else "#dc3545"}'>
-                    {home_xg:.2f}
-                </p>
-            </div>
-        """, unsafe_allow_html=True)
-    
-    with col5:
-        st.markdown(f"""
-            <div style='text-align: center;'>
-                <p style='margin-bottom: 5px;'>BTTS</p>
-                <p style='color: {get_color(btts_ev)}; font-size: 1.2em; font-weight: bold; margin-bottom: 5px;'>
-                    {btts_yes_odds:.2f} ({(100/btts_yes_odds):.1f}%)
-                </p>
-                <p style='color: {get_color(btts_ev)}; margin-bottom: 15px;'>EV: {btts_ev:+.1f}%</p>
-            </div>
-        """, unsafe_allow_html=True)
-    
-    with col6:
-        st.markdown(f"""
-            <div style='text-align: center;'>
-                <p style='margin-bottom: 5px;'>Away xG</p>
-                <p style='font-size: 1.2em; font-weight: bold; color: {"#28a745" if away_xg > home_xg else "#dc3545"}'>
-                    {away_xg:.2f}
-                </p>
-            </div>
-        """, unsafe_allow_html=True)
-    
-    with col7:
-        st.markdown(f"""
-            <div style='text-align: center;'>
-                <p style='margin-bottom: 5px;'>BTTS No</p>
-                <p style='color: {get_color(btts_no_ev)}; font-size: 1.2em; font-weight: bold; margin-bottom: 5px;'>
-                    {btts_no_odds:.2f} ({(100/btts_no_odds):.1f}%)
-                </p>
-                <p style='color: {get_color(btts_no_ev)}; margin-bottom: 15px;'>EV: {btts_no_ev:+.1f}%</p>
-            </div>
-        """, unsafe_allow_html=True)
-
-def calculate_win_probability(team_xg, opponent_xg):
-    """Calculate win probability using Poisson distribution"""
-    total_prob = 0
-    max_goals = 10  # Reasonable upper limit
-    
-    for i in range(max_goals):
-        for j in range(i):  # j < i for win
-            prob_i = poisson.pmf(i, team_xg)
-            prob_j = poisson.pmf(j, opponent_xg)
-            total_prob += prob_i * prob_j
-    
-    return total_prob
-
-def calculate_draw_probability(home_xg, away_xg):
-    """Calculate draw probability using Poisson distribution"""
-    total_prob = 0
-    max_goals = 10  # Reasonable upper limit
-    
-    for i in range(max_goals):
-        prob_i = poisson.pmf(i, home_xg)
-        prob_i_opp = poisson.pmf(i, away_xg)
-        total_prob += prob_i * prob_i_opp
-    
-    return total_prob
-
-def calculate_btts_probability(home_xg, away_xg):
-    """Calculate Both Teams To Score probability using Poisson distribution"""
-    # Probability of both teams scoring at least 1 goal
-    prob_home_scoring = 1 - poisson.pmf(0, home_xg)
-    prob_away_scoring = 1 - poisson.pmf(0, away_xg)
-    return prob_home_scoring * prob_away_scoring
-
-def create_match_features_from_api(match_data):
-    """Create features DataFrame from match data with error handling"""
-    try:
-        features = {}
-
-        # Extract odds from match data
-        features['odds_home_win'] = match_data.get('odds_ft_1', 0)
-        features['odds_draw'] = match_data.get('odds_ft_x', 0)
-        features['odds_away_win'] = match_data.get('odds_ft_2', 0)
-        
-        # Calculate probabilities from odds, handling zero odds
-        total_prob = 0
-        raw_probs = {'home': 0, 'draw': 0, 'away': 0}
-        
-        # Calculate raw probabilities if odds are available
-        if features['odds_home_win'] > 0:
-            raw_probs['home'] = 1 / features['odds_home_win']
-            total_prob += raw_probs['home']
-        if features['odds_draw'] > 0:
-            raw_probs['draw'] = 1 / features['odds_draw']
-            total_prob += raw_probs['draw']
-        if features['odds_away_win'] > 0:
-            raw_probs['away'] = 1 / features['odds_away_win']
-            total_prob += raw_probs['away']
-        
-        # If no valid odds are available, use default probabilities
-        if total_prob == 0:
-            features['prob_home_win'] = 0.4
-            features['prob_draw'] = 0.3
-            features['prob_away_win'] = 0.3
-        else:
-            # Normalize probabilities
-            features['prob_home_win'] = raw_probs['home'] / total_prob
-            features['prob_draw'] = raw_probs['draw'] / total_prob
-            features['prob_away_win'] = raw_probs['away'] / total_prob
-        
-        # Add other features
-        features['home_ppg'] = match_data.get('home_ppg', 0)
-        features['away_ppg'] = match_data.get('away_ppg', 0)
-        features['home_xg'] = match_data.get('team_a_xg_prematch', 0)
-        features['away_xg'] = match_data.get('team_b_xg_prematch', 0)
-        
-        # Convert to DataFrame
-        return pd.DataFrame([features])
-        
-    except Exception as e:
-        logging.error(f"Error creating features: {str(e)}")
-        traceback.print_exc()
-        raise ValueError(f"Failed to create features: {str(e)}")
