@@ -1381,100 +1381,121 @@ def show_main_app():
     # Get the current time in Germany's timezone
     now = datetime.now(germany_tz)
 
-    # Streamlit date input with Germany's timezone
-    date = st.date_input(
-       "Select Date",
-        value=now.date(),
-        min_value=now.date(),
-        max_value=now.date() + timedelta(days=14),
-        help="Select a date to view matches. Showing matches from today up to 2 weeks in the future."
-    )
+    # Create two columns for date inputs
+    col1, col2 = st.columns(2)
     
-    if date:
-        with st.spinner("Fetching matches..."):
-            date_str = date.strftime('%Y-%m-%d')
-            all_matches = get_matches(date_str)
+    with col1:
+        start_date = st.date_input(
+            "Start Date",
+            value=now.date(),
+            min_value=now.date(),
+            max_value=now.date() + timedelta(days=14),
+            help="Select start date to view matches"
+        )
+    
+    with col2:
+        end_date = st.date_input(
+            "End Date",
+            value=now.date(),
+            min_value=now.date(),
+            max_value=now.date() + timedelta(days=14),
+            help="Select end date to view matches"
+        )
+    
+    if start_date and end_date:
+        if start_date > end_date:
+            st.error("Start date must be before or equal to end date")
+            return
             
-            if not all_matches:
-                st.warning(f"No matches found for {date_str}. Try selecting a different date.")
-                st.info("Note: Match data is typically available only for dates close to today.")
-                return
-            
-            # Get unique leagues from matches
-            available_leagues = {"All Matches": None}
-            for match in all_matches:
-                league_name = get_league_name(match)
-                if league_name and league_name != "Unknown League":
-                    available_leagues[league_name] = match.get('competition_id')
-            
-            # League filter
-            selected_league = st.selectbox(
-                "Select Competition",
-                options=list(available_leagues.keys()),
-                index=0,
-                help="Filter matches by competition"
-            )
-            
-            # Confidence filter
-            confidence_level = st.selectbox(
-                "Filter by Confidence Level",
-                options=["All", "High", "Medium", "Low"],
-                index=0,
-                help="Filter predictions by confidence level (High: ≥60%, Medium: 40-59%, Low: <40%)"
-            )
-            
-            # Filter matches by selected league
-            if selected_league != "All Matches":
-                matches = [m for m in all_matches if get_league_name(m) == selected_league]
-            else:
-                matches = all_matches
-            
-            if not matches:
-                st.info(f"No matches found for {selected_league} on {date_str}.")
-                return
-            
-            # Group matches by league for better organization
-            matches_by_league = {}
-            for match in matches:
-                league_name = get_league_name(match)
-                if league_name not in matches_by_league:
-                    matches_by_league[league_name] = []
-                matches_by_league[league_name].append(match)
-            
-            # Display matches grouped by league
-            for league_name, league_matches in matches_by_league.items():
-                matches_to_display = []
-                
-                # First pass: process all matches and store those that meet confidence criteria
-                for match in league_matches:
-                    result = process_match_prediction(match)
-                    if result:
-                        prediction_data, confidence = result
-                        show_match = True
-                        
-                        if confidence_level != "All":
-                            if confidence_level == "High" and confidence < 0.6:
-                                show_match = False
-                            elif confidence_level == "Medium" and (confidence < 0.4 or confidence >= 0.6):
-                                show_match = False
-                            elif confidence_level == "Low" and confidence >= 0.4:
-                                show_match = False
-                        
-                        if show_match:
-                            matches_to_display.append((match, prediction_data, confidence))
-                
-                # Only show league header if there are matches to display
-                if matches_to_display:
-                    st.markdown(f"## {league_name}")
-                    
-                    # Second pass: display filtered matches
-                    for match, prediction_data, confidence in matches_to_display:
-                        display_kickoff_time(match)
-                        display_match_details(match, prediction_data, confidence)
-                else:
-                    st.info(f"No matches with {confidence_level.lower()} confidence predictions found in {league_name}.")
-                    
+        # Get matches for the date range
+        matches = []
+        current_date = start_date
+        while current_date <= end_date:
+            daily_matches = get_matches_for_date(current_date)
+            matches.extend(daily_matches)
+            current_date += timedelta(days=1)
 
+        # Filter out matches that have already been played in German time
+        current_timestamp = now.timestamp()
+        matches = [match for match in matches if match.get('date_unix', 0) > current_timestamp]
+            
+        # Sort matches by kickoff time
+        matches.sort(key=lambda x: x.get('date_unix', 0))
+        
+        # Get unique leagues from matches
+        available_leagues = {"All Matches": None}
+        for match in matches:
+            league_name = get_league_name(match)
+            if league_name and league_name != "Unknown League":
+                available_leagues[league_name] = match.get('competition_id')
+        
+        # League filter
+        selected_league = st.selectbox(
+            "Select Competition",
+            options=list(available_leagues.keys()),
+            index=0,
+            help="Filter matches by competition"
+        )
+        
+        # Confidence filter
+        confidence_level = st.selectbox(
+            "Filter by Confidence Level",
+            options=["All", "High", "Medium", "Low"],
+            index=0,
+            help="Filter predictions by confidence level (High: ≥60%, Medium: 40-59%, Low: <40%)"
+        )
+        
+        # Filter matches by selected league
+        if selected_league != "All Matches":
+            matches = [m for m in matches if get_league_name(m) == selected_league]
+        else:
+            matches = matches
+        
+        if not matches:
+            st.info(f"No matches found for {selected_league} on {start_date} to {end_date}.")
+            return
+        
+        # Group matches by league for better organization
+        matches_by_league = {}
+        for match in matches:
+            league_name = get_league_name(match)
+            if league_name not in matches_by_league:
+                matches_by_league[league_name] = []
+            matches_by_league[league_name].append(match)
+        
+        # Display matches grouped by league
+        for league_name, league_matches in matches_by_league.items():
+            matches_to_display = []
+            
+            # First pass: process all matches and store those that meet confidence criteria
+            for match in league_matches:
+                result = process_match_prediction(match)
+                if result:
+                    prediction_data, confidence = result
+                    show_match = True
+                    
+                    if confidence_level != "All":
+                        if confidence_level == "High" and confidence < 0.6:
+                            show_match = False
+                        elif confidence_level == "Medium" and (confidence < 0.4 or confidence >= 0.6):
+                            show_match = False
+                        elif confidence_level == "Low" and confidence >= 0.4:
+                            show_match = False
+                    
+                    if show_match:
+                        matches_to_display.append((match, prediction_data, confidence))
+            
+            # Only show league header if there are matches to display
+            if matches_to_display:
+                st.markdown(f"## {league_name}")
+                
+                # Second pass: display filtered matches
+                for match, prediction_data, confidence in matches_to_display:
+                    display_kickoff_time(match)
+                    display_match_details(match, prediction_data, confidence)
+            else:
+                st.info(f"No matches with {confidence_level.lower()} confidence predictions found in {league_name}.")
+                
 # Add Navigation JavaScript
 st.markdown("""
 <script>
@@ -1516,6 +1537,15 @@ def add_navigation_buttons():
             st.session_state.logged_in = False
             st.query_params.clear()
             st.rerun()
+
+def convert_to_cet(kickoff):
+    """Convert kickoff time to CET format"""
+    try:
+        # Parse the kickoff time (assuming it's in HH:MM format)
+        time_obj = datetime.strptime(kickoff, '%H:%M').time()
+        return time_obj.strftime('%H:%M CET')
+    except:
+        return kickoff  # Return original string if conversion fails
 
 def main():
     # Initialize session state
