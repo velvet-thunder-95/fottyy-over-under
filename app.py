@@ -813,9 +813,19 @@ def display_match_odds(match_data):
         draw_implied = (1/draw_odds) / total_implied * 100
         away_implied = (1/away_odds) / total_implied * 100
         
+        # Debug prints
+        print(f"Home - Pred: {home_pred:.2f}%, Odds: {home_odds:.2f}")
+        print(f"Draw - Pred: {draw_pred:.2f}%, Odds: {draw_odds:.2f}")
+        print(f"Away - Pred: {away_pred:.2f}%, Odds: {away_odds:.2f}")
+        
         home_ev = calculate_ev(home_pred, home_odds)
         draw_ev = calculate_ev(draw_pred, draw_odds)
         away_ev = calculate_ev(away_pred, away_odds)
+        
+        # Debug prints
+        print(f"Home EV: {home_ev:.2f}%")
+        print(f"Draw EV: {draw_ev:.2f}%")
+        print(f"Away EV: {away_ev:.2f}%")
     else:
         home_implied = draw_implied = away_implied = 0
         home_ev = draw_ev = away_ev = 0
@@ -848,16 +858,6 @@ def display_match_odds(match_data):
     with col3:
         display_odds_box("Away Win", away_odds, away_implied, away_ev)
 
-    # Display xG
-    st.markdown("<h3>Expected Goals</h3>", unsafe_allow_html=True)
-    col4, col5 = st.columns(2)
-    with col4:
-        home_xg = float(match_data.get('team_a_xg_prematch', 0))
-        away_xg = float(match_data.get('team_b_xg_prematch', 0))
-        display_xg_box("Home xG", home_xg, away_xg)
-    with col5:
-        display_xg_box("Away xG", away_xg, home_xg)
-
     # Calculate and display Over/Under odds
     try:
         over = float(match_data.get('odds_ft_over25', 0))
@@ -876,9 +876,17 @@ def display_match_odds(match_data):
                 over_pred *= 100  # Convert to percentage
                 under_pred = 100 - over_pred
                 
+                # Debug prints
+                print(f"Over - Pred: {over_pred:.2f}%, Odds: {over:.2f}")
+                print(f"Under - Pred: {under_pred:.2f}%, Odds: {under:.2f}")
+                
                 # Calculate EV using the helper function
                 over_ev = calculate_ev(over_pred, over)
                 under_ev = calculate_ev(under_pred, under)
+                
+                # Debug prints
+                print(f"Over EV: {over_ev:.2f}%")
+                print(f"Under EV: {under_ev:.2f}%")
                 
                 # Display Over/Under odds
                 st.markdown("<h3>Over/Under 2.5 Goals</h3>", unsafe_allow_html=True)
@@ -908,9 +916,17 @@ def display_match_odds(match_data):
                 btts_pred *= 100  # Convert to percentage
                 btts_no_pred = 100 - btts_pred
                 
+                # Debug prints
+                print(f"BTTS - Pred: {btts_pred:.2f}%, Odds: {btts_yes:.2f}")
+                print(f"No BTTS - Pred: {btts_no_pred:.2f}%, Odds: {btts_no:.2f}")
+                
                 # Calculate EV using the helper function
                 btts_ev = calculate_ev(btts_pred, btts_yes)
                 btts_no_ev = calculate_ev(btts_no_pred, btts_no)
+                
+                # Debug prints
+                print(f"BTTS EV: {btts_ev:.2f}%")
+                print(f"No BTTS EV: {btts_no_ev:.2f}%")
                 
                 # Display BTTS odds
                 st.markdown("<h3>Both Teams To Score</h3>", unsafe_allow_html=True)
@@ -923,59 +939,61 @@ def display_match_odds(match_data):
         print(f"Error processing BTTS: {str(e)}")
 
 def get_ev_color(ev_percentage):
-    """Get color based on EV percentage"""
-    if ev_percentage < -15:
-        return "#FE0000"  # MINUS EV Bet (over 15% negative EV)
-    elif -15 <= ev_percentage < -5:
-        return "#F4AF84"  # MINUS EV Bet (between 5% and 15% negative EV)
-    elif -5 <= ev_percentage <= 5:
-        return "#FFFF00"  # Breakevenish Bet (between -5% and 5% EV)
-    elif 5 < ev_percentage <= 15:
-        return "#E2EFDB"  # PLUS EV Bet (between 5% and 15% positive EV)
-    elif 15 < ev_percentage <= 25:
-        return "#A9D08F"  # PLUS EV Bet (between 15% and 25% positive EV)
-    else:
-        return "#00AF50"  # PLUS EV Bet (over 25% positive EV)
+    """
+    Get background color based on EV percentage
+    
+    Args:
+        ev_percentage (float): Expected Value percentage
+        
+    Returns:
+        str: Hex color code
+    """
+    try:
+        if ev_percentage > 25:
+            return "#00AF50"  # Dark Green - PLUS EV over 25%
+        elif ev_percentage > 15:
+            return "#A9D08F"  # Light Green - PLUS EV 15-25%
+        elif ev_percentage > 5:
+            return "#E2EFDB"  # Very Light Green - PLUS EV 5-15%
+        elif ev_percentage >= -5:
+            return "#FFFF00"  # Yellow - Breakeven -5% to 5%
+        elif ev_percentage >= -15:
+            return "#F4AF84"  # Light Red - MINUS EV -5% to -15%
+        else:
+            return "#FE0000"  # Dark Red - MINUS EV below -15%
+    except Exception as e:
+        logger.error(f"Error getting EV color: {str(e)}")
+        return "#FFFFFF"  # White as fallback
 
 def calculate_ev(predicted_prob, odds):
-    """Calculate EV for a bet"""
+    """
+    Calculate Expected Value (EV) for a bet
+    
+    Args:
+        predicted_prob (float): Our predicted probability (0-100)
+        odds (float): Decimal odds from bookmaker
+        
+    Returns:
+        float: Expected Value percentage
+    """
     try:
-        if predicted_prob is None or odds <= 1:
+        if not odds or odds <= 1.0 or predicted_prob <= 0:
             return 0
             
         # Convert probability to decimal (0-1)
-        prob = predicted_prob / 100
+        prob_decimal = predicted_prob / 100
+            
+        # Calculate implied probability from odds
+        implied_prob = 1 / odds
         
-        # Calculate EV: (probability * potential_profit) - (1 - probability)
-        potential_profit = odds - 1
-        ev = (prob * potential_profit) - (1 - prob)
+        # Calculate EV percentage
+        ev_percentage = (prob_decimal * (odds - 1) - (1 - prob_decimal)) * 100
         
-        # Convert to percentage
-        ev *= 100
+        return ev_percentage
         
-        print(f"EV Calculation Debug:")
-        print(f"Predicted Prob: {prob:.4f}")
-        print(f"Odds: {odds:.2f}")
-        print(f"Potential Profit: {potential_profit:.2f}")
-        print(f"Calculated EV: {ev:.2f}%")
-        
-        return ev
     except Exception as e:
-        print(f"Error calculating EV: {str(e)}")
+        logger.error(f"Error calculating EV: {str(e)}")
         return 0
-
-def get_ev_color(ev):
-    """Get background color based on EV value"""
-    if ev == 0:
-        return "#FEF9C3"  # Yellow for zero/invalid EV
-    elif ev <= -10:
-        return "#DC2626"  # Strong negative EV (dark red)
-    elif ev < 0:
-        return "#FCA5A5"  # Slight negative EV (light red)
-    elif ev >= 10:
-        return "#059669"  # Strong positive EV (dark green)
-    else:
-        return "#86EFAC"  # Slight positive EV (light green)
 
 def get_match_prediction(match_data):
     """Calculate match prediction using the loaded model"""
@@ -1334,35 +1352,28 @@ def calculate_btts_probability(home_xg, away_xg):
 
 def display_odds_box(title, odds, implied_prob, ev):
     """Helper function to display odds box with consistent styling"""
-    # Get background color based on EV
-    bg_color = get_ev_color(ev)
+    if ev is None:
+        ev = 0
+        
+    ev_color = get_ev_color(ev)
     
     st.markdown(f"""
-        <div style="background-color: {bg_color}; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 10px;">
-            <div style="color: #1f2937; font-weight: 500; text-align: center;">{title}</div>
-            <div style="color: #2563eb; font-size: 1.2rem; font-weight: 600; text-align: center;">
-                {odds:.2f} ({implied_prob:.1f}%)
+        <div style="background-color: {ev_color}; padding: 1rem; border-radius: 8px; margin: 0.5rem 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <h4 style="margin: 0; color: #1a1a1a; font-size: 1rem;">{title}</h4>
+            <div style="display: flex; justify-content: space-between; margin-top: 0.5rem;">
+                <div>
+                    <p style="margin: 0; color: #4a5568; font-size: 0.9rem;">Odds</p>
+                    <p style="margin: 0; color: #1a1a1a; font-weight: 600;">{odds:.2f}</p>
+                </div>
+                <div>
+                    <p style="margin: 0; color: #4a5568; font-size: 0.9rem;">Implied %</p>
+                    <p style="margin: 0; color: #1a1a1a; font-weight: 600;">{implied_prob:.1f}%</p>
+                </div>
+                <div>
+                    <p style="margin: 0; color: #4a5568; font-size: 0.9rem;">EV</p>
+                    <p style="margin: 0; color: #1a1a1a; font-weight: 600;">{ev:+.1f}%</p>
+                </div>
             </div>
-            <div style="color: #1f2937; font-size: 0.9rem; text-align: center;">EV: {ev:+.1f}%</div>
-        </div>
-    """, unsafe_allow_html=True)
-
-def display_xg_box(title, xg, opponent_xg):
-    """Helper function to display xG box with consistent styling"""
-    # Calculate EV based on xG difference
-    xg_diff = xg - opponent_xg
-    xg_ev = xg_diff * 20  # Scale the xG difference to match EV scale
-    
-    # Get background color based on xG comparison
-    bg_color = get_ev_color(xg_ev)
-    
-    st.markdown(f"""
-        <div style="background-color: {bg_color}; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 10px;">
-            <div style="color: #1f2937; font-weight: 500; text-align: center;">{title}</div>
-            <div style="color: #2563eb; font-size: 1.2rem; font-weight: 600; text-align: center;">
-                {xg:.2f}
-            </div>
-            <div style="color: #1f2937; font-size: 0.9rem; text-align: center;">xG Diff: {xg_diff:+.2f}</div>
         </div>
     """, unsafe_allow_html=True)
 
