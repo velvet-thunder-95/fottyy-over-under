@@ -967,7 +967,7 @@ def get_ev_color(ev_percentage):
 
 def calculate_ev(predicted_prob, odds):
     """
-    Calculate Expected Value (EV) for a bet
+    Calculate Expected Value (EV) for a bet using the formula: odds - (1/prob_decimal)
     
     Args:
         predicted_prob (float): Our predicted probability (0-100)
@@ -983,11 +983,14 @@ def calculate_ev(predicted_prob, odds):
         # Convert probability to decimal (0-1)
         prob_decimal = predicted_prob / 100
             
-        # Calculate implied probability from odds
-        implied_prob = 1 / odds
+        # Calculate EV using odds - (1/prob_decimal)
+        ev = odds - (1/prob_decimal)
         
-        # Calculate EV percentage
-        ev_percentage = (prob_decimal * (odds - 1) - (1 - prob_decimal)) * 100
+        # Convert to percentage
+        ev_percentage = ev * 100
+        
+        # Debug prints
+        print(f"Odds: {odds:.2f}, Prob: {prob_decimal:.3f}, EV: {ev_percentage:.2f}%")
         
         return ev_percentage
         
