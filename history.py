@@ -148,11 +148,11 @@ class PredictionHistory:
             params.append(status)
         if confidence_level:
             if confidence_level == "High":
-                query += " AND CAST(confidence AS REAL) >= 0.7"
+                query += " AND CAST(confidence AS REAL) >= 70"  # High confidence: 70% or higher
             elif confidence_level == "Medium":
-                query += " AND CAST(confidence AS REAL) >= 0.5 AND CAST(confidence AS REAL) < 0.7"
+                query += " AND CAST(confidence AS REAL) >= 50 AND CAST(confidence AS REAL) < 70"  # Medium: 50-70%
             elif confidence_level == "Low":
-                query += " AND CAST(confidence AS REAL) < 0.5"
+                query += " AND CAST(confidence AS REAL) < 50"  # Low: below 50%
         if league and league != "All":
             query += " AND league = ?"
             params.append(league)
@@ -660,9 +660,9 @@ def show_history_page():
                                     return 'N/A'
                             
                             # Map confidence to levels
-                            if confidence >= 0.7:
+                            if confidence >= 70:
                                 return 'High'
-                            elif confidence >= 0.5:
+                            elif confidence >= 50:
                                 return 'Medium'
                             else:
                                 return 'Low'

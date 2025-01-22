@@ -510,7 +510,9 @@ def create_match_features_from_api(match_data):
         raise ValueError(f"Failed to create features: {str(e)}")
 
 def adjust_probabilities(home_prob, draw_prob, away_prob, match_data):
-    """Adjust probabilities based on odds and team strengths"""
+    """Adjust probabilities based on odds and team strengths. Input and output are decimals (0-1)"""
+    # Input is already in decimal form (0-1)
+    
     # Get odds
     home_odds = float(match_data.get('odds_ft_1', 0))
     away_odds = float(match_data.get('odds_ft_2', 0))
@@ -575,6 +577,7 @@ def adjust_probabilities(home_prob, draw_prob, away_prob, match_data):
         final_home_prob = excess
         final_draw_prob = excess
     
+    # Return probabilities in decimal form (0-1)
     return final_home_prob, final_draw_prob, final_away_prob
 
 def calculate_form(recent_matches, team):
@@ -689,37 +692,30 @@ def calculate_match_prediction(match):
     # Weighted combination of all factors
     # Odds are given highest weight as they incorporate market knowledge
     home_final = (home_prob_odds * 0.5) + (home_prob_form * 0.25) + (home_prob_xg * 0.25)
-    
     away_final = (away_prob_odds * 0.5) + (away_prob_form * 0.25) + (away_prob_xg * 0.25)
-    
-    # Calculate draw probability (based on odds and typical draw frequency)
-    draw_final = draw_prob_odds * 0.6  # Reduce draw probability slightly as they're less common
-    
-    # Normalize probabilities to sum to 1
-    total = home_final + away_final + draw_final
-    home_final /= total
-    away_final /= total
-    draw_final /= total
+    draw_final = 1 - (home_final + away_final)  # Ensure probabilities sum to 1
     
     return home_final, draw_final, away_final
 
 def display_prediction(prediction, confidence):
     """Display prediction with appropriate color based on confidence level"""
-    if confidence >= 0.6:
+    if confidence >= 70:  
         sentiment_class = "prediction-high"
         confidence_text = "High Confidence"
-    elif confidence >= 0.4:
+    elif confidence >= 50:  
         sentiment_class = "prediction-medium"
         confidence_text = "Medium Confidence"
     else:
         sentiment_class = "prediction-low"
         confidence_text = "Low Confidence"
-        
+    
     st.markdown(f"""
-        <div class="{sentiment_class}">
-            {prediction}
-            <div style="font-size: 0.9rem; margin-top: 0.5rem;">
-                {confidence_text}
+        <div class="prediction-wrapper {sentiment_class}">
+            <div class="prediction-text">
+                Prediction: {prediction}
+            </div>
+            <div class="confidence-text">
+                {confidence_text} ({confidence:.1f}%)
             </div>
         </div>
     """, unsafe_allow_html=True)
@@ -736,7 +732,7 @@ def display_probability_bars(home_prob, draw_prob, away_prob, home_team, away_te
         st.markdown(f"""
             <div style="text-align: center;">
                 <div style="margin-bottom: 0.5rem;">
-                    <span style="color: #48bb78; font-weight: 600; font-size: 1.2rem;">{home_prob:.1%}</span>
+                    <span style="color: #48bb78; font-weight: 600; font-size: 1.2rem;">{home_prob*100:.1f}%</span>
                 </div>
                 <div style="color: #1a1a1a; font-weight: 500;">{home_team}</div>
             </div>
@@ -747,7 +743,7 @@ def display_probability_bars(home_prob, draw_prob, away_prob, home_team, away_te
         st.markdown(f"""
             <div style="text-align: center;">
                 <div style="margin-bottom: 0.5rem;">
-                    <span style="color: #ed8936; font-weight: 600; font-size: 1.2rem;">{draw_prob:.1%}</span>
+                    <span style="color: #ed8936; font-weight: 600; font-size: 1.2rem;">{draw_prob*100:.1f}%</span>
                 </div>
                 <div style="color: #1a1a1a; font-weight: 500;">Draw</div>
             </div>
@@ -758,7 +754,7 @@ def display_probability_bars(home_prob, draw_prob, away_prob, home_team, away_te
         st.markdown(f"""
             <div style="text-align: center;">
                 <div style="margin-bottom: 0.5rem;">
-                    <span style="color: #3182ce; font-weight: 600; font-size: 1.2rem;">{away_prob:.1%}</span>
+                    <span style="color: #3182ce; font-weight: 600; font-size: 1.2rem;">{away_prob*100:.1f}%</span>
                 </div>
                 <div style="color: #1a1a1a; font-weight: 500;">{away_team}</div>
             </div>
@@ -768,9 +764,9 @@ def display_probability_bars(home_prob, draw_prob, away_prob, home_team, away_te
     st.markdown(f"""
         <div style="margin-top: 1rem; padding: 0 1rem;">
             <div style="width: 100%; height: 20px; background: #e2e8f0; border-radius: 10px; overflow: hidden; display: flex;">
-                <div style="width: {home_prob * 100}%; height: 100%; background-color: #48bb78;"></div>
-                <div style="width: {draw_prob * 100}%; height: 100%; background-color: #ed8936;"></div>
-                <div style="width: {away_prob * 100}%; height: 100%; background-color: #3182ce;"></div>
+                <div style="width: {home_prob*100}%; height: 100%; background-color: #48bb78;"></div>
+                <div style="width: {draw_prob*100}%; height: 100%; background-color: #ed8936;"></div>
+                <div style="width: {away_prob*100}%; height: 100%; background-color: #3182ce;"></div>
             </div>
         </div>
         
@@ -797,9 +793,9 @@ def display_match_odds(match_data):
     """, unsafe_allow_html=True)
     
     # Get predicted probabilities for all markets
-    home_pred = float(match_data.get('home_prob', 0)) * 100  # Convert to percentage
-    draw_pred = float(match_data.get('draw_prob', 0)) * 100
-    away_pred = float(match_data.get('away_prob', 0)) * 100
+    home_pred = float(match_data.get('home_prob', 0)) 
+    draw_pred = float(match_data.get('draw_prob', 0)) 
+    away_pred = float(match_data.get('away_prob', 0)) 
     
     # Match outcome odds
     home_odds = float(match_data.get('odds_ft_1', 0))
@@ -814,13 +810,13 @@ def display_match_odds(match_data):
         away_implied = (1/away_odds) / total_implied * 100
         
         # Debug prints
-        print(f"Home - Pred: {home_pred:.2f}%, Odds: {home_odds:.2f}")
-        print(f"Draw - Pred: {draw_pred:.2f}%, Odds: {draw_odds:.2f}")
-        print(f"Away - Pred: {away_pred:.2f}%, Odds: {away_odds:.2f}")
+        print(f"Home - Pred: {home_pred*100:.2f}%, Odds: {home_odds:.2f}")
+        print(f"Draw - Pred: {draw_pred*100:.2f}%, Odds: {draw_odds:.2f}")
+        print(f"Away - Pred: {away_pred*100:.2f}%, Odds: {away_odds:.2f}")
         
-        home_ev = calculate_ev(home_pred, home_odds)
-        draw_ev = calculate_ev(draw_pred, draw_odds)
-        away_ev = calculate_ev(away_pred, away_odds)
+        home_ev = calculate_ev(home_pred*100, home_odds)
+        draw_ev = calculate_ev(draw_pred*100, draw_odds)
+        away_ev = calculate_ev(away_pred*100, away_odds)
         
         # Debug prints
         print(f"Home EV: {home_ev:.2f}%")
@@ -967,7 +963,8 @@ def get_ev_color(ev_percentage):
 
 def calculate_ev(predicted_prob, odds):
     """
-    Calculate Expected Value (EV) for a bet using the formula: odds - (1/prob_decimal)
+    Calculate Expected Value (EV) for a bet using the formula: (Bookie Odds/Breakeven Odds - 1) * 100
+    where Breakeven Odds = 1/Probability
     
     Args:
         predicted_prob (float): Our predicted probability (0-100)
@@ -977,26 +974,23 @@ def calculate_ev(predicted_prob, odds):
         float: Expected Value percentage
     """
     try:
-        if not odds or odds <= 1.0 or predicted_prob <= 0:
-            return 0
-            
         # Convert probability to decimal (0-1)
         prob_decimal = predicted_prob / 100
-            
-        # Calculate EV using odds - (1/prob_decimal)
-        ev = odds - (1/prob_decimal)
         
-        # Convert to percentage
-        ev_percentage = ev * 100
+        # Calculate breakeven odds
+        breakeven_odds = 1 / prob_decimal
         
-        # Debug prints
-        print(f"Odds: {odds:.2f}, Prob: {prob_decimal:.3f}, EV: {ev_percentage:.2f}%")
+        # Calculate EV percentage
+        ev_percentage = (odds / breakeven_odds - 1) * 100
         
-        return ev_percentage
+        return round(ev_percentage, 2)
         
+    except ZeroDivisionError:
+        logger.error("Division by zero in EV calculation - probability cannot be 0")
+        return 0.0
     except Exception as e:
         logger.error(f"Error calculating EV: {str(e)}")
-        return 0
+        return 0.0
 
 def get_match_prediction(match_data):
     """Calculate match prediction using the loaded model"""
@@ -1030,6 +1024,7 @@ def get_match_prediction(match_data):
             away_prob = probabilities[0][2]
         
         # Adjust probabilities based on odds and team strengths
+        # Note: adjust_probabilities handles decimal conversion
         home_prob, draw_prob, away_prob = adjust_probabilities(
             home_prob, draw_prob, away_prob, match_data
         )
@@ -1037,16 +1032,15 @@ def get_match_prediction(match_data):
         return home_prob, draw_prob, away_prob
         
     except Exception as e:
-        logger.error(f"Error in prediction: {str(e)}", exc_info=True)
-        st.error(f"Prediction error: {str(e)}")
+        logger.error(f"Error in get_match_prediction: {str(e)}")
         return None, None, None
 
 def normalize_probabilities(probs):
-    """Normalize probabilities to sum to 1"""
+    """Normalize probabilities to sum to 100"""
     total = sum(probs)
     if total == 0:
-        return [1/3, 1/3, 1/3]  # Equal probabilities if sum is 0
-    return [p/total for p in probs]
+        return [0] * len(probs)
+    return [p * 100 / total for p in probs]
 
 def update_match_results():
     """Update completed match results and calculate profits/losses"""
@@ -1122,21 +1116,33 @@ def process_match_prediction(match):
         match_date = datetime.fromtimestamp(match['date_unix']).date()
         today = datetime.now().date()
         
-        # Get predictions
+        # Get predictions (these are in decimal form 0-1)
         home_prob, draw_prob, away_prob = get_match_prediction(match)
         
         if all(prob is not None for prob in [home_prob, draw_prob, away_prob]):
-            # Normalize probabilities
-            probs = normalize_probabilities([home_prob, draw_prob, away_prob])
-            home_prob, draw_prob, away_prob = probs
-            
             # Store probabilities in match data for later use
             match['home_prob'] = home_prob
             match['draw_prob'] = draw_prob
             match['away_prob'] = away_prob
             
-            # Determine predicted outcome
-            max_prob = max(home_prob, draw_prob, away_prob)
+            # Determine predicted outcome and confidence based on probability margins
+            probs = [home_prob, draw_prob, away_prob]
+            max_prob = max(probs)
+            sorted_probs = sorted(probs, reverse=True)
+            margin = sorted_probs[0] - sorted_probs[1]  # Margin between highest and second highest
+            
+            # Calculate confidence based on both margin and absolute probability
+            # 1. Base confidence from absolute probability (max 60%)
+            base_confidence = max_prob * 60  # e.g. if highest prob is 0.60, base is 36%
+            
+            # 2. Additional confidence from margin (max 40%)
+            # Margin of 0.20 (20%) or more gets full 40%
+            margin_confidence = min(margin * 200, 40)  # margin * 200 means 0.20 margin = 40%
+            
+            # 3. Total confidence (max 100%)
+            confidence = base_confidence + margin_confidence
+            
+            # Determine outcome
             if max_prob == home_prob:
                 predicted_outcome = "HOME"
             elif max_prob == away_prob:
@@ -1154,7 +1160,7 @@ def process_match_prediction(match):
                 'home_odds': float(match.get('odds_ft_1', 0)),
                 'draw_odds': float(match.get('odds_ft_x', 0)),
                 'away_odds': float(match.get('odds_ft_2', 0)),
-                'confidence': max_prob,
+                'confidence': confidence,
                 'bet_amount': 1.0,  # Fixed bet amount
                 'prediction_type': 'Match Result',
                 'match_date': match_date.strftime('%Y-%m-%d'),
@@ -1183,13 +1189,13 @@ def process_match_prediction(match):
                 if not match_exists:
                     history.add_prediction(prediction_data)
             
-            return prediction_data, max_prob
+            return prediction_data, confidence
+            
+        return None, None
             
     except Exception as e:
-        logger.error(f"Error processing prediction for match: {str(e)}", exc_info=True)
-        return None
-    
-    return None
+        logger.error(f"Error in process_match_prediction: {str(e)}")
+        return None, None
 
 def display_match_details(match, prediction_data, confidence):
     """Display match details, prediction, and odds"""
@@ -1456,7 +1462,7 @@ def show_main_app():
             "Filter by Confidence Level",
             options=["All", "High", "Medium", "Low"],
             index=0,
-            help="Filter predictions by confidence level (High: ≥60%, Medium: 40-59%, Low: <40%)"
+            help="Filter predictions by confidence level (High: ≥70%, Medium: 50-69%, Low: <50%)"
         )
         
         # Filter matches by selected league
@@ -1489,11 +1495,11 @@ def show_main_app():
                     show_match = True
                     
                     if confidence_level != "All":
-                        if confidence_level == "High" and confidence < 0.6:
+                        if confidence_level == "High" and confidence < 70:  
                             show_match = False
-                        elif confidence_level == "Medium" and (confidence < 0.4 or confidence >= 0.6):
+                        elif confidence_level == "Medium" and (confidence < 50 or confidence >= 70):  
                             show_match = False
-                        elif confidence_level == "Low" and confidence >= 0.4:
+                        elif confidence_level == "Low" and confidence >= 50:  
                             show_match = False
                     
                     if show_match:
