@@ -41,6 +41,31 @@ class PredictionHistory:
             )
         ''')
         
+        # Convert existing confidence values to REAL if needed
+        try:
+            c.execute('SELECT confidence FROM predictions LIMIT 1')
+            sample = c.fetchone()
+            if sample and isinstance(sample[0], bytes):
+                # Create a temporary table
+                c.execute('''
+                    CREATE TABLE temp_predictions AS 
+                    SELECT id, date, league, home_team, away_team, 
+                           predicted_outcome, actual_outcome, home_odds, 
+                           draw_odds, away_odds, 
+                           CAST((SELECT CAST(confidence AS REAL)) AS REAL) as confidence,
+                           bet_amount, profit_loss, prediction_type, 
+                           status, match_date, match_id 
+                    FROM predictions
+                ''')
+                
+                # Drop the original table
+                c.execute('DROP TABLE predictions')
+                
+                # Rename temp table to original
+                c.execute('ALTER TABLE temp_predictions RENAME TO predictions')
+        except:
+            pass
+        
         conn.commit()
         conn.close()
 
@@ -48,6 +73,12 @@ class PredictionHistory:
         """Add a new prediction to the database"""
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
+        
+        # Ensure confidence is a float
+        try:
+            confidence = float(prediction_data['confidence'])
+        except (TypeError, ValueError):
+            confidence = 0.0
         
         c.execute('''
             INSERT INTO predictions (
@@ -64,7 +95,7 @@ class PredictionHistory:
             prediction_data['home_odds'],
             prediction_data['draw_odds'],
             prediction_data['away_odds'],
-            prediction_data['confidence'],
+            confidence,  # Use the converted float value
             prediction_data['bet_amount'],
             prediction_data['prediction_type'],
             'Pending',
@@ -89,11 +120,21 @@ class PredictionHistory:
         conn.commit()
         conn.close()
 
-    def get_predictions(self, start_date=None, end_date=None, status=None):
+    def get_predictions(self, start_date=None, end_date=None, status=None, confidence_level=None, league=None):
         """Get predictions with optional filters"""
         conn = sqlite3.connect(self.db_path)
         
-        query = "SELECT * FROM predictions WHERE 1=1"
+        # Convert binary confidence to float in the query
+        query = """
+            SELECT 
+                id, date, league, home_team, away_team, 
+                predicted_outcome, actual_outcome, 
+                home_odds, draw_odds, away_odds,
+                CAST(confidence AS REAL) as confidence,
+                bet_amount, profit_loss, prediction_type,
+                status, match_date, match_id
+            FROM predictions WHERE 1=1
+        """
         params = []
         
         if start_date:
@@ -105,6 +146,16 @@ class PredictionHistory:
         if status:
             query += " AND status = ?"
             params.append(status)
+        if confidence_level:
+            if confidence_level == "High":
+                query += " AND CAST(confidence AS REAL) >= 0.7"
+            elif confidence_level == "Medium":
+                query += " AND CAST(confidence AS REAL) >= 0.5 AND CAST(confidence AS REAL) < 0.7"
+            elif confidence_level == "Low":
+                query += " AND CAST(confidence AS REAL) < 0.5"
+        if league and league != "All":
+            query += " AND league = ?"
+            params.append(league)
             
         df = pd.read_sql_query(query, conn, params=params)
         conn.close()
@@ -453,7 +504,7 @@ def show_history_page():
     # Add date filter in sidebar with custom styling
     st.sidebar.markdown("""
         <div class="date-filter">
-            <h2 style='color: #1e3c72; font-size: 1.2em; margin-bottom: 15px;'>Date Filter</h2>
+            <h2 style='color: #1e3c72; font-size: 1.2em; margin-bottom: 15px;'>Filters</h2>
         </div>
     """, unsafe_allow_html=True)
     
@@ -477,11 +528,29 @@ def show_history_page():
             min_value=start_date,
             max_value=max_date
         )
+
+        # Add confidence level filter
+        confidence_level = st.sidebar.selectbox(
+            "Confidence Level",
+            ["All", "High", "Medium", "Low"],
+            help="Filter predictions by confidence level: High (≥70%), Medium (50-69%), Low (<50%)"
+        )
+        
+        # Add league filter
+        leagues = all_predictions['league'].unique().tolist()
+        leagues.insert(0, "All")
+        league = st.sidebar.selectbox(
+            "League",
+            leagues,
+            help="Filter predictions by league"
+        )
         
         # Get filtered predictions
         predictions = history.get_predictions(
             start_date=start_date.strftime('%Y-%m-%d'),
-            end_date=end_date.strftime('%Y-%m-%d')
+            end_date=end_date.strftime('%Y-%m-%d'),
+            confidence_level=None if confidence_level == "All" else confidence_level,
+            league=league
         )
         
         if not predictions.empty:
@@ -491,7 +560,9 @@ def show_history_page():
             # Refresh predictions after update
             predictions = history.get_predictions(
                 start_date=start_date.strftime('%Y-%m-%d'),
-                end_date=end_date.strftime('%Y-%m-%d')
+                end_date=end_date.strftime('%Y-%m-%d'),
+                confidence_level=None if confidence_level == "All" else confidence_level,
+                league=league
             )
             
             # Calculate statistics
@@ -571,6 +642,38 @@ def show_history_page():
                         axis=1
                     )
                     
+                    # Format confidence as High/Medium/Low
+                    def get_confidence_level(x):
+                        try:
+                            if pd.isna(x):
+                                return 'N/A'
+                            
+                            # Try to convert to float
+                            try:
+                                confidence = float(x)
+                            except (ValueError, TypeError):
+                                # If direct conversion fails, try to decode bytes
+                                if isinstance(x, bytes):
+                                    import struct
+                                    confidence = struct.unpack('f', x)[0]
+                                else:
+                                    return 'N/A'
+                            
+                            # Map confidence to levels
+                            if confidence >= 0.7:
+                                return 'High'
+                            elif confidence >= 0.5:
+                                return 'Medium'
+                            else:
+                                return 'Low'
+                        except Exception as e:
+                            print(f"Error processing confidence value: {x}, type: {type(x)}, error: {str(e)}")
+                            return 'N/A'
+                    
+                    # Convert confidence values
+                    display_df['confidence'] = pd.to_numeric(display_df['confidence'], errors='coerce')
+                    display_df['Confidence'] = display_df['confidence'].apply(get_confidence_level)
+                    
                     # Select and rename columns for display
                     display_columns = {
                         'Date': 'Match Date',
@@ -578,6 +681,7 @@ def show_history_page():
                         'home_team': 'Home Team',
                         'away_team': 'Away Team',
                         'predicted_outcome': 'Prediction',
+                        'Confidence': 'Confidence',
                         'actual_outcome': 'Actual Outcome',
                         'Result': 'Result',
                         'profit_loss': 'Profit/Loss',
@@ -598,6 +702,7 @@ def show_history_page():
                         'Home Team': 'TBD',
                         'Away Team': 'TBD',
                         'Prediction': 'No Prediction',
+                        'Confidence': 'N/A',
                         'Actual Outcome': 'Pending',
                         'Result': '⏳ Pending',
                         'Profit/Loss': 0.0,
