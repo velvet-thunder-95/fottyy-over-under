@@ -161,27 +161,52 @@ class PredictionHistory:
         conn.close()
         return df
 
-    def calculate_statistics(self):
-        """Calculate prediction statistics"""
+    def calculate_statistics(self, confidence_level=None):
+        """Calculate prediction statistics with optional confidence level filter"""
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
         
-        # Get all completed predictions
-        c.execute("""
+        # First, let's check what status values exist in the database
+        c.execute("SELECT DISTINCT status FROM predictions")
+        statuses = c.fetchall()
+        print(f"Available status values: {statuses}")
+        
+        # Base query with confidence level filtering
+        query = """
             SELECT 
                 COUNT(*) as total_predictions,
                 SUM(CASE WHEN predicted_outcome = actual_outcome THEN 1 ELSE 0 END) as correct_predictions,
-                SUM(profit_loss) as total_profit,
-                SUM(bet_amount) as total_bet_amount
+                COALESCE(SUM(profit_loss), 0) as total_profit,
+                COALESCE(SUM(bet_amount), 0) as total_bet_amount,
+                AVG(CAST(confidence AS REAL)) as avg_confidence
             FROM predictions 
-            WHERE status = 'complete'
-        """)
+            WHERE status IN ('Completed', 'complete')
+        """
         
+        # Add confidence level filtering if specified
+        params = []
+        if confidence_level and confidence_level != "All":
+            if confidence_level == "High":
+                query += " AND CAST(confidence AS REAL) >= 70"
+            elif confidence_level == "Medium":
+                query += " AND CAST(confidence AS REAL) >= 50 AND CAST(confidence AS REAL) < 70"
+            elif confidence_level == "Low":
+                query += " AND CAST(confidence AS REAL) < 50"
+        
+        print(f"Executing query with confidence_level: {confidence_level}")
+        print(f"Query: {query}")
+        
+        c.execute(query)
         stats = c.fetchone()
-        total_predictions = stats[0] or 0
-        correct_predictions = stats[1] or 0
-        total_profit = stats[2] or 0
-        total_bet_amount = stats[3] or 0
+        print(f"Raw stats from database: {stats}")
+        
+        total_predictions = stats[0] if stats[0] is not None else 0
+        correct_predictions = stats[1] if stats[1] is not None else 0
+        total_profit = stats[2] if stats[2] is not None else 0
+        total_bet_amount = stats[3] if stats[3] is not None else 0
+        avg_confidence = stats[4] if stats[4] is not None else 0
+        
+        print(f"Processed stats: total_pred={total_predictions}, correct_pred={correct_predictions}, profit={total_profit}, bet_amount={total_bet_amount}")
         
         # Calculate success rate and ROI
         success_rate = (correct_predictions / total_predictions * 100) if total_predictions > 0 else 0
@@ -194,7 +219,8 @@ class PredictionHistory:
             'correct_predictions': correct_predictions,
             'success_rate': success_rate,
             'total_profit': total_profit,
-            'roi': roi
+            'roi': roi,
+            'avg_confidence': avg_confidence
         }
 
     def update_match_results(self):
@@ -352,56 +378,53 @@ def show_history_page():
         
         /* Metrics styling */
         .metrics-container {
+            width: 200px;
+            margin-bottom: 20px;
+        }
+        
+        .metric-box {
+            background: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            text-align: left;
+            margin-bottom: 8px;
             display: flex;
             justify-content: space-between;
-            margin-bottom: 30px;
-            gap: 15px;
-        }
-        
-        .metric-container {
-            background: white;
-            padding: 25px 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-            text-align: center;
-            transition: transform 0.2s ease;
-            border: 1px solid #e9ecef;
-            flex: 1;
-        }
-        
-        .metric-container:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+            align-items: center;
         }
         
         .metric-label {
-            color: #495057;
-            font-size: 0.95em;
+            color: #666;
+            font-size: 0.75rem;
             font-weight: 600;
-            margin-bottom: 10px;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0.5px;
+            margin: 0;
         }
         
         .metric-value {
-            color: #212529;
-            font-size: 2em;
-            font-weight: 700;
-            line-height: 1.2;
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: #2c5282;
+            margin: 0;
         }
         
         .positive-value {
-            color: #28a745;
-            background: linear-gradient(45deg, #28a745 0%, #34ce57 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: #48bb78;
         }
         
         .negative-value {
-            color: #dc3545;
-            background: linear-gradient(45deg, #dc3545 0%, #e4606d 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: #f56565;
+        }
+
+        @media (max-width: 768px) {
+            .metrics-grid {
+                flex-wrap: wrap;
+            }
+            .metric-box {
+                min-width: calc(50% - 10px);
+            }
         }
         
         /* Table styling */
@@ -566,55 +589,44 @@ def show_history_page():
             )
             
             # Calculate statistics
-            stats = history.calculate_statistics()
+            current_confidence = None if confidence_level == "All" else confidence_level
+            print(f"Selected confidence level: {confidence_level}")
+            stats = history.calculate_statistics(confidence_level=current_confidence)
             
-            # Display statistics in columns with custom styling
-            def display_metric(container, label, value, is_percentage=False, is_currency=False, color_value=False):
-                # Format the value based on type
-                if isinstance(value, (int, float)):
-                    if is_percentage:
-                        formatted_value = f"{value:.1f}"
-                    elif is_currency:
-                        formatted_value = f"{value:.2f}"
-                    else:
-                        formatted_value = f"{int(value)}"
-                else:
-                    formatted_value = str(value)
-                
-                # Add currency symbol or percentage sign
-                value_display = f"£{formatted_value}" if is_currency else f"{formatted_value}{'%' if is_percentage else ''}"
-                
-                # Determine if value is positive/negative for color coding
-                try:
-                    numeric_value = float(formatted_value)
-                    value_class = ' positive-value' if numeric_value > 0 else ' negative-value' if numeric_value < 0 else ''
-                except ValueError:
-                    value_class = ''
-                
-                container.markdown(f"""
-                    <div class="metric-container">
-                        <div class="metric-label">{label}</div>
-                        <div class="metric-value{value_class if color_value else ''}">
-                            {value_display}
-                        </div>
-                    </div>
-                """, unsafe_allow_html=True)
-            
-            # Create a container for metrics
+            # Create metrics container
             st.markdown('<div class="metrics-container">', unsafe_allow_html=True)
             
-            col1, col2, col3, col4, col5 = st.columns(5)
+            # Display each metric
+            metrics = [
+                {"label": "Total Predictions", "value": stats['total_predictions'], "is_percentage": False, "is_currency": False},
+                {"label": "Correct Predictions", "value": stats['correct_predictions'], "is_percentage": False, "is_currency": False},
+                {"label": "Success Rate", "value": stats['success_rate'], "is_percentage": True, "is_currency": False},
+                {"label": "Total Profit", "value": stats['total_profit'], "is_currency": True, "is_percentage": False},
+                {"label": "ROI", "value": stats['roi'], "is_percentage": True, "is_currency": False}
+            ]
             
-            with col1:
-                display_metric(st, "Total Predictions", stats['total_predictions'])
-            with col2:
-                display_metric(st, "Correct Predictions", stats['correct_predictions'])
-            with col3:
-                display_metric(st, "Success Rate", stats['success_rate'], is_percentage=True)
-            with col4:
-                display_metric(st, "Total Profit", stats['total_profit'], is_currency=True, color_value=True)
-            with col5:
-                display_metric(st, "ROI", stats['roi'], is_percentage=True, color_value=True)
+            for metric in metrics:
+                if metric.get("is_currency"):
+                    formatted_value = f"£{metric['value']:.2f}"
+                elif metric.get("is_percentage"):
+                    formatted_value = f"{metric['value']:.1f}%"
+                else:
+                    formatted_value = str(metric['value'])
+                
+                value_class = ""
+                if metric.get("is_currency") or metric.get("is_percentage"):
+                    try:
+                        value = float(metric['value'])
+                        value_class = " positive-value" if value > 0 else " negative-value" if value < 0 else ""
+                    except (ValueError, TypeError):
+                        value_class = ""
+                
+                st.markdown(f"""
+                    <div class="metric-box">
+                        <div class="metric-label">{metric['label']}</div>
+                        <div class="metric-value{value_class}">{formatted_value}</div>
+                    </div>
+                """, unsafe_allow_html=True)
             
             st.markdown('</div>', unsafe_allow_html=True)
             
