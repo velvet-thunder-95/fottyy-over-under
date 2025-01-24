@@ -28,6 +28,10 @@ LEAGUE_IDS = {
     'England - FA Womens Super League': 12827,      
     'England - FA Womens Championship': 12802,
 
+    # Unknown leagues
+    'League - 1': 14125,
+    'Croatia - Prva HNL':12121,
+
     # European Competitions
     'UEFA Champions League': 12321,
     'UEFA Europa League':12327,

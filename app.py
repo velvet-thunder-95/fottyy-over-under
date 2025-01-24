@@ -506,7 +506,7 @@ def create_match_features_from_api(match_data):
         return df
         
     except Exception as e:
-        logger.error(f"Error creating features: {str(e)}", exc_info=True)
+        logger.error(f"Error creating features: {str(e)}")
         raise ValueError(f"Failed to create features: {str(e)}")
 
 def adjust_probabilities(home_prob, draw_prob, away_prob, match_data):
@@ -859,38 +859,28 @@ def display_match_odds(match_data):
         over = float(match_data.get('odds_ft_over25', 0))
         under = float(match_data.get('odds_ft_under25', 0))
         if over > 0 and under > 0:
+            # Get our predicted probabilities
+            over_pred = match_data.get('over25_prob', 0) * 100  # Convert to percentage
+            under_pred = match_data.get('under25_prob', 0) * 100
+            
+            # Calculate implied probabilities
             over_raw_prob = 1 / over
             under_raw_prob = 1 / under
             total_prob = over_raw_prob + under_raw_prob
             over_implied = (over_raw_prob / total_prob) * 100
             under_implied = (under_raw_prob / total_prob) * 100
             
-            # Calculate Over/Under probabilities from xG
-            over_pred = calculate_over25_probability(match_data.get('team_a_xg_prematch', 0), match_data.get('team_b_xg_prematch', 0))
+            # Calculate EV using the same method as match outcomes
+            over_ev = calculate_ev(over_pred, over)
+            under_ev = calculate_ev(under_pred, under)
             
-            if over_pred is not None:
-                over_pred *= 100  # Convert to percentage
-                under_pred = 100 - over_pred
-                
-                # Debug prints
-                print(f"Over - Pred: {over_pred:.2f}%, Odds: {over:.2f}")
-                print(f"Under - Pred: {under_pred:.2f}%, Odds: {under:.2f}")
-                
-                # Calculate EV using the helper function
-                over_ev = calculate_ev(over_pred, over)
-                under_ev = calculate_ev(under_pred, under)
-                
-                # Debug prints
-                print(f"Over EV: {over_ev:.2f}%")
-                print(f"Under EV: {under_ev:.2f}%")
-                
-                # Display Over/Under odds
-                st.markdown("<h3>Over/Under 2.5 Goals</h3>", unsafe_allow_html=True)
-                col6, col7 = st.columns(2)
-                with col6:
-                    display_odds_box("Over 2.5", over, over_implied, over_ev)
-                with col7:
-                    display_odds_box("Under 2.5", under, under_implied, under_ev)
+            # Display Over/Under odds
+            st.markdown("<h3>Over/Under 2.5 Goals</h3>", unsafe_allow_html=True)
+            col6, col7 = st.columns(2)
+            with col6:
+                display_odds_box("Over 2.5", over, over_implied, over_ev)
+            with col7:
+                display_odds_box("Under 2.5", under, under_implied, under_ev)
     except Exception as e:
         print(f"Error processing Over/Under: {str(e)}")
 
@@ -899,38 +889,28 @@ def display_match_odds(match_data):
         btts_yes = float(match_data.get('odds_btts_yes', 0))
         btts_no = float(match_data.get('odds_btts_no', 0))
         if btts_yes > 0 and btts_no > 0:
+            # Get our predicted probabilities
+            btts_pred = match_data.get('btts_prob', 0) * 100  # Convert to percentage
+            btts_no_pred = match_data.get('btts_no_prob', 0) * 100
+            
+            # Calculate implied probabilities
             btts_raw_prob = 1 / btts_yes
             btts_no_raw_prob = 1 / btts_no
             total_btts_prob = btts_raw_prob + btts_no_raw_prob
             btts_implied = (btts_raw_prob / total_btts_prob) * 100
             btts_no_implied = (btts_no_raw_prob / total_btts_prob) * 100
             
-            # Calculate BTTS probability from xG
-            btts_pred = calculate_btts_probability(match_data.get('team_a_xg_prematch', 0), match_data.get('team_b_xg_prematch', 0))
+            # Calculate EV using the same method as match outcomes
+            btts_ev = calculate_ev(btts_pred, btts_yes)
+            btts_no_ev = calculate_ev(btts_no_pred, btts_no)
             
-            if btts_pred is not None:
-                btts_pred *= 100  # Convert to percentage
-                btts_no_pred = 100 - btts_pred
-                
-                # Debug prints
-                print(f"BTTS - Pred: {btts_pred:.2f}%, Odds: {btts_yes:.2f}")
-                print(f"No BTTS - Pred: {btts_no_pred:.2f}%, Odds: {btts_no:.2f}")
-                
-                # Calculate EV using the helper function
-                btts_ev = calculate_ev(btts_pred, btts_yes)
-                btts_no_ev = calculate_ev(btts_no_pred, btts_no)
-                
-                # Debug prints
-                print(f"BTTS EV: {btts_ev:.2f}%")
-                print(f"No BTTS EV: {btts_no_ev:.2f}%")
-                
-                # Display BTTS odds
-                st.markdown("<h3>Both Teams To Score</h3>", unsafe_allow_html=True)
-                col8, col9 = st.columns(2)
-                with col8:
-                    display_odds_box("BTTS Yes", btts_yes, btts_implied, btts_ev)
-                with col9:
-                    display_odds_box("BTTS No", btts_no, btts_no_implied, btts_no_ev)
+            # Display BTTS odds
+            st.markdown("<h3>Both Teams To Score</h3>", unsafe_allow_html=True)
+            col8, col9 = st.columns(2)
+            with col8:
+                display_odds_box("BTTS Yes", btts_yes, btts_implied, btts_ev)
+            with col9:
+                display_odds_box("BTTS No", btts_no, btts_no_implied, btts_no_ev)
     except Exception as e:
         print(f"Error processing BTTS: {str(e)}")
 
@@ -1119,80 +1099,86 @@ def process_match_prediction(match):
         # Get predictions (these are in decimal form 0-1)
         home_prob, draw_prob, away_prob = get_match_prediction(match)
         
+        # Calculate Over 2.5 and BTTS probabilities
+        over25_prob = calculate_over25_probability(match.get('team_a_xg_prematch', 0), match.get('team_b_xg_prematch', 0))
+        btts_prob = calculate_btts_probability(match.get('team_a_xg_prematch', 0), match.get('team_b_xg_prematch', 0))
+        
+        # Store all probabilities in match data
         if all(prob is not None for prob in [home_prob, draw_prob, away_prob]):
-            # Store probabilities in match data for later use
             match['home_prob'] = home_prob
             match['draw_prob'] = draw_prob
             match['away_prob'] = away_prob
+            match['over25_prob'] = over25_prob if over25_prob is not None else 0
+            match['under25_prob'] = 1 - over25_prob if over25_prob is not None else 0
+            match['btts_prob'] = btts_prob if btts_prob is not None else 0
+            match['btts_no_prob'] = 1 - btts_prob if btts_prob is not None else 0
+
+        # Determine predicted outcome and confidence based on probability margins
+        probs = [home_prob, draw_prob, away_prob]
+        max_prob = max(probs)
+        sorted_probs = sorted(probs, reverse=True)
+        margin = sorted_probs[0] - sorted_probs[1]  # Margin between highest and second highest
+        
+        # Calculate confidence based on both margin and absolute probability
+        # 1. Base confidence from absolute probability (max 60%)
+        base_confidence = max_prob * 60  # e.g. if highest prob is 0.60, base is 36%
+        
+        # 2. Additional confidence from margin (max 40%)
+        # Margin of 0.20 (20%) or more gets full 40%
+        margin_confidence = min(margin * 200, 40)  # margin * 200 means 0.20 margin = 40%
+        
+        # 3. Total confidence (max 100%)
+        confidence = base_confidence + margin_confidence
+        
+        # Determine outcome
+        if max_prob == home_prob:
+            predicted_outcome = "HOME"
+        elif max_prob == away_prob:
+            predicted_outcome = "AWAY"
+        else:
+            predicted_outcome = "DRAW"
+        
+        # Create prediction data
+        prediction_data = {
+            'date': datetime.now().strftime('%Y-%m-%d'),
+            'league': get_league_name(match),
+            'home_team': match.get('home_name'),
+            'away_team': match.get('away_name'),
+            'predicted_outcome': predicted_outcome,
+            'home_odds': float(match.get('odds_ft_1', 0)),
+            'draw_odds': float(match.get('odds_ft_x', 0)),
+            'away_odds': float(match.get('odds_ft_2', 0)),
+            'confidence': confidence,
+            'bet_amount': 1.0,  # Fixed bet amount
+            'prediction_type': 'Match Result',
+            'match_date': match_date.strftime('%Y-%m-%d'),
+            'match_id': str(match.get('id', ''))
+        }
+        
+        # Only store in database if it's today's match
+        if match_date == today:
+            # Check for existing prediction
+            history = PredictionHistory()
+            existing_predictions = history.get_predictions(
+                start_date=prediction_data['match_date'],
+                end_date=prediction_data['match_date']
+            )
             
-            # Determine predicted outcome and confidence based on probability margins
-            probs = [home_prob, draw_prob, away_prob]
-            max_prob = max(probs)
-            sorted_probs = sorted(probs, reverse=True)
-            margin = sorted_probs[0] - sorted_probs[1]  # Margin between highest and second highest
+            # Check if prediction already exists for this match
+            match_exists = False
+            if not existing_predictions.empty:
+                match_exists = existing_predictions[
+                    (existing_predictions['home_team'] == prediction_data['home_team']) &
+                    (existing_predictions['away_team'] == prediction_data['away_team']) &
+                    (existing_predictions['match_date'] == prediction_data['match_date'])
+                ].shape[0] > 0
             
-            # Calculate confidence based on both margin and absolute probability
-            # 1. Base confidence from absolute probability (max 60%)
-            base_confidence = max_prob * 60  # e.g. if highest prob is 0.60, base is 36%
-            
-            # 2. Additional confidence from margin (max 40%)
-            # Margin of 0.20 (20%) or more gets full 40%
-            margin_confidence = min(margin * 200, 40)  # margin * 200 means 0.20 margin = 40%
-            
-            # 3. Total confidence (max 100%)
-            confidence = base_confidence + margin_confidence
-            
-            # Determine outcome
-            if max_prob == home_prob:
-                predicted_outcome = "HOME"
-            elif max_prob == away_prob:
-                predicted_outcome = "AWAY"
-            else:
-                predicted_outcome = "DRAW"
-            
-            # Create prediction data
-            prediction_data = {
-                'date': datetime.now().strftime('%Y-%m-%d'),
-                'league': get_league_name(match),
-                'home_team': match.get('home_name'),
-                'away_team': match.get('away_name'),
-                'predicted_outcome': predicted_outcome,
-                'home_odds': float(match.get('odds_ft_1', 0)),
-                'draw_odds': float(match.get('odds_ft_x', 0)),
-                'away_odds': float(match.get('odds_ft_2', 0)),
-                'confidence': confidence,
-                'bet_amount': 1.0,  # Fixed bet amount
-                'prediction_type': 'Match Result',
-                'match_date': match_date.strftime('%Y-%m-%d'),
-                'match_id': str(match.get('id', ''))
-            }
-            
-            # Only store in database if it's today's match
-            if match_date == today:
-                # Check for existing prediction
-                history = PredictionHistory()
-                existing_predictions = history.get_predictions(
-                    start_date=prediction_data['match_date'],
-                    end_date=prediction_data['match_date']
-                )
-                
-                # Check if prediction already exists for this match
-                match_exists = False
-                if not existing_predictions.empty:
-                    match_exists = existing_predictions[
-                        (existing_predictions['home_team'] == prediction_data['home_team']) &
-                        (existing_predictions['away_team'] == prediction_data['away_team']) &
-                        (existing_predictions['match_date'] == prediction_data['match_date'])
-                    ].shape[0] > 0
-                
-                # Only add if prediction doesn't exist
-                if not match_exists:
-                    history.add_prediction(prediction_data)
-            
-            return prediction_data, confidence
-            
-        return None, None
-            
+            # Only add if prediction doesn't exist
+            if not match_exists:
+                history.add_prediction(prediction_data)
+        
+        return prediction_data, confidence
+        
     except Exception as e:
         logger.error(f"Error in process_match_prediction: {str(e)}")
         return None, None
@@ -1202,7 +1188,7 @@ def display_match_details(match, prediction_data, confidence):
     try:
         # Display league name and prediction
         st.markdown(f"### {prediction_data['league']}")
-        prediction = f"Prediction: {match.get('home_name', '')} vs {match.get('away_name', '')} - {prediction_data['predicted_outcome']}"
+        prediction = f"{match.get('home_name', '')} vs {match.get('away_name', '')} - {prediction_data['predicted_outcome']}"
         display_prediction(prediction, confidence)
 
         # Display date and kickoff time
