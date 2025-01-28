@@ -246,6 +246,15 @@ def get_match_result(match_id):
         }
         
         response = requests.get(url, params=params)
+        
+        # If we get a 404, it's likely a future match
+        if response.status_code == 404:
+            return {
+                "status": "SCHEDULED",
+                "home_score": None,
+                "away_score": None
+            }
+            
         response.raise_for_status()
         
         data = response.json()
@@ -258,13 +267,16 @@ def get_match_result(match_id):
         # Return formatted match result
         return {
             "status": "FINISHED" if match_data.get("status") == "complete" else match_data.get("status", "SCHEDULED"),
-            "home_score": match_data.get("home_score", 0),
-            "away_score": match_data.get("away_score", 0)
+            "home_score": match_data.get("home_score", None),
+            "away_score": match_data.get("away_score", None)
         }
-        
-    except Exception as e:
+    except requests.exceptions.RequestException as e:
         print(f"Error getting match result: {str(e)}")
-        return None
+        return {
+            "status": "SCHEDULED",
+            "home_score": None,
+            "away_score": None
+        }
 
 
 def get_results_by_date(date_str):
@@ -283,19 +295,43 @@ def get_match_by_teams(home_team, away_team, date_str):
     """Find a match by teams from database instead of API"""
     try:
         # Convert date string to required format (YYYY-MM-DD)
-        match_date = datetime.strptime(date_str, '%Y-%m-%d').strftime('%Y-%m-%d')
+        match_date = datetime.strptime(date_str, '%Y-%m-%d')
+        
+        # If the match is in the future, return a scheduled status
+        if match_date > datetime.now():
+            return {
+                "id": None,
+                "status": "SCHEDULED",
+                "home_score": None,
+                "away_score": None,
+                "home_team": home_team,
+                "away_team": away_team,
+                "match_date": date_str
+            }
         
         # Make API request to get matches for the date
         url = f"{BASE_URL}/matches"
         params = {
             "key": API_KEY,
-            "date_from": match_date,
-            "date_to": match_date
+            "date_from": date_str,
+            "date_to": date_str
         }
         
         response = requests.get(url, params=params)
-        response.raise_for_status()
         
+        # If we get a 404, return scheduled status
+        if response.status_code == 404:
+            return {
+                "id": None,
+                "status": "SCHEDULED",
+                "home_score": None,
+                "away_score": None,
+                "home_team": home_team,
+                "away_team": away_team,
+                "match_date": date_str
+            }
+            
+        response.raise_for_status()
         data = response.json()
         
         if not data.get("success"):
@@ -305,18 +341,37 @@ def get_match_by_teams(home_team, away_team, date_str):
         
         # Find the specific match with matching teams
         for match in matches:
-            if (match.get("home_team", "").lower() == home_team.lower() and 
-                match.get("away_team", "").lower() == away_team.lower()):
+            if (match.get("home_team") == home_team and 
+                match.get("away_team") == away_team):
                 return {
                     "id": match.get("id"),
-                    "home_team": match.get("home_team"),
-                    "away_team": match.get("away_team"),
-                    "date": match_date,
-                    "status": match.get("status", "SCHEDULED")
+                    "status": "FINISHED" if match.get("status") == "complete" else match.get("status", "SCHEDULED"),
+                    "home_score": match.get("home_score"),
+                    "away_score": match.get("away_score"),
+                    "home_team": home_team,
+                    "away_team": away_team,
+                    "match_date": date_str
                 }
         
-        return None
+        # If match not found, return scheduled status
+        return {
+            "id": None,
+            "status": "SCHEDULED",
+            "home_score": None,
+            "away_score": None,
+            "home_team": home_team,
+            "away_team": away_team,
+            "match_date": date_str
+        }
         
-    except Exception as e:
+    except requests.exceptions.RequestException as e:
         print(f"Error finding match by teams: {str(e)}")
-        return None
+        return {
+            "id": None,
+            "status": "SCHEDULED",
+            "home_score": None,
+            "away_score": None,
+            "home_team": home_team,
+            "away_team": away_team,
+            "match_date": date_str
+        }
