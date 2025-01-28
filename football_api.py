@@ -30,6 +30,7 @@ LEAGUE_IDS = {
 
     # Unknown leagues
     'League - 1': 14125,
+    'league - 2': 14086,
     'Croatia - Prva HNL':12121,
 
     # European Competitions
