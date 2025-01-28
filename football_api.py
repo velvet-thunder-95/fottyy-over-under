@@ -29,8 +29,8 @@ LEAGUE_IDS = {
     'England - FA Womens Championship': 12802,
 
     # Unknown leagues
-    'League - 1': 14125,
-    'league - 2': 14086,
+    'Argentina - Primera Division 1': 14125,
+    'Colombia - Categoria Primera A': 14086,
     'Croatia - Prva HNL':12121,
 
     # European Competitions
@@ -49,12 +49,6 @@ LEAGUE_IDS = {
     'Africa Cup of Nations': 12310,
     'WC Qualification Europe': 12311,
     
-    # Spain
-    'Spain - La Liga': 12476,
-    'Spain - La Ligas': 12316,
-    'Spain - LaLiga2': 12477,
-    'Spain - Copa del Rey': 12478,
-    'Spain - Segunda División': 12467,
 
     # Spain
     'Spain - La Liga': 12316,
@@ -180,7 +174,7 @@ def get_matches(date_str):
         params = {
             'key': API_KEY,
             'date': date_str,
-            'timezone': 'Asia/Kolkata'  # Using Indian timezone
+            'timezone': 'Europe/Berlin'  # Using German timezone
         }
         
         url = f"{BASE_URL}/todays-matches"

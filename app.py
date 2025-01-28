@@ -1099,19 +1099,23 @@ def process_match_prediction(match):
         # Get predictions (these are in decimal form 0-1)
         home_prob, draw_prob, away_prob = get_match_prediction(match)
         
+        # Handle None probabilities
+        if any(prob is None for prob in [home_prob, draw_prob, away_prob]):
+            logger.error("Invalid probabilities returned from get_match_prediction")
+            return None, None
+        
         # Calculate Over 2.5 and BTTS probabilities
         over25_prob = calculate_over25_probability(match.get('team_a_xg_prematch', 0), match.get('team_b_xg_prematch', 0))
         btts_prob = calculate_btts_probability(match.get('team_a_xg_prematch', 0), match.get('team_b_xg_prematch', 0))
         
         # Store all probabilities in match data
-        if all(prob is not None for prob in [home_prob, draw_prob, away_prob]):
-            match['home_prob'] = home_prob
-            match['draw_prob'] = draw_prob
-            match['away_prob'] = away_prob
-            match['over25_prob'] = over25_prob if over25_prob is not None else 0
-            match['under25_prob'] = 1 - over25_prob if over25_prob is not None else 0
-            match['btts_prob'] = btts_prob if btts_prob is not None else 0
-            match['btts_no_prob'] = 1 - btts_prob if btts_prob is not None else 0
+        match['home_prob'] = home_prob
+        match['draw_prob'] = draw_prob
+        match['away_prob'] = away_prob
+        match['over25_prob'] = over25_prob if over25_prob is not None else 0.5
+        match['under25_prob'] = 1 - (over25_prob if over25_prob is not None else 0.5)
+        match['btts_prob'] = btts_prob if btts_prob is not None else 0.5
+        match['btts_no_prob'] = 1 - (btts_prob if btts_prob is not None else 0.5)
 
         # Determine predicted outcome and confidence based on probability margins
         probs = [home_prob, draw_prob, away_prob]
@@ -1138,16 +1142,24 @@ def process_match_prediction(match):
         else:
             predicted_outcome = "DRAW"
         
+        # Get league name with fallback
+        league_name = get_league_name(match)
+        if not league_name:
+            # Extract from URL as fallback
+            league_name = extract_league_name(match.get('match_url', ''))
+            if not league_name:
+                league_name = "Unknown League"
+        
         # Create prediction data
         prediction_data = {
             'date': datetime.now().strftime('%Y-%m-%d'),
-            'league': get_league_name(match),
-            'home_team': match.get('home_name'),
-            'away_team': match.get('away_name'),
+            'league': league_name,
+            'home_team': match.get('home_name', 'Unknown Home Team'),
+            'away_team': match.get('away_name', 'Unknown Away Team'),
             'predicted_outcome': predicted_outcome,
-            'home_odds': float(match.get('odds_ft_1', 0)),
-            'draw_odds': float(match.get('odds_ft_x', 0)),
-            'away_odds': float(match.get('odds_ft_2', 0)),
+            'home_odds': float(match.get('odds_ft_1', 1.0)),
+            'draw_odds': float(match.get('odds_ft_x', 1.0)),
+            'away_odds': float(match.get('odds_ft_2', 1.0)),
             'confidence': confidence,
             'bet_amount': 1.0,  # Fixed bet amount
             'prediction_type': 'Match Result',
@@ -1228,8 +1240,12 @@ def display_match_details(match, prediction_data, confidence):
         # Add separator between predictions
         st.markdown("---")
         
+    except ZeroDivisionError:
+        logger.error("Division by zero in display_match_details")
+        st.error("An error occurred while displaying match details")
     except Exception as e:
         logger.error(f"Error displaying match details: {str(e)}", exc_info=True)
+        st.error("An error occurred while displaying match details")
 
 def display_kickoff_time(match_data):
     """Display kickoff time in German timezone"""
@@ -1280,15 +1296,16 @@ def calculate_over25_probability(home_xg, away_xg):
         
         # Convert xG to float and handle None/invalid values
         try:
-            home_xg = float(home_xg)
-            away_xg = float(away_xg)
+            home_xg = float(home_xg) if home_xg not in (None, 0) else 0.5
+            away_xg = float(away_xg) if away_xg not in (None, 0) else 0.5
         except (TypeError, ValueError) as e:
             print(f"Error converting xG values: {str(e)}")
-            return None
+            home_xg = 0.5
+            away_xg = 0.5
             
         if home_xg <= 0 or away_xg <= 0:
             print("Invalid xG values (<=0)")
-            return None
+            return 0.5
         
         # Calculate probability matrix for total goals
         max_goals = 10
@@ -1306,7 +1323,7 @@ def calculate_over25_probability(home_xg, away_xg):
         return total_prob
     except Exception as e:
         print(f"Error in Over 2.5 calculation: {str(e)}")
-        return None
+        return 0.5  # Return default probability on error
 
 def calculate_btts_probability(home_xg, away_xg):
     """Calculate probability of both teams scoring using Poisson distribution"""
@@ -1318,15 +1335,16 @@ def calculate_btts_probability(home_xg, away_xg):
         
         # Convert xG to float and handle None/invalid values
         try:
-            home_xg = float(home_xg)
-            away_xg = float(away_xg)
+            home_xg = float(home_xg) if home_xg not in (None, 0) else 0.5
+            away_xg = float(away_xg) if away_xg not in (None, 0) else 0.5
         except (TypeError, ValueError) as e:
             print(f"Error converting xG values: {str(e)}")
-            return None
-            
+            home_xg = 0.5
+            away_xg = 0.5
+        
         if home_xg <= 0 or away_xg <= 0:
             print("Invalid xG values (<=0)")
-            return None
+            return 0.5
         
         # Probability of home team scoring at least 1
         home_scoring_prob = 1 - poisson.pmf(0, home_xg)
@@ -1343,7 +1361,7 @@ def calculate_btts_probability(home_xg, away_xg):
         return btts_prob
     except Exception as e:
         print(f"Error in BTTS calculation: {str(e)}")
-        return None
+        return 0.5  # Return default probability on error
 
 def display_odds_box(title, odds, implied_prob, ev):
     """Helper function to display odds box with consistent styling"""
@@ -1359,10 +1377,6 @@ def display_odds_box(title, odds, implied_prob, ev):
                 <div>
                     <p style="margin: 0; color: #4a5568; font-size: 0.9rem;">Odds</p>
                     <p style="margin: 0; color: #1a1a1a; font-weight: 600;">{odds:.2f}</p>
-                </div>
-                <div>
-                    <p style="margin: 0; color: #4a5568; font-size: 0.9rem;">Implied %</p>
-                    <p style="margin: 0; color: #1a1a1a; font-weight: 600;">{implied_prob:.1f}%</p>
                 </div>
                 <div>
                     <p style="margin: 0; color: #4a5568; font-size: 0.9rem;">EV</p>

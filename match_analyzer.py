@@ -482,6 +482,91 @@ class MatchAnalyzer:
         connection.close()
         return result if result else None
 
+    def create_features(self, match_data):
+        """Create features for prediction model"""
+        try:
+            if not match_data:
+                return None
+            
+            features = {}
+            
+            # Handle PPG (Points Per Game) features with default values
+            features['home_ppg'] = float(match_data.get('home_ppg', 1.5))  # Default to average PPG
+            features['away_ppg'] = float(match_data.get('away_ppg', 1.5))
+            features['pre_match_home_ppg'] = float(match_data.get('pre_match_home_ppg', 1.5))
+            features['pre_match_away_ppg'] = float(match_data.get('pre_match_away_ppg', 1.5))
+            features['pre_match_teamA_overall_ppg'] = float(match_data.get('pre_match_teamA_overall_ppg', 1.5))
+            features['pre_match_teamB_overall_ppg'] = float(match_data.get('pre_match_teamB_overall_ppg', 1.5))
+            
+            # Handle xG (Expected Goals) features with default values
+            features['team_a_xg'] = float(match_data.get('team_a_xg', 1.2))  # Default to average xG
+            features['team_b_xg'] = float(match_data.get('team_b_xg', 1.0))
+            features['total_xg'] = float(match_data.get('total_xg', 2.2))
+            features['team_a_xg_prematch'] = float(match_data.get('team_a_xg_prematch', 1.2))
+            features['team_b_xg_prematch'] = float(match_data.get('team_b_xg_prematch', 1.0))
+            features['total_xg_prematch'] = float(match_data.get('total_xg_prematch', 2.2))
+            
+            # Handle potential features
+            features['btts_potential'] = int(match_data.get('btts_potential', 1))
+            features['btts_fhg_potential'] = int(match_data.get('btts_fhg_potential', 0))
+            features['btts_2hg_potential'] = int(match_data.get('btts_2hg_potential', 0))
+            features['o45_potential'] = int(match_data.get('o45_potential', 0))
+            features['o35_potential'] = int(match_data.get('o35_potential', 1))
+            features['o25_potential'] = int(match_data.get('o25_potential', 1))
+            features['o15_potential'] = int(match_data.get('o15_potential', 1))
+            features['o05_potential'] = int(match_data.get('o05_potential', 1))
+            
+            # Calculate derived features with safety checks
+            home_strength = features['pre_match_teamA_overall_ppg']
+            away_strength = features['pre_match_teamB_overall_ppg']
+            total_strength = home_strength + away_strength
+            
+            if total_strength == 0:
+                # If no historical data, use home advantage bias
+                features['ppg_ratio'] = 0.6  # 60% home advantage
+            else:
+                features['ppg_ratio'] = home_strength / total_strength
+                
+            home_xg = features['team_a_xg_prematch']
+            away_xg = features['team_b_xg_prematch']
+            total_xg = home_xg + away_xg
+            
+            if total_xg == 0:
+                # If no xG data, use home advantage bias
+                features['xg_ratio'] = 0.55  # 55% home advantage
+            else:
+                features['xg_ratio'] = home_xg / total_xg
+                
+            return features
+            
+        except Exception as e:
+            print(f"Error creating features: {str(e)}")
+            # Return default features when error occurs
+            return {
+                'home_ppg': 1.5,
+                'away_ppg': 1.5,
+                'pre_match_home_ppg': 1.5,
+                'pre_match_away_ppg': 1.5,
+                'pre_match_teamA_overall_ppg': 1.5,
+                'pre_match_teamB_overall_ppg': 1.5,
+                'team_a_xg': 1.2,
+                'team_b_xg': 1.0,
+                'total_xg': 2.2,
+                'team_a_xg_prematch': 1.2,
+                'team_b_xg_prematch': 1.0,
+                'total_xg_prematch': 2.2,
+                'btts_potential': 1,
+                'btts_fhg_potential': 0,
+                'btts_2hg_potential': 0,
+                'o45_potential': 0,
+                'o35_potential': 1,
+                'o25_potential': 1,
+                'o15_potential': 1,
+                'o05_potential': 1,
+                'ppg_ratio': 0.6,
+                'xg_ratio': 0.55
+            }
+
 def main():
     """Main function to analyze matches"""
     API_KEY = "633379bdd5c4c3eb26919d8570866801e1c07f399197ba8c5311446b8ea77a49"
