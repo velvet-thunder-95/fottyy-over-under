@@ -29,7 +29,7 @@ LEAGUE_IDS = {
     'England - FA Womens Championship': 12802,
 
     # Unknown leagues
-    'Argentina - Primera Division 1': 14125,
+
     'Colombia - Categoria Primera A': 14086,
     'Croatia - Prva HNL':12121,
 

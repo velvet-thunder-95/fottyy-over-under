@@ -161,8 +161,8 @@ class PredictionHistory:
         conn.close()
         return df
 
-    def calculate_statistics(self, confidence_level=None):
-        """Calculate prediction statistics with optional confidence level filter"""
+    def calculate_statistics(self, confidence_level=None, league=None):
+        """Calculate prediction statistics with optional confidence level and league filter"""
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
         
@@ -171,7 +171,7 @@ class PredictionHistory:
         statuses = c.fetchall()
         print(f"Available status values: {statuses}")
         
-        # Base query with confidence level filtering
+        # Base query with confidence level and league filtering
         query = """
             SELECT 
                 COUNT(*) as total_predictions,
@@ -183,8 +183,8 @@ class PredictionHistory:
             WHERE status IN ('Completed', 'complete')
         """
         
-        # Add confidence level filtering if specified
         params = []
+        # Add confidence level filtering if specified
         if confidence_level and confidence_level != "All":
             if confidence_level == "High":
                 query += " AND CAST(confidence AS REAL) >= 70"
@@ -193,20 +193,23 @@ class PredictionHistory:
             elif confidence_level == "Low":
                 query += " AND CAST(confidence AS REAL) < 50"
         
-        print(f"Executing query with confidence_level: {confidence_level}")
+        # Add league filtering if specified
+        if league and league != "All":
+            query += " AND league = ?"
+            params.append(league)
+        
+        print(f"Executing query with confidence_level: {confidence_level}, league: {league}")
         print(f"Query: {query}")
         
-        c.execute(query)
+        c.execute(query, params)
         stats = c.fetchone()
         print(f"Raw stats from database: {stats}")
         
-        total_predictions = stats[0] if stats[0] is not None else 0
-        correct_predictions = stats[1] if stats[1] is not None else 0
-        total_profit = stats[2] if stats[2] is not None else 0
-        total_bet_amount = stats[3] if stats[3] is not None else 0
-        avg_confidence = stats[4] if stats[4] is not None else 0
-        
-        print(f"Processed stats: total_pred={total_predictions}, correct_pred={correct_predictions}, profit={total_profit}, bet_amount={total_bet_amount}")
+        total_predictions = stats[0] or 0
+        correct_predictions = stats[1] or 0
+        total_profit = stats[2] or 0
+        total_bet_amount = stats[3] or 0
+        avg_confidence = stats[4] or 0
         
         # Calculate success rate and ROI
         success_rate = (correct_predictions / total_predictions * 100) if total_predictions > 0 else 0
@@ -590,8 +593,9 @@ def show_history_page():
             
             # Calculate statistics
             current_confidence = None if confidence_level == "All" else confidence_level
-            print(f"Selected confidence level: {confidence_level}")
-            stats = history.calculate_statistics(confidence_level=current_confidence)
+            current_league = None if league == "All" else league
+            print(f"Selected confidence level: {confidence_level}, Selected league: {league}")
+            stats = history.calculate_statistics(confidence_level=current_confidence, league=current_league)
             
             # Create metrics container
             st.markdown('<div class="metrics-container">', unsafe_allow_html=True)
