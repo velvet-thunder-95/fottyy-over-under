@@ -22,7 +22,8 @@ class TransfermarktAPI:
         self.search_cache = TransfermarktAPI.search_cache
         self.max_workers = max_workers
         self.request_times = []  # Track API request times
-        self.max_requests_per_second = 5  # Maximum requests per second
+        self.max_requests_per_second = 2  # Maximum requests per second (reduced from 5)
+        self.min_delay = 0.5  # Minimum delay between requests in seconds
         
         # Common abbreviations and their full names
         self.abbreviations = {
@@ -57,7 +58,9 @@ class TransfermarktAPI:
             "athletic bilbao": "athletic bilbao",
             "athletic club bilbao": "athletic bilbao",
             "athletic club": "athletic bilbao",
-            "real sociedad": "real sociedad san sebastian",
+            "real sociedad": "real sociedad",
+            "real sociedad san sebastian": "real sociedad",
+            "sociedad": "real sociedad",
             "valencia": "fc valencia",
             "girona": "fc girona",
             
@@ -403,7 +406,8 @@ class TransfermarktAPI:
             "elversberg": {"id": "4097", "name": "SV 07 Elversberg"},
             "darmstadt 98": {"id": "105", "name": "SV Darmstadt 98"},
             "nürnberg": {"id": "4", "name": "1. FC Nürnberg"},
-            "bastia": {"id": "3444", "name": "SC Bastia"}
+            "bastia": {"id": "3444", "name": "SC Bastia"},
+            "real sociedad": {"id": "681", "name": "Real Sociedad San Sebastián"}
         }
         
         # Try to find in abbreviations first (case-insensitive)
@@ -661,23 +665,56 @@ class TransfermarktAPI:
     def _rate_limit(self):
         """Implement rate limiting for API requests"""
         current_time = time.time()
+        
         # Remove old requests from tracking
         self.request_times = [t for t in self.request_times if current_time - t < 1.0]
         
+        # If we've made too many requests recently, wait
         if len(self.request_times) >= self.max_requests_per_second:
-            # Wait if we've made too many requests
-            sleep_time = 1.0 - (current_time - self.request_times[0])
+            sleep_time = max(
+                1.0 - (current_time - self.request_times[0]),  # Wait until a second has passed
+                self.min_delay  # Minimum delay between requests
+            )
             if sleep_time > 0:
                 time.sleep(sleep_time)
-            self.request_times = self.request_times[1:]
+            self.request_times = self.request_times[1:]  # Remove oldest request
+        
+        # Ensure minimum delay between requests
+        if self.request_times and (current_time - self.request_times[-1]) < self.min_delay:
+            time.sleep(self.min_delay)
         
         self.request_times.append(current_time)
 
     def _make_api_request(self, url, params):
-        """Make an API request with rate limiting"""
-        self._rate_limit()
-        return requests.get(url, headers=self.headers, params=params)
-
+        """Make an API request with rate limiting and retries"""
+        max_retries = 3
+        retry_delay = 1.0
+        
+        for attempt in range(max_retries):
+            try:
+                self._rate_limit()  # Apply rate limiting
+                response = requests.get(url, headers=self.headers, params=params)
+                
+                if response.status_code == 429:  # Too Many Requests
+                    if attempt < max_retries - 1:  # Don't sleep on last attempt
+                        sleep_time = retry_delay * (2 ** attempt)  # Exponential backoff
+                        logger.warning(f"Rate limit hit, waiting {sleep_time} seconds...")
+                        time.sleep(sleep_time)
+                        continue
+                
+                response.raise_for_status()
+                return response
+                
+            except requests.exceptions.RequestException as e:
+                if attempt < max_retries - 1:
+                    sleep_time = retry_delay * (2 ** attempt)
+                    logger.warning(f"Request failed, retrying in {sleep_time} seconds... Error: {str(e)}")
+                    time.sleep(sleep_time)
+                else:
+                    raise
+        
+        raise Exception("Max retries exceeded")
+        
     @lru_cache(maxsize=128)
     def get_team_squad(self, team_id, domain="de"):
         """Get all players in a team's squad with caching"""
