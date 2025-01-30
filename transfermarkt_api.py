@@ -77,6 +77,12 @@ class TransfermarktAPI:
             "freiburg": "sc freiburg",
             "hoffenheim": "tsg 1899 hoffenheim",
             "tsg hoffenheim": "tsg 1899 hoffenheim",
+            "darmstadt": "sv darmstadt 98",
+            "darmstadt 98": "sv darmstadt 98",
+            "nurnberg": "1. fc nürnberg",
+            "nürnberg": "1. fc nürnberg",
+            "elversberg": "sv elversberg",
+            "sv elversberg": "sv 07 elversberg",
             
             # Italian Teams
             "milan": "ac milan",
@@ -109,6 +115,8 @@ class TransfermarktAPI:
             "lens": "rc lens",
             "brest": "stade brestois 29",
             "stade brestois": "stade brestois 29",
+            "bastia": "sc bastia",
+            "sc bastia": "sporting club bastia",
             
             # Portuguese Teams
             "benfica": "sl benfica",
@@ -166,6 +174,8 @@ class TransfermarktAPI:
             "beşiktaş": "besiktas jk",
             "besiktas istanbul": "besiktas jk",
             "trabzonspor": "trabzonspor",
+            "bodrumspor": "bb bodrumspor",
+            "bb bodrumspor": "bandirmaboluspor",
             
             # Greek Teams
             "paok": "paok thessaloniki",
@@ -225,9 +235,13 @@ class TransfermarktAPI:
             "lech poznan": "lech posen",
             
             # Croatian Teams
-            "dinamo zagreb": "dinamo zagreb",
-            "hajduk split": "hajduk split",
+            "dinamo zagreb": "gnk dinamo zagreb",
+            "hajduk split": "hnk hajduk split",
             "rijeka": "hnk rijeka",
+            "istra": "nk istra 1961",
+            "istra 1961": "nk istra 1961",
+            "gorica": "hnk gorica",
+            "hnk gorica": "hnk gorica",
             
             # Saudi & UAE Teams
             "al orubah": "al-orobah fc",
@@ -378,6 +392,20 @@ class TransfermarktAPI:
             
         logger.info(f"Searching for team: {team_name}")
         
+        # Special direct mappings for problematic teams
+        direct_mappings = {
+            "bodo/glimt": {"id": "2619", "name": "FK Bodø/Glimt"},
+            "ludogorets": {"id": "31614", "name": "Ludogorets Razgrad"},
+            "riga fs": {"id": "35159", "name": "Riga FC"},
+            "istra 1961": {"id": "4051", "name": "NK Istra 1961"},
+            "gorica": {"id": "2947", "name": "HNK Gorica"},
+            "bb bodrumspor": {"id": "24134", "name": "Bandırmaboluspor"},
+            "elversberg": {"id": "4097", "name": "SV 07 Elversberg"},
+            "darmstadt 98": {"id": "105", "name": "SV Darmstadt 98"},
+            "nürnberg": {"id": "4", "name": "1. FC Nürnberg"},
+            "bastia": {"id": "3444", "name": "SC Bastia"}
+        }
+        
         # Try to find in abbreviations first (case-insensitive)
         team_lower = team_name.lower()
         if team_lower in self.abbreviations:
@@ -393,13 +421,6 @@ class TransfermarktAPI:
         if cache_key in self.search_cache:
             logger.info(f"Found in cache: {team_name}")
             return self.search_cache[cache_key]
-        
-        # Special direct mappings for problematic teams
-        direct_mappings = {
-            "bodo/glimt": {"id": "2619", "name": "FK Bodø/Glimt"},
-            "ludogorets": {"id": "31614", "name": "Ludogorets Razgrad"},
-            "riga fs": {"id": "35159", "name": "Riga FC"}
-        }
         
         # Check direct mappings first
         clean_name = self.clean_team_name(team_name).lower()
