@@ -1328,7 +1328,7 @@ def display_kickoff_time(match_data):
 
         # Convert unix timestamp to datetime in German timezone
         german_tz = pytz.timezone('Europe/Berlin')
-        utc_dt = datetime.fromtimestamp(unix_timestamp, datetime.UTC)
+        utc_dt = datetime.fromtimestamp(unix_timestamp, pytz.UTC)
         german_dt = utc_dt.astimezone(german_tz)
 
         # Format the time
