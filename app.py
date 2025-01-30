@@ -788,6 +788,71 @@ def display_probability_bars(home_prob, draw_prob, away_prob, home_team, away_te
         </div>
     """, unsafe_allow_html=True)
 
+def display_market_values(home_team, away_team):
+    """Display market values for both teams in a styled box"""
+    try:
+        api = TransfermarktAPI(max_workers=20)  # Increased to 20 worker threads for better parallelization
+        market_values = api.get_both_teams_market_value(home_team, away_team)
+        
+        st.markdown(f"""
+            <div style="
+                background-color: #f8fafc;
+                border: 2px solid #64748b;
+                border-radius: 8px;
+                padding: 16px;
+                margin: 12px 0;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <h4 style="
+                    color: #334155;
+                    margin: 0 0 12px 0;
+                    font-size: 1.1rem;
+                    font-weight: 600;">
+                    Team Market Values
+                </h4>
+                <div style="
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-top: 8px;">
+                    <div>
+                        <span style="color: #64748b; font-size: 0.9rem;">Home Team:</span>
+                        <span style="
+                            color: #0f172a;
+                            font-weight: 600;
+                            font-size: 1.1rem;
+                            margin-left: 8px;">
+                            €{market_values['home_market_value']:,.0f}
+                        </span>
+                    </div>
+                    <div>
+                        <span style="color: #64748b; font-size: 0.9rem;">Away Team:</span>
+                        <span style="
+                            color: #0f172a;
+                            font-weight: 600;
+                            font-size: 1.1rem;
+                            margin-left: 8px;">
+                            €{market_values['away_market_value']:,.0f}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+    except Exception as e:
+        st.warning("Market values not available")
+        logging.error(f"Error displaying market values: {str(e)}")
+
+@st.cache_data(ttl=3600)  # Cache for 1 hour
+def get_market_values(home_team, away_team):
+    """Get market values for both teams with caching"""
+    api = TransfermarktAPI(max_workers=20)  # Increased to 20 worker threads for better parallelization
+    return api.get_both_teams_market_value(home_team, away_team)
+
+@st.cache_data(ttl=3600)  # Cache for 1 hour
+def get_multiple_market_values(teams):
+    """Get market values for multiple teams with caching"""
+    api = TransfermarktAPI(max_workers=20)  # Increased to 20 worker threads for better parallelization
+    return api.get_multiple_teams_market_value(teams)
+
 def display_match_odds(match_data):
     """Display FootyStats match odds in an organized box."""
     st.markdown("""
@@ -1197,71 +1262,6 @@ def process_match_prediction(match):
         logger.error(f"Error in process_match_prediction: {str(e)}")
         return None, None
 
-def display_market_values(home_team, away_team):
-    """Display market values for both teams in a styled box"""
-    try:
-        api = TransfermarktAPI(max_workers=20)  # Increased to 20 worker threads for better parallelization
-        market_values = api.get_both_teams_market_value(home_team, away_team)
-        
-        st.markdown(f"""
-            <div style="
-                background-color: #f8fafc;
-                border: 2px solid #64748b;
-                border-radius: 8px;
-                padding: 16px;
-                margin: 12px 0;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                <h4 style="
-                    color: #334155;
-                    margin: 0 0 12px 0;
-                    font-size: 1.1rem;
-                    font-weight: 600;">
-                    Team Market Values
-                </h4>
-                <div style="
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    margin-top: 8px;">
-                    <div>
-                        <span style="color: #64748b; font-size: 0.9rem;">Home Team:</span>
-                        <span style="
-                            color: #0f172a;
-                            font-weight: 600;
-                            font-size: 1.1rem;
-                            margin-left: 8px;">
-                            €{market_values['home_market_value']:,.0f}
-                        </span>
-                    </div>
-                    <div>
-                        <span style="color: #64748b; font-size: 0.9rem;">Away Team:</span>
-                        <span style="
-                            color: #0f172a;
-                            font-weight: 600;
-                            font-size: 1.1rem;
-                            margin-left: 8px;">
-                            €{market_values['away_market_value']:,.0f}
-                        </span>
-                    </div>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
-    except Exception as e:
-        st.warning("Market values not available")
-        logging.error(f"Error displaying market values: {str(e)}")
-
-@st.cache_data(ttl=3600)  # Cache for 1 hour
-def get_market_values(home_team, away_team):
-    """Get market values for both teams with caching"""
-    api = TransfermarktAPI(max_workers=20)  # Increased to 20 worker threads for better parallelization
-    return api.get_both_teams_market_value(home_team, away_team)
-
-@st.cache_data(ttl=3600)  # Cache for 1 hour
-def get_multiple_market_values(teams):
-    """Get market values for multiple teams with caching"""
-    api = TransfermarktAPI(max_workers=20)  # Increased to 20 worker threads for better parallelization
-    return api.get_multiple_teams_market_value(teams)
-
 def display_match_details(match, prediction_data, confidence):
     """Display match details, prediction, and odds"""
     try:
@@ -1274,26 +1274,30 @@ def display_match_details(match, prediction_data, confidence):
         display_market_values(match.get('home_name', ''), match.get('away_name', ''))
 
         # Display date and kickoff time
-        match_date = datetime.fromtimestamp(match['date_unix']).date()
-        match_date_str = match_date.strftime('%Y-%m-%d')
-        kickoff = match.get('kickoff', '')
-        if kickoff:
-            cet_time = convert_to_cet(kickoff)
-            st.markdown(f"""
-                <div style="display: inline-block;
-                            background-color: #f0f9ff;
-                            border: 2px solid #0ea5e9;
-                            border-radius: 8px;
-                            padding: 10px 16px;
-                            margin: 12px 0;
-                            font-family: 'SF Mono', monospace;
-                            font-size: 0.95rem;
-                            font-weight: 500;
-                            color: #0369a1;
-                            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
-                    📅 {match_date_str} &nbsp;|&nbsp; 🕒 {cet_time}
-                </div>
-            """, unsafe_allow_html=True)
+        try:
+            match_date = datetime.fromtimestamp(match['date_unix'], pytz.UTC).date()
+            match_date_str = match_date.strftime('%Y-%m-%d')
+            kickoff = match.get('kickoff', '')
+            if kickoff:
+                cet_time = convert_to_cet(kickoff)
+                st.markdown(f"""
+                    <div style="display: inline-block;
+                                background-color: #f0f9ff;
+                                border: 2px solid #0ea5e9;
+                                border-radius: 8px;
+                                padding: 10px 16px;
+                                margin: 12px 0;
+                                font-family: 'SF Mono', monospace;
+                                font-size: 0.95rem;
+                                font-weight: 500;
+                                color: #0369a1;
+                                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
+                        📅 {match_date_str} &nbsp;|&nbsp; 🕒 {cet_time}
+                    </div>
+                """, unsafe_allow_html=True)
+        except Exception as date_error:
+            logger.error(f"Error processing match date: {str(date_error)}")
+            st.warning("Match date information unavailable")
         
         # Display probability bars
         display_probability_bars(
@@ -1310,9 +1314,6 @@ def display_match_details(match, prediction_data, confidence):
         # Add separator between predictions
         st.markdown("---")
         
-    except ZeroDivisionError:
-        logger.error("Division by zero in display_match_details")
-        st.error("An error occurred while displaying match details")
     except Exception as e:
         logger.error(f"Error displaying match details: {str(e)}", exc_info=True)
         st.error("An error occurred while displaying match details")
