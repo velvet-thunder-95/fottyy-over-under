@@ -175,19 +175,23 @@ class TransfermarktAPI:
             "aek": "aek athen",
             
             # Additional Teams
-            "rigas fs": "rigas fs",
-            "rīgas fs": "rigas fs",
-            "rigas futbola skola": "rigas fs",
-            "rīgas futbola skola": "rigas fs",
+            "rigas fs": "riga fs",
+            "rīgas fs": "riga fs",
+            "rigas futbola skola": "riga fs",
+            "rīgas futbola skola": "riga fs",
             "qarabag": "qarabag agdam",
             "qarabağ": "qarabag agdam",
-            "bodo/glimt": "fk bodo/glimt",
-            "bodo glimt": "fk bodo/glimt",
-            "fk bodo - glimt": "fk bodo/glimt",
-            "fk bodo glimt": "fk bodo/glimt",
-            "ludogorets": "pfc ludogorets razgrad",
-            "ludogorets razgrad": "pfc ludogorets razgrad",
-            "pfc ludogorets": "pfc ludogorets razgrad",
+            "bodo/glimt": "bodo/glimt",
+            "bodø/glimt": "bodo/glimt",
+            "bodo glimt": "bodo/glimt",
+            "fk bodo/glimt": "bodo/glimt",
+            "fk bodø/glimt": "bodo/glimt",
+            "fk bodo - glimt": "bodo/glimt",
+            "ludogorets": "ludogorets",
+            "ludogorets razgrad": "ludogorets",
+            "ludogorets razgrad fc": "ludogorets",
+            "pfc ludogorets": "ludogorets",
+            "pfc ludogorets razgrad": "ludogorets",
             "elfsborg": "if elfsborg",
             "if elfsborg": "if elfsborg",
             "slavia praha": "sk slavia praha",
@@ -390,6 +394,21 @@ class TransfermarktAPI:
             logger.info(f"Found in cache: {team_name}")
             return self.search_cache[cache_key]
         
+        # Special direct mappings for problematic teams
+        direct_mappings = {
+            "bodo/glimt": {"id": "2619", "name": "FK Bodø/Glimt"},
+            "ludogorets": {"id": "31614", "name": "Ludogorets Razgrad"},
+            "riga fs": {"id": "35159", "name": "Riga FC"}
+        }
+        
+        # Check direct mappings first
+        clean_name = self.clean_team_name(team_name).lower()
+        for key, value in direct_mappings.items():
+            if clean_name in [self.clean_team_name(k).lower() for k in self.abbreviations if self.abbreviations[k].lower() == key]:
+                logger.info(f"Found direct mapping: {value['name']}")
+                self.search_cache[cache_key] = value
+                return value
+        
         # Generate search variations
         search_variations = [
             self.clean_team_name(team_name),
@@ -412,7 +431,7 @@ class TransfermarktAPI:
             search_variations.extend([name, f"{name} fc", f"{name} club"])
         
         # Try each variation
-        tried_names = set()  # Track tried variations to avoid duplicates
+        tried_names = set()
         best_non_youth_match = None
         best_non_youth_similarity = 0
         
@@ -462,7 +481,7 @@ class TransfermarktAPI:
                         return best_non_youth_match
                     
                     # For specific cases, use first non-youth result if reasonable match
-                    if any(x in team_lower for x in ["al-", "al ", "fc", "sporting", "dynamo", "viktoria"]):
+                    if any(x in team_lower for x in ["al-", "al ", "fc", "sporting", "dynamo", "viktoria", "bodo", "riga", "ludogorets"]):
                         for team in teams:
                             if not self._is_youth_team(team["name"]):
                                 similarity = self._calculate_similarity(
