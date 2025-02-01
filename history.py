@@ -11,8 +11,49 @@ import logging
 
 class PredictionHistory:
     def __init__(self):
+        """Initialize the database connection and create tables if they don't exist."""
         self.db_path = 'predictions.db'
-        self.init_database()
+        connection = sqlite3.connect(self.db_path)
+        cursor = connection.cursor()
+        
+        # Create predictions table if it doesn't exist
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS predictions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                date TEXT,
+                league TEXT,
+                home_team TEXT,
+                away_team TEXT,
+                predicted_outcome TEXT,
+                actual_outcome TEXT,
+                home_odds REAL,
+                draw_odds REAL,
+                away_odds REAL,
+                confidence REAL,
+                bet_amount REAL,
+                profit_loss REAL,
+                prediction_type TEXT,
+                status TEXT,
+                match_date TEXT,
+                match_id TEXT,
+                home_score INTEGER,
+                away_score INTEGER
+            )
+        ''')
+        
+        # Add new columns if they don't exist
+        try:
+            cursor.execute('ALTER TABLE predictions ADD COLUMN home_score INTEGER')
+        except sqlite3.OperationalError:
+            pass  # Column already exists
+            
+        try:
+            cursor.execute('ALTER TABLE predictions ADD COLUMN away_score INTEGER')
+        except sqlite3.OperationalError:
+            pass  # Column already exists
+            
+        connection.commit()
+        connection.close()
 
     def init_database(self):
         """Initialize the SQLite database"""
@@ -38,7 +79,9 @@ class PredictionHistory:
                 prediction_type TEXT,
                 status TEXT,
                 match_date TEXT,
-                match_id TEXT
+                match_id TEXT,
+                home_score INTEGER,
+                away_score INTEGER
             )
         ''')
         
@@ -52,10 +95,10 @@ class PredictionHistory:
                     CREATE TABLE temp_predictions AS 
                     SELECT id, date, league, home_team, away_team, 
                            predicted_outcome, actual_outcome, home_odds, 
-                           draw_odds, away_odds, 
+                           draw_odds, away_odds,
                            CAST((SELECT CAST(confidence AS REAL)) AS REAL) as confidence,
                            bet_amount, profit_loss, prediction_type, 
-                           status, match_date, match_id 
+                           status, match_date, match_id, NULL as home_score, NULL as away_score
                     FROM predictions
                 ''')
                 
@@ -72,162 +115,239 @@ class PredictionHistory:
 
     def add_prediction(self, prediction_data):
         """Add a new prediction to the database"""
-        conn = sqlite3.connect(self.db_path)
-        c = conn.cursor()
-        
-        # Ensure confidence is a float
         try:
-            confidence = float(prediction_data['confidence'])
-        except (TypeError, ValueError):
-            confidence = 0.0
-        
-        c.execute('''
-            INSERT INTO predictions (
-                date, league, home_team, away_team, predicted_outcome,
-                home_odds, draw_odds, away_odds, confidence,
-                bet_amount, prediction_type, status, match_date, match_id
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (
-            prediction_data['date'],
-            prediction_data['league'],
-            prediction_data['home_team'],
-            prediction_data['away_team'],
-            prediction_data['predicted_outcome'],
-            prediction_data['home_odds'],
-            prediction_data['draw_odds'],
-            prediction_data['away_odds'],
-            confidence,  # Use the converted float value
-            prediction_data['bet_amount'],
-            prediction_data['prediction_type'],
-            'Pending',
-            prediction_data.get('match_date', prediction_data['date']),
-            prediction_data['match_id']
-        ))
-        
-        conn.commit()
-        conn.close()
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            # Ensure confidence is a float
+            confidence = float(prediction_data.get('confidence', 0.0))
+            match_id = str(prediction_data.get('match_id', ''))
+            
+            # Insert prediction
+            cursor.execute("""
+                INSERT INTO predictions (
+                    date, league, home_team, away_team,
+                    predicted_outcome, actual_outcome,
+                    home_odds, draw_odds, away_odds,
+                    confidence, bet_amount, profit_loss,
+                    status, match_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                prediction_data['date'],
+                prediction_data['league'],
+                prediction_data['home_team'],
+                prediction_data['away_team'],
+                prediction_data['predicted_outcome'],
+                None,  # actual_outcome starts as None
+                float(prediction_data['home_odds']),
+                float(prediction_data['draw_odds']),
+                float(prediction_data['away_odds']),
+                confidence,
+                float(prediction_data['bet_amount']),
+                0.0,  # profit_loss starts at 0
+                'Pending',  # status starts as Pending
+                match_id
+            ))
+            
+            conn.commit()
+            conn.close()
+            logging.info(f"Successfully added prediction for {prediction_data['home_team']} vs {prediction_data['away_team']} with match_id: {match_id} and confidence: {confidence}")
+            return True
+            
+        except Exception as e:
+            logging.error(f"Error adding prediction: {str(e)}")
+            return False
 
     def update_prediction_result(self, prediction_id, actual_outcome, profit_loss):
         """Update prediction with actual result and profit/loss"""
         conn = sqlite3.connect(self.db_path)
-        c = conn.cursor()
+        cursor = conn.cursor()
         
-        c.execute('''
-            UPDATE predictions 
-            SET actual_outcome = ?, profit_loss = ?, status = 'Completed'
-            WHERE id = ?
-        ''', (actual_outcome, profit_loss, prediction_id))
-        
-        conn.commit()
-        conn.close()
+        try:
+            cursor.execute("""
+                UPDATE predictions 
+                SET actual_outcome = ?, 
+                    profit_loss = ?,
+                    status = 'Completed'
+                WHERE id = ?
+            """, (actual_outcome, profit_loss, prediction_id))
+            conn.commit()
+            
+        except Exception as e:
+            logger.error(f"Error updating prediction result: {str(e)}")
+            conn.rollback()
+            
+        finally:
+            conn.close()
 
     def get_predictions(self, start_date=None, end_date=None, status=None, confidence_level=None, league=None):
         """Get predictions with optional filters"""
         conn = sqlite3.connect(self.db_path)
         
-        # Convert binary confidence to float in the query
         query = """
             SELECT 
                 id, date, league, home_team, away_team, 
                 predicted_outcome, actual_outcome, 
                 home_odds, draw_odds, away_odds,
-                CAST(confidence AS REAL) as confidence,
-                bet_amount, profit_loss, prediction_type,
-                status, match_date, match_id
+                confidence,
+                bet_amount, profit_loss,
+                status, match_id, home_score, away_score
             FROM predictions WHERE 1=1
         """
         params = []
         
         if start_date:
-            query += " AND match_date >= ?"
+            query += " AND date >= ?"
             params.append(start_date)
         if end_date:
-            query += " AND match_date <= ?"
+            query += " AND date <= ?"
             params.append(end_date)
         if status:
             query += " AND status = ?"
             params.append(status)
         if confidence_level:
             if confidence_level == "High":
-                query += " AND CAST(confidence AS REAL) >= 70"  # High confidence: 70% or higher
+                query += " AND confidence >= 70"
             elif confidence_level == "Medium":
-                query += " AND CAST(confidence AS REAL) >= 50 AND CAST(confidence AS REAL) < 70"  # Medium: 50-70%
+                query += " AND confidence >= 50 AND confidence < 70"
             elif confidence_level == "Low":
-                query += " AND CAST(confidence AS REAL) < 50"  # Low: below 50%
+                query += " AND confidence < 50"
         if league and league != "All":
             query += " AND league = ?"
             params.append(league)
             
         df = pd.read_sql_query(query, conn, params=params)
         conn.close()
+        
         return df
 
     def calculate_statistics(self, confidence_level=None, league=None):
         """Calculate prediction statistics with optional confidence level and league filter"""
         conn = sqlite3.connect(self.db_path)
-        c = conn.cursor()
+        cursor = conn.cursor()
         
-        # First, let's check what status values exist in the database
-        c.execute("SELECT DISTINCT status FROM predictions")
-        statuses = c.fetchall()
-        print(f"Available status values: {statuses}")
-        
-        # Base query with confidence level and league filtering
         query = """
-            SELECT 
-                COUNT(*) as total_predictions,
-                SUM(CASE WHEN predicted_outcome = actual_outcome THEN 1 ELSE 0 END) as correct_predictions,
-                COALESCE(SUM(profit_loss), 0) as total_profit,
-                COALESCE(SUM(bet_amount), 0) as total_bet_amount,
-                AVG(CAST(confidence AS REAL)) as avg_confidence
-            FROM predictions 
-            WHERE status IN ('Completed', 'complete')
+            SELECT COUNT(*) as total,
+                   SUM(CASE WHEN predicted_outcome = actual_outcome AND actual_outcome IS NOT NULL THEN 1 ELSE 0 END) as correct,
+                   SUM(profit_loss) as total_profit,
+                   COUNT(CASE WHEN actual_outcome IS NULL THEN 1 END) as pending
+            FROM predictions
+            WHERE 1=1
         """
-        
         params = []
-        # Add confidence level filtering if specified
-        if confidence_level and confidence_level != "All":
-            if confidence_level == "High":
-                query += " AND CAST(confidence AS REAL) >= 70"
-            elif confidence_level == "Medium":
-                query += " AND CAST(confidence AS REAL) >= 50 AND CAST(confidence AS REAL) < 70"
-            elif confidence_level == "Low":
-                query += " AND CAST(confidence AS REAL) < 50"
         
-        # Add league filtering if specified
+        if confidence_level:
+            if confidence_level == "High":
+                query += " AND confidence >= 70"
+            elif confidence_level == "Medium":
+                query += " AND confidence >= 50 AND confidence < 70"
+            elif confidence_level == "Low":
+                query += " AND confidence < 50"
+        
         if league and league != "All":
             query += " AND league = ?"
             params.append(league)
+            
+        cursor.execute(query, params)
+        result = cursor.fetchone()
         
-        print(f"Executing query with confidence_level: {confidence_level}, league: {league}")
-        print(f"Query: {query}")
+        total = result[0] or 0
+        correct = result[1] or 0
+        total_profit = result[2] or 0
+        pending_count = result[3] or 0
         
-        c.execute(query, params)
-        stats = c.fetchone()
-        print(f"Raw stats from database: {stats}")
-        
-        total_predictions = stats[0] or 0
-        correct_predictions = stats[1] or 0
-        total_profit = stats[2] or 0
-        total_bet_amount = stats[3] or 0
-        avg_confidence = stats[4] or 0
-        
-        # Calculate success rate and ROI
-        success_rate = (correct_predictions / total_predictions * 100) if total_predictions > 0 else 0
-        roi = (total_profit / total_bet_amount * 100) if total_bet_amount > 0 else 0
+        success_rate = (correct / (total - pending_count) * 100) if total - pending_count > 0 else 0
+        roi = (total_profit / total * 100) if total > 0 else 0
         
         conn.close()
         
-        return {
-            'total_predictions': total_predictions,
-            'correct_predictions': correct_predictions,
-            'success_rate': success_rate,
-            'total_profit': total_profit,
-            'roi': roi,
-            'avg_confidence': avg_confidence
-        }
+        return [total, correct, success_rate, total_profit, roi], pending_count
 
-    def update_match_results(self):
+    def update_match_results(self, match_id, result):
+        """Update match results in the database"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        try:
+            # First get the match details
+            cursor.execute("""
+                SELECT predicted_outcome, home_odds, draw_odds, away_odds
+                FROM predictions 
+                WHERE match_id = ?
+            """, (match_id,))
+            match_data = cursor.fetchone()
+            
+            if not match_data:
+                print(f"No prediction found for match {match_id}")
+                return
+                
+            predicted_outcome, home_odds, draw_odds, away_odds = match_data
+            
+            # Parse the result
+            if isinstance(result, dict):
+                home_score = result.get('home_score')
+                away_score = result.get('away_score')
+                status = result.get('status', 'Completed')
+            else:
+                home_score = result
+                away_score = None
+                status = 'Completed'
+            
+            # Determine actual outcome
+            if home_score is not None and away_score is not None:
+                if home_score > away_score:
+                    actual_outcome = 'HOME'
+                elif away_score > home_score:
+                    actual_outcome = 'AWAY'
+                else:
+                    actual_outcome = 'DRAW'
+                    
+                # Calculate profit/loss using $1 bet amount
+                if all([home_odds, draw_odds, away_odds]):  # Only if we have odds
+                    odds = {
+                        'home_odds': float(home_odds),
+                        'draw_odds': float(draw_odds),
+                        'away_odds': float(away_odds)
+                    }
+                    
+                    # Get the odds for the predicted outcome
+                    bet_odds = odds.get(f"{predicted_outcome.lower()}_odds")
+                    
+                    if predicted_outcome == actual_outcome:
+                        # Won: Get the profit (odds - 1)
+                        profit_loss = round(bet_odds - 1.0, 2)
+                    else:
+                        # Lost: Lose the $1 bet
+                        profit_loss = -1.0
+                else:
+                    profit_loss = None
+            else:
+                actual_outcome = None
+                profit_loss = None
+            
+            # Update the database
+            cursor.execute('''
+                UPDATE predictions
+                SET status = ?,
+                    home_score = ?,
+                    away_score = ?,
+                    actual_outcome = ?,
+                    profit_loss = ?
+                WHERE match_id = ?
+            ''', (status, home_score, away_score, actual_outcome, profit_loss, match_id))
+            
+            conn.commit()
+            print(f"Updated match {match_id} with status {status}, scores {home_score}-{away_score}, outcome {actual_outcome}, profit/loss {profit_loss}")
+            
+        except Exception as e:
+            print(f"Error updating match {match_id}: {str(e)}")
+            conn.rollback()
+            
+        finally:
+            if conn:
+                conn.close()
+
+    def update_match_results_all(self):
         """Update completed match results using match_analyzer"""
         import logging
         logging.basicConfig(level=logging.INFO)
@@ -269,108 +389,155 @@ class PredictionHistory:
                     logger.warning(f"No result data for match {match_id}")
                     continue
                 
-                match_status = result.get('status', 'UNKNOWN')
-                logger.info(f"Match {match_id} status: {match_status}")
+                self.update_match_results(match_id, result)
                 
-                # Only update if match is finished
-                if match_status == 'FINISHED':
-                    # Calculate profit/loss
-                    bet_amount = pred[10]  # bet_amount
-                    predicted_outcome = pred[5]  # predicted_outcome
-                    actual_outcome = result.get('winner', {}).get('name')
-                    
-                    if not actual_outcome:
-                        logger.warning(f"No winner determined for match {match_id}")
-                        continue
-                    
-                    logger.info(f"Match {match_id}: Predicted={predicted_outcome}, Actual={actual_outcome}")
-                    
-                    # Get the odds based on predicted outcome
-                    if predicted_outcome == 'HOME':
-                        odds = pred[7]  # home_odds
-                    elif predicted_outcome == 'AWAY':
-                        odds = pred[9]  # away_odds
-                    else:  # DRAW
-                        odds = pred[8]  # draw_odds
-                    
-                    # Calculate profit/loss
-                    if predicted_outcome == actual_outcome:
-                        profit = bet_amount * (odds - 1)  # Winning bet
-                    else:
-                        profit = -bet_amount  # Losing bet
-                    
-                    # Update prediction with result
-                    c.execute('''
-                        UPDATE predictions 
-                        SET actual_outcome = ?, 
-                            profit_loss = ?, 
-                            status = 'Completed'
-                        WHERE id = ?
-                    ''', (actual_outcome, profit, pred_id))
-                    
-                    conn.commit()
-                    logger.info(f"Updated result for match {match_id}: {actual_outcome} (Profit: {profit})")
-                else:
-                    logger.info(f"Match {match_id} not finished, status: {match_status}")
-                    
             except Exception as e:
                 logger.error(f"Error updating match result for prediction {pred_id if 'pred_id' in locals() else None}: {str(e)}", exc_info=True)
                 continue
         
         conn.close()
 
+
+
 def style_dataframe(df):
     """Style the predictions dataframe with colors and formatting"""
-    # Create a copy of the DataFrame to avoid modifying the original
-    styled_df = df.copy()
     
-    # Format status and result columns
-    def format_status(row):
-        # Check if actual outcome is None, empty, or 'Pending'
-        if pd.isna(row['Actual Outcome']) or row['Actual Outcome'] == '' or row['Actual Outcome'] == 'Pending':
+    def format_result(row):
+        if row['Status'] == 'Pending':
+            return '⏳ Pending'
+        elif pd.isna(row['Actual Outcome']) or row['Actual Outcome'] == '':
             return '⏳ Pending'
         elif row['Prediction'] == row['Actual Outcome']:
             return '✅ Won'
         else:
             return '❌ Lost'
-    
-    def format_profit(row):
+            
+    def format_actual_outcome(row):
+        if row['Status'] == 'Pending' or pd.isna(row['Actual Outcome']) or row['Actual Outcome'] == '':
+            return '-'  # Show dash for pending matches
+        return row['Actual Outcome']
+
+    def format_profit_loss(row):
+        if row['Status'] == 'Pending':
+            return '-'
         try:
-            # Only show profit/loss for completed matches
-            if pd.notna(row['Actual Outcome']) and row['Actual Outcome'] not in ['', 'Pending']:
-                profit = float(row.get('Profit/Loss', 0))
-                return f"{profit:+.2f}" if profit != 0 else "0.00"
-            return "Pending"
-        except:
-            return "0.00"
+            profit = float(row['Profit/Loss'])
+            if profit > 0:
+                return f'+${profit:.2f}'
+            elif profit < 0:
+                return f'-${abs(profit):.2f}'
+            return '$0.00'
+        except (ValueError, TypeError):
+            return '-'
+
+    # Create a copy to avoid modifying the original
+    display_df = df.copy()
     
-    # Apply formatting
-    styled_df['Result'] = styled_df.apply(format_status, axis=1)
-    styled_df['Profit/Loss'] = styled_df.apply(format_profit, axis=1)
+    # Format the Result column
+    display_df['Result'] = display_df.apply(format_result, axis=1)
     
-    # Reset index to remove it from display
-    styled_df = styled_df.reset_index(drop=True)
+    # Format the Actual Outcome column
+    display_df['Actual Outcome'] = display_df.apply(format_actual_outcome, axis=1)
+    
+    # Format Profit/Loss
+    display_df['Profit/Loss'] = display_df.apply(format_profit_loss, axis=1)
     
     # Apply styling
-    return styled_df.style\
-        .apply(lambda x: ['background-color: #e6ffe6' if v == '✅ Won'
-                         else 'background-color: #ffe6e6' if v == '❌ Lost'
-                         else 'background-color: #f0f9ff' if v == '⏳ Pending'
-                         else '' for v in x], subset=['Result'])\
-        .set_properties(**{
-            'text-align': 'center',
-            'white-space': 'nowrap',
-            'padding': '5px'
-        })\
-        .set_table_styles([
-            {'selector': 'th', 'props': [('text-align', 'center')]},
-            {'selector': 'td', 'props': [('text-align', 'center')]},
-            {'selector': 'thead', 'props': [('display', 'none')]}
-        ])
+    def style_row(row):
+        base_style = [
+            'font-size: 14px',
+            'font-weight: 400',
+            'color: #333333',
+            'padding: 12px 15px',
+            'border-bottom: 1px solid #e0e0e0'
+        ]
+        
+        if row['Status'] == 'Pending':
+            return [';'.join(base_style + ['background-color: #f5f5f5'])] * len(row)
+        elif pd.isna(row['Actual Outcome']) or row['Actual Outcome'] == '':
+            return [';'.join(base_style + ['background-color: #f5f5f5'])] * len(row)
+        elif row['Prediction'] == row['Actual Outcome']:
+            return [';'.join(base_style + ['background-color: #e8f5e9'])] * len(row)  # Lighter green
+        else:
+            return [';'.join(base_style + ['background-color: #fce4ec'])] * len(row)  # Lighter red
+    
+    # Create the styled DataFrame
+    styled_df = display_df.style.apply(style_row, axis=1)
+    
+    # Add table styles
+    styled_df.set_table_styles([
+        {'selector': 'th', 'props': [
+            ('background-color', '#f8f9fa'),
+            ('color', '#333333'),
+            ('font-weight', '600'),
+            ('font-size', '14px'),
+            ('text-align', 'left'),
+            ('padding', '12px 15px'),
+            ('border-bottom', '2px solid #dee2e6')
+        ]},
+        {'selector': 'td', 'props': [
+            ('text-align', 'left'),
+            ('white-space', 'nowrap'),
+            ('min-width', '100px')
+        ]},
+        {'selector': 'table', 'props': [
+            ('border-collapse', 'collapse'),
+            ('width', '100%'),
+            ('margin', '10px 0'),
+            ('font-family', '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif')
+        ]},
+        {'selector': 'tr:hover td', 'props': [
+            ('background-color', 'rgba(0,0,0,0.05) !important')
+        ]}
+    ])
+    
+    return styled_df
+
+def get_confidence_level(confidence):
+    """Convert confidence value to display text"""
+    try:
+        # Handle None, NaN, and empty values
+        if confidence is None or pd.isna(confidence) or confidence == "":
+            return "Unknown"
+            
+        # Convert to float and handle string values
+        conf_value = float(str(confidence).strip())
+        
+        # Categorize confidence
+        if conf_value >= 70:
+            return "High"
+        elif conf_value >= 50:
+            return "Medium"
+        elif conf_value >= 0:
+            return "Low"
+        else:
+            return "Unknown"
+    except (ValueError, TypeError, AttributeError):
+        return "Unknown"
 
 def show_history_page():
     """Display prediction history page"""
-    # Check login state
+    st.markdown("""
+        <style>
+        .stDataFrame {
+            font-size: 14px;
+            width: 100%;
+        }
+        .stDataFrame [data-testid="StyledDataFrameDataCell"] {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            padding: 12px 15px !important;
+            color: #333333 !important;
+        }
+        .stDataFrame [data-testid="StyledDataFrameHeaderCell"] {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            padding: 12px 15px !important;
+            background-color: #f8f9fa !important;
+            color: #333333 !important;
+            font-weight: 600 !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+    
     if not check_login_state():
         st.warning("Please log in to view prediction history.")
         return
@@ -549,66 +716,55 @@ def show_history_page():
         </div>
     """, unsafe_allow_html=True)
     
-    # Initialize PredictionHistory
-    history = PredictionHistory()
-    
-    # Add date filter in sidebar with custom styling
-    st.sidebar.markdown("""
-        <div class="date-filter">
-            <h2 style='color: #1e3c72; font-size: 1.2em; margin-bottom: 15px;'>Filters</h2>
-        </div>
-    """, unsafe_allow_html=True)
-    
-    # Get min and max dates from predictions
-    all_predictions = history.get_predictions()
-    if not all_predictions.empty:
-        min_date = pd.to_datetime(all_predictions['match_date']).min()
-        max_date = pd.to_datetime(all_predictions['match_date']).max()
+    try:
+        # Initialize PredictionHistory
+        history = PredictionHistory()
         
-        # Date range selector
-        start_date = st.sidebar.date_input(
-            "Start Date",
-            min_date,
-            min_value=min_date,
-            max_value=max_date
-        )
+        # Add date filter in sidebar with custom styling
+        st.sidebar.markdown("""
+            <div class="date-filter">
+                <h2 style='color: #1e3c72; font-size: 1.2em; margin-bottom: 15px;'>Filters</h2>
+            </div>
+        """, unsafe_allow_html=True)
         
-        end_date = st.sidebar.date_input(
-            "End Date",
-            max_date,
-            min_value=start_date,
-            max_value=max_date
-        )
-
-        # Add confidence level filter
-        confidence_level = st.sidebar.selectbox(
-            "Confidence Level",
-            ["All", "High", "Medium", "Low"],
-            help="Filter predictions by confidence level: High (≥70%), Medium (50-69%), Low (<50%)"
-        )
-        
-        # Add league filter
-        leagues = all_predictions['league'].unique().tolist()
-        leagues.insert(0, "All")
-        league = st.sidebar.selectbox(
-            "League",
-            leagues,
-            help="Filter predictions by league"
-        )
-        
-        # Get filtered predictions
-        predictions = history.get_predictions(
-            start_date=start_date.strftime('%Y-%m-%d'),
-            end_date=end_date.strftime('%Y-%m-%d'),
-            confidence_level=None if confidence_level == "All" else confidence_level,
-            league=league
-        )
-        
-        if not predictions.empty:
-            # Update any pending predictions
-            history.update_match_results()
+        # Get min and max dates from predictions
+        all_predictions = history.get_predictions()
+        if not all_predictions.empty:
+            min_date = pd.to_datetime(all_predictions['date']).min()
+            max_date = pd.to_datetime(all_predictions['date']).max()
             
-            # Refresh predictions after update
+            # Date range selector
+            start_date = st.sidebar.date_input(
+                "Start Date",
+                min_date,
+                min_value=min_date,
+                max_value=max_date
+            )
+            
+            end_date = st.sidebar.date_input(
+                "End Date",
+                max_date,
+                min_value=start_date,
+                max_value=max_date
+            )
+
+            # Add confidence level filter
+            confidence_level = st.sidebar.selectbox(
+                "Confidence Level",
+                ["All", "High", "Medium", "Low"],
+                help="Filter predictions by confidence level: High (≥70%), Medium (50-69%), Low (<50%)"
+            )
+            
+            # Add league filter
+            leagues = all_predictions['league'].unique().tolist()
+            leagues.insert(0, "All")
+            league = st.sidebar.selectbox(
+                "League",
+                leagues,
+                index=0
+            )
+            
+            # Get filtered predictions
             predictions = history.get_predictions(
                 start_date=start_date.strftime('%Y-%m-%d'),
                 end_date=end_date.strftime('%Y-%m-%d'),
@@ -616,161 +772,122 @@ def show_history_page():
                 league=league
             )
             
-            # Calculate statistics
-            current_confidence = None if confidence_level == "All" else confidence_level
-            current_league = None if league == "All" else league
-            print(f"Selected confidence level: {confidence_level}, Selected league: {league}")
-            stats = history.calculate_statistics(confidence_level=current_confidence, league=current_league)
-            
-            # Create metrics container
-            st.markdown('<div class="metrics-container">', unsafe_allow_html=True)
-            
-            # Display each metric
-            metrics = [
-                {"label": "Total Predictions", "value": stats['total_predictions'], "is_percentage": False, "is_currency": False},
-                {"label": "Correct Predictions", "value": stats['correct_predictions'], "is_percentage": False, "is_currency": False},
-                {"label": "Success Rate", "value": stats['success_rate'], "is_percentage": True, "is_currency": False},
-                {"label": "Total Profit", "value": stats['total_profit'], "is_currency": True, "is_percentage": False},
-                {"label": "ROI", "value": stats['roi'], "is_percentage": True, "is_currency": False}
-            ]
-            
-            for metric in metrics:
-                if metric.get("is_currency"):
-                    formatted_value = f"£{metric['value']:.2f}"
-                elif metric.get("is_percentage"):
-                    formatted_value = f"{metric['value']:.1f}%"
-                else:
-                    formatted_value = str(metric['value'])
-                
-                value_class = ""
-                if metric.get("is_currency") or metric.get("is_percentage"):
-                    try:
-                        value = float(metric['value'])
-                        value_class = " positive-value" if value > 0 else " negative-value" if value < 0 else ""
-                    except (ValueError, TypeError):
-                        value_class = ""
-                
-                st.markdown(f"""
-                    <div class="metric-box">
-                        <div class="metric-label">{metric['label']}</div>
-                        <div class="metric-value{value_class}">{formatted_value}</div>
-                    </div>
-                """, unsafe_allow_html=True)
-            
-            st.markdown('</div>', unsafe_allow_html=True)
-            
-            # Display predictions table
             if not predictions.empty:
-                st.markdown("""
-                    <h2 style='color: #1e3c72; font-size: 1.5em; margin: 30px 0 20px;'>
-                        Recent Predictions
-                    </h2>
-                """, unsafe_allow_html=True)
+                # Update any pending predictions
+                history.update_match_results_all()
                 
-                try:
-                    # Format DataFrame for display
-                    display_df = predictions.copy()
+                # Refresh predictions after update
+                predictions = history.get_predictions(
+                    start_date=start_date.strftime('%Y-%m-%d'),
+                    end_date=end_date.strftime('%Y-%m-%d'),
+                    confidence_level=None if confidence_level == "All" else confidence_level,
+                    league=league
+                )
+                
+                # Calculate statistics
+                current_confidence = None if confidence_level == "All" else confidence_level
+                current_league = None if league == "All" else league
+                stats, pending_count = history.calculate_statistics(confidence_level=current_confidence, league=current_league)
+                
+                # Create metrics container
+                st.markdown('<div class="metrics-container">', unsafe_allow_html=True)
+                
+                # Display each metric
+                metrics = [
+                    {"label": "Total Predictions", "value": stats[0], "is_percentage": False, "is_currency": False},
+                    {"label": "Correct Predictions", "value": stats[1], "is_percentage": False, "is_currency": False},
+                    {"label": "Success Rate", "value": stats[2], "is_percentage": True, "is_currency": False},
+                    {"label": "Total Profit", "value": stats[3], "is_currency": True, "is_percentage": False},
+                    {"label": "ROI", "value": stats[4], "is_percentage": True, "is_currency": False},
+                    {"label": "Pending Predictions", "value": pending_count, "is_percentage": False, "is_currency": False}
+                ]
+                
+                for metric in metrics:
+                    if metric.get("is_currency"):
+                        formatted_value = f"£{metric['value']:.2f}"
+                    elif metric.get("is_percentage"):
+                        formatted_value = f"{metric['value']:.1f}%"
+                    else:
+                        formatted_value = str(metric['value'])
                     
-                    # Convert date columns
-                    display_df['Date'] = pd.to_datetime(display_df['match_date'])\
-                                          .dt.strftime('%Y-%m-%d')
-                    
-                    # Create Result column
-                    display_df['Result'] = display_df.apply(
-                        lambda x: '✅ Won' if pd.notna(x['predicted_outcome']) and x['predicted_outcome'] == x['actual_outcome']
-                        else '❌ Lost' if pd.notna(x['actual_outcome'])
-                        else '⏳ Pending',
-                        axis=1
-                    )
-                    
-                    # Format confidence as High/Medium/Low
-                    def get_confidence_level(x):
+                    value_class = ""
+                    if metric.get("is_currency") or metric.get("is_percentage"):
                         try:
-                            if pd.isna(x):
-                                return 'N/A'
-                            
-                            # Try to convert to float
-                            try:
-                                confidence = float(x)
-                            except (ValueError, TypeError):
-                                # If direct conversion fails, try to decode bytes
-                                if isinstance(x, bytes):
-                                    import struct
-                                    confidence = struct.unpack('f', x)[0]
-                                else:
-                                    return 'N/A'
-                            
-                            # Map confidence to levels
-                            if confidence >= 70:
-                                return 'High'
-                            elif confidence >= 50:
-                                return 'Medium'
-                            else:
-                                return 'Low'
-                        except Exception as e:
-                            print(f"Error processing confidence value: {x}, type: {type(x)}, error: {str(e)}")
-                            return 'N/A'
+                            value = float(metric['value'])
+                            value_class = " positive-value" if value > 0 else " negative-value" if value < 0 else ""
+                        except (ValueError, TypeError):
+                            value_class = ""
                     
-                    # Convert confidence values
-                    display_df['confidence'] = pd.to_numeric(display_df['confidence'], errors='coerce')
-                    display_df['Confidence'] = display_df['confidence'].apply(get_confidence_level)
+                    st.markdown(f"""
+                        <div class="metric-box">
+                            <div class="metric-label">{metric['label']}</div>
+                            <div class="metric-value{value_class}">{formatted_value}</div>
+                        </div>
+                    """, unsafe_allow_html=True)
+                
+                st.markdown('</div>', unsafe_allow_html=True)
+                
+                # Display predictions table
+                if not predictions.empty:
+                    st.markdown("""
+                        <h2 style='color: #1e3c72; font-size: 1.5em; margin: 30px 0 20px;'>
+                            Recent Predictions
+                        </h2>
+                    """, unsafe_allow_html=True)
                     
-                    # Select and rename columns for display
-                    display_columns = {
-                        'Date': 'Match Date',
-                        'league': 'League',
-                        'home_team': 'Home Team',
-                        'away_team': 'Away Team',
-                        'predicted_outcome': 'Prediction',
-                        'Confidence': 'Confidence',
-                        'actual_outcome': 'Actual Outcome',
-                        'Result': 'Result',
-                        'profit_loss': 'Profit/Loss',
-                        'status': 'Status'
-                    }
-                    
-                    # Filter and rename columns
-                    display_df = display_df[display_columns.keys()].rename(columns=display_columns)
-                    
-                    # Convert numeric columns
-                    numeric_cols = ['Profit/Loss']
-                    display_df[numeric_cols] = display_df[numeric_cols].apply(pd.to_numeric, errors='coerce')
-                    
-                    # Fill missing values with appropriate defaults
-                    defaults = {
-                        'Match Date': 'Upcoming',
-                        'League': 'Unknown League',
-                        'Home Team': 'TBD',
-                        'Away Team': 'TBD',
-                        'Prediction': 'No Prediction',
-                        'Confidence': 'N/A',
-                        'Actual Outcome': 'Pending',
-                        'Result': '⏳ Pending',
-                        'Profit/Loss': 0.0,
-                        'Status': 'Pending'
-                    }
-                    
-                    # Update DataFrame with defaults
-                    display_df = display_df.fillna(defaults)
-                    
-                    # Sort by date descending
-                    display_df = display_df.sort_values('Match Date', ascending=False)
-                    
-                    # Apply styling
-                    styled_df = style_dataframe(display_df)
-                    
-                    # Display the styled DataFrame
-                    st.dataframe(
-                        styled_df,
-                        use_container_width=True,
-                        height=400
-                    )
-                    
-                except Exception as e:
-                    st.error(f"Error displaying predictions table: {str(e)}")
-                    st.exception(e)
-            else:
-                st.info("No predictions found for the selected date range.")
+                    try:
+                        # Convert confidence to numeric and create display version
+                        predictions['confidence_num'] = pd.to_numeric(predictions['confidence'], errors='coerce')
+                        predictions['Confidence'] = predictions['confidence_num'].apply(get_confidence_level)
+                        
+                        # Convert date to datetime
+                        predictions['date'] = pd.to_datetime(predictions['date']).dt.strftime('%Y-%m-%d')
+                        
+                        # Create Result column
+                        predictions['Result'] = predictions.apply(
+                            lambda x: '✅ Won' if pd.notna(x['predicted_outcome']) and x['predicted_outcome'] == x['actual_outcome']
+                            else '❌ Lost' if pd.notna(x['actual_outcome'])
+                            else '⏳ Pending',
+                            axis=1
+                        )
+                        
+                        # Define display columns mapping
+                        display_columns = {
+                            'date': 'Date',
+                            'league': 'League',
+                            'home_team': 'Home Team',
+                            'away_team': 'Away Team',
+                            'predicted_outcome': 'Prediction',
+                            'Confidence': 'Confidence',
+                            'actual_outcome': 'Actual Outcome',
+                            'Result': 'Result',
+                            'profit_loss': 'Profit/Loss',
+                            'status': 'Status'
+                        }
+                        
+                        # Create final dataframe
+                        final_df = predictions[list(display_columns.keys())].copy()
+                        final_df = final_df.rename(columns=display_columns)
+                        
+                        # Apply styling
+                        styled_df = style_dataframe(final_df)
+                        
+                        # Display the styled dataframe
+                        st.dataframe(
+                            styled_df,
+                            use_container_width=True,
+                            hide_index=True
+                        )
+                        
+                    except Exception as e:
+                        st.error(f"Error displaying predictions table: {str(e)}")
+                        st.exception(e)
+                else:
+                    st.info("No predictions found for the selected date range.")
+                
+    except Exception as e:
+        st.error(f"Error displaying predictions table: {str(e)}")
+        st.exception(e)
 
     # Add Navigation JavaScript
     st.markdown("""

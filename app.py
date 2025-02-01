@@ -1149,24 +1149,27 @@ def process_match_prediction(match):
         if not league_name:
             # Extract from URL as fallback
             league_name = extract_league_name(match.get('match_url', ''))
-            if not league_name:
-                league_name = "Unknown League"
         
+        # Get match ID
+        match_id = match.get('id')
+        if not match_id:
+            logger.error(f"No match ID found for {match['home_name']} vs {match['away_name']}")
+            return None, None
+
         # Create prediction data
         prediction_data = {
-            'date': datetime.now().strftime('%Y-%m-%d'),
+            'date': match_date.strftime('%Y-%m-%d'),
             'league': league_name,
-            'home_team': match.get('home_name', 'Unknown Home Team'),
-            'away_team': match.get('away_name', 'Unknown Away Team'),
+            'home_team': match['home_name'],
+            'away_team': match['away_name'],
             'predicted_outcome': predicted_outcome,
-            'home_odds': float(match.get('odds_ft_1', 1.0)),
-            'draw_odds': float(match.get('odds_ft_x', 1.0)),
-            'away_odds': float(match.get('odds_ft_2', 1.0)),
-            'confidence': confidence,
-            'bet_amount': 1.0,  # Fixed bet amount
-            'prediction_type': 'Match Result',
-            'match_date': match_date.strftime('%Y-%m-%d'),
-            'match_id': str(match.get('id', ''))
+            'confidence': float(confidence),  # Ensure confidence is stored as float
+            'home_odds': match.get('odds_ft_1', 0),
+            'draw_odds': match.get('odds_ft_x', 0),
+            'away_odds': match.get('odds_ft_2', 0),
+            'bet_amount': 10.0,  # Default bet amount
+            'status': 'Pending',
+            'match_id': str(match_id)  # Convert to string but don't generate fallback
         }
         
         # Only store in database if it's today's match
@@ -1174,8 +1177,8 @@ def process_match_prediction(match):
             # Check for existing prediction
             history = PredictionHistory()
             existing_predictions = history.get_predictions(
-                start_date=prediction_data['match_date'],
-                end_date=prediction_data['match_date']
+                start_date=prediction_data['date'],
+                end_date=prediction_data['date']
             )
             
             # Check if prediction already exists for this match
@@ -1184,7 +1187,7 @@ def process_match_prediction(match):
                 match_exists = existing_predictions[
                     (existing_predictions['home_team'] == prediction_data['home_team']) &
                     (existing_predictions['away_team'] == prediction_data['away_team']) &
-                    (existing_predictions['match_date'] == prediction_data['match_date'])
+                    (existing_predictions['date'] == prediction_data['date'])
                 ].shape[0] > 0
             
             # Only add if prediction doesn't exist
