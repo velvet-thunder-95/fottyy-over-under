@@ -277,7 +277,7 @@ class PredictionHistory:
                     # Calculate profit/loss
                     bet_amount = pred[10]  # bet_amount
                     predicted_outcome = pred[5]  # predicted_outcome
-                    actual_outcome = result.get('winner')
+                    actual_outcome = result.get('winner', {}).get('name')
                     
                     if not actual_outcome:
                         logger.warning(f"No winner determined for match {match_id}")

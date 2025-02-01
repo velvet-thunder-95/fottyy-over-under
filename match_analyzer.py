@@ -12,28 +12,36 @@ class MatchAnalyzer:
         
     def get_match_details(self, match_id):
         """Fetch match details from API or local database"""
-        # First get match info from our database
-        match_info = self.fetch_match_data(match_id)
-        if not match_info:
-            print(f"No match found in database with ID {match_id}")
-            return None
-            
-        match_date = datetime.strptime(match_info['match_date'], '%Y-%m-%d')
-        current_date = datetime.now()
-        
-        # For future matches, mark as scheduled
-        if match_date > current_date:
-            print(f"Match {match_id} is scheduled for future")
-            return None
-            
-        # For past matches, try to get data from API
-        url = f"{self.base_url}/match"
-        params = {
-            "key": self.api_key,
-            "match_id": str(match_id)  # Convert to string to be safe
-        }
-        
         try:
+            # First get match info from our database
+            match_info = self.fetch_match_data(match_id)
+            if not match_info:
+                print(f"No match found in database with ID {match_id}")
+                return None
+                
+            match_date = datetime.strptime(match_info['match_date'], '%Y-%m-%d')
+            current_date = datetime.now()
+            
+            # For future matches, mark as scheduled
+            if match_date > current_date:
+                print(f"Match {match_id} is scheduled for future")
+                return {
+                    'status': 'SCHEDULED',
+                    'home_score': None,
+                    'away_score': None,
+                    'winner': None,
+                    'match_date': match_info['match_date'],
+                    'home_team': match_info['home_team'],
+                    'away_team': match_info['away_team']
+                }
+                
+            # For past matches, try to get data from API
+            url = f"{self.base_url}/match"
+            params = {
+                "key": self.api_key,
+                "match_id": str(match_id)  # Convert to string to be safe
+            }
+            
             print(f"Fetching match data from API for match {match_id}")
             print(f"API URL: {url}")
             print(f"API Params: {params}")
@@ -45,11 +53,35 @@ class MatchAnalyzer:
             data = response.json()
             
             if data.get("success") and data.get("data"):
-                return data["data"]
+                api_data = data["data"]
+                
+                # Convert API data to our standard format
+                return {
+                    'status': api_data.get('status', 'UNKNOWN'),
+                    'home_score': api_data.get('home_score'),
+                    'away_score': api_data.get('away_score'),
+                    'match_date': match_info['match_date'],
+                    'home_team': match_info['home_team'],
+                    'away_team': match_info['away_team'],
+                    'homeGoalCount': api_data.get('home_score'),
+                    'awayGoalCount': api_data.get('away_score'),
+                    'odds_ft_1': match_info['home_odds'],
+                    'odds_ft_x': match_info['draw_odds'],
+                    'odds_ft_2': match_info['away_odds']
+                }
             
             print(f"No API data available for match {match_id}")
-            return None
-            
+            # If no API data, use database info
+            return {
+                'status': match_info['status'],
+                'home_score': None,
+                'away_score': None,
+                'winner': match_info['actual_outcome'],
+                'match_date': match_info['match_date'],
+                'home_team': match_info['home_team'],
+                'away_team': match_info['away_team']
+            }
+                
         except Exception as e:
             print(f"Error fetching match details: {str(e)}")
             if hasattr(e, 'response') and hasattr(e.response, 'text'):
@@ -198,11 +230,20 @@ class MatchAnalyzer:
             
             # Determine winner
             if home_goals > away_goals:
-                result['winner'] = "HOME"
+                result['winner'] = {
+                    'name': 'HOME',
+                    'score': home_goals
+                }
             elif away_goals > home_goals:
-                result['winner'] = "AWAY"
+                result['winner'] = {
+                    'name': 'AWAY',
+                    'score': away_goals
+                }
             else:
-                result['winner'] = "DRAW"
+                result['winner'] = {
+                    'name': 'DRAW',
+                    'score': home_goals  # Both scores are equal
+                }
                 
             print(f"Match complete - Winner: {result['winner']}")
             
@@ -602,7 +643,7 @@ def main():
             # Calculate profit/loss
             profit_loss = analyzer.calculate_profit_loss(
                 predicted_outcome, 
-                result['winner'], 
+                result['winner']['name'], 
                 odds
             )
             
@@ -619,7 +660,7 @@ def main():
             if profit_loss is not None:
                 total_profit_loss += profit_loss
                 matches_analyzed += 1
-                if predicted_outcome == result['winner']:
+                if predicted_outcome == result['winner']['name']:
                     correct_predictions += 1
         else:
             print("Failed to fetch match data")
