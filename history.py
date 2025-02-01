@@ -239,18 +239,23 @@ class PredictionHistory:
         c = conn.cursor()
         
         # Get pending predictions
-        c.execute("SELECT * FROM predictions WHERE status IN ('Pending', 'pending')")
+        c.execute("""
+            SELECT * FROM predictions 
+            WHERE status IN ('Pending', 'pending') 
+            AND match_id IS NOT NULL
+        """)
         pending_predictions = c.fetchall()
         logger.info(f"Found {len(pending_predictions)} pending predictions")
         
         for pred in pending_predictions:
             try:
+                pred_id = pred[0]  # prediction id
                 match_id = pred[16]  # match_id
                 if not match_id:
-                    logger.warning(f"Skipping prediction {pred[0]}: No match_id")
+                    logger.warning(f"Skipping prediction {pred_id}: No match_id")
                     continue
                     
-                logger.info(f"Processing match {match_id} for prediction {pred[0]}")
+                logger.info(f"Processing match {match_id} for prediction {pred_id}")
                 
                 # Get match data from analyzer
                 match_data = analyzer.get_match_details(match_id)
@@ -263,16 +268,20 @@ class PredictionHistory:
                 if not result:
                     logger.warning(f"No result data for match {match_id}")
                     continue
-                    
-                match_status = result.get('status', '').lower()
+                
+                match_status = result.get('status', 'UNKNOWN')
                 logger.info(f"Match {match_id} status: {match_status}")
                 
-                # Only update if match is complete (handle different status values)
-                if match_status in ['complete', 'finished', 'completed']:
+                # Only update if match is finished
+                if match_status == 'FINISHED':
                     # Calculate profit/loss
                     bet_amount = pred[10]  # bet_amount
                     predicted_outcome = pred[5]  # predicted_outcome
-                    actual_outcome = result.get('winner', 'Pending')
+                    actual_outcome = result.get('winner')
+                    
+                    if not actual_outcome:
+                        logger.warning(f"No winner determined for match {match_id}")
+                        continue
                     
                     logger.info(f"Match {match_id}: Predicted={predicted_outcome}, Actual={actual_outcome}")
                     
@@ -293,17 +302,19 @@ class PredictionHistory:
                     # Update prediction with result
                     c.execute('''
                         UPDATE predictions 
-                        SET actual_outcome = ?, profit_loss = ?, status = 'Completed'
+                        SET actual_outcome = ?, 
+                            profit_loss = ?, 
+                            status = 'Completed'
                         WHERE id = ?
-                    ''', (actual_outcome, profit, pred[0]))
+                    ''', (actual_outcome, profit, pred_id))
                     
                     conn.commit()
                     logger.info(f"Updated result for match {match_id}: {actual_outcome} (Profit: {profit})")
                 else:
-                    logger.info(f"Match {match_id} not complete, status: {match_status}")
+                    logger.info(f"Match {match_id} not finished, status: {match_status}")
                     
             except Exception as e:
-                logger.error(f"Error updating match result for prediction {pred[0]}: {str(e)}", exc_info=True)
+                logger.error(f"Error updating match result for prediction {pred_id if 'pred_id' in locals() else None}: {str(e)}", exc_info=True)
                 continue
         
         conn.close()

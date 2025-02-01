@@ -150,25 +150,33 @@ class MatchAnalyzer:
             
             # Map various status formats
             status_mapping = {
-                'complete': 'complete',
-                'finished': 'complete',
-                'fulltime': 'complete',
-                'ft': 'complete',
-                'in_progress': 'in_progress',
-                'live': 'in_progress',
-                'pending': 'pending',
-                'scheduled': 'pending',
-                'postponed': 'postponed',
-                'cancelled': 'cancelled'
+                'complete': 'FINISHED',
+                'finished': 'FINISHED',
+                'fulltime': 'FINISHED',
+                'ft': 'FINISHED',
+                'in_progress': 'IN_PROGRESS',
+                'live': 'IN_PROGRESS',
+                'pending': 'SCHEDULED',
+                'scheduled': 'SCHEDULED',
+                'postponed': 'POSTPONED',
+                'cancelled': 'CANCELLED'
             }
             
-            mapped_status = status_mapping.get(status, status)
+            mapped_status = status_mapping.get(status, 'UNKNOWN').upper()
             print(f"Mapped status from '{status}' to '{mapped_status}'")
             
-            # If match is not complete, return early
-            if mapped_status != 'complete':
+            # Initialize result dictionary
+            result = {
+                'status': mapped_status,
+                'home_score': None,
+                'away_score': None,
+                'winner': None
+            }
+            
+            # If match is not finished, return early with current status
+            if mapped_status != 'FINISHED':
                 print(f"Match not complete, status: {mapped_status}")
-                return None, None
+                return result
             
             print("Match complete - analyzing result")
             
@@ -180,43 +188,34 @@ class MatchAnalyzer:
             try:
                 home_goals = int(str(home_goals).strip())
                 away_goals = int(str(away_goals).strip())
+                result['home_score'] = home_goals
+                result['away_score'] = away_goals
             except (ValueError, TypeError) as e:
                 print(f"Error converting goals to int: {e}")
-                return None, None
+                return result
             
             print(f"Goals - Home: {home_goals}, Away: {away_goals}")
             
             # Determine winner
             if home_goals > away_goals:
-                winner = "HOME"
+                result['winner'] = "HOME"
             elif away_goals > home_goals:
-                winner = "AWAY"
+                result['winner'] = "AWAY"
             else:
-                winner = "DRAW"
+                result['winner'] = "DRAW"
                 
-            print(f"Match complete - Winner: {winner}")
+            print(f"Match complete - Winner: {result['winner']}")
             
-            # Create odds dictionary
-            odds = {
-                "home_odds": float(match_data.get('odds_ft_1', 0)),
-                "draw_odds": float(match_data.get('odds_ft_x', 0)),
-                "away_odds": float(match_data.get('odds_ft_2', 0))
-            }
-            
-            # Update match result in database
-            if 'id' in match_data:
-                match_id = str(match_data['id'])
-                predicted_outcome = self.get_prediction(match_id)
-                if predicted_outcome:
-                    profit_loss = self.calculate_profit_loss(predicted_outcome, winner, odds)
-                    self.update_match_result(match_id, winner, profit_loss)
-            
-            return mapped_status, winner
+            return result
             
         except Exception as e:
             print(f"Error analyzing match result: {str(e)}")
-            print(f"Match data: {match_data}")
-            return None, None
+            return {
+                'status': 'ERROR',
+                'home_score': None,
+                'away_score': None,
+                'winner': None
+            }
 
     def get_prediction(self, match_id):
         """Get prediction for a match from database"""
@@ -603,8 +602,8 @@ def main():
             # Calculate profit/loss
             profit_loss = analyzer.calculate_profit_loss(
                 predicted_outcome, 
-                result[1], 
-                result[0]  # Use API odds if available, else DB odds
+                result['winner'], 
+                odds
             )
             
             # Print analysis
@@ -620,7 +619,7 @@ def main():
             if profit_loss is not None:
                 total_profit_loss += profit_loss
                 matches_analyzed += 1
-                if predicted_outcome == result[1]:
+                if predicted_outcome == result['winner']:
                     correct_predictions += 1
         else:
             print("Failed to fetch match data")
