@@ -35,6 +35,7 @@ env/
 # Database
 *.db
 *.sqlite3
+predictions.db
 
 # Logs
 *.log

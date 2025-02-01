@@ -360,8 +360,9 @@ class PredictionHistory:
         
         # Get pending predictions
         c.execute("""
-            SELECT * FROM predictions 
-            WHERE status IN ('Pending', 'pending') 
+            SELECT id, match_id, home_team, away_team, date 
+            FROM predictions 
+            WHERE status = 'Pending' 
             AND match_id IS NOT NULL
         """)
         pending_predictions = c.fetchall()
@@ -369,30 +370,23 @@ class PredictionHistory:
         
         for pred in pending_predictions:
             try:
-                pred_id = pred[0]  # prediction id
-                match_id = pred[16]  # match_id
+                pred_id, match_id, home_team, away_team, match_date = pred
                 if not match_id:
-                    logger.warning(f"Skipping prediction {pred_id}: No match_id")
-                    continue
-                    
-                logger.info(f"Processing match {match_id} for prediction {pred_id}")
-                
-                # Get match data from analyzer
-                match_data = analyzer.get_match_details(match_id)
-                if not match_data:
-                    logger.warning(f"No match data found for match {match_id}")
+                    logger.warning(f"Missing match_id for {home_team} vs {away_team} on {match_date}")
                     continue
                     
                 # Get match result
-                result = analyzer.analyze_match_result(match_data)
+                result = analyzer.analyze_match_result(match_id)
                 if not result:
-                    logger.warning(f"No result data for match {match_id}")
+                    logger.info(f"Match not complete: {home_team} vs {away_team}")
                     continue
-                
+                    
+                # Update the result
                 self.update_match_results(match_id, result)
+                logger.info(f"Updated result for {home_team} vs {away_team}")
                 
             except Exception as e:
-                logger.error(f"Error updating match result for prediction {pred_id if 'pred_id' in locals() else None}: {str(e)}", exc_info=True)
+                logger.error(f"Error updating match: {str(e)}")
                 continue
         
         conn.close()

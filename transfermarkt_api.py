@@ -71,21 +71,12 @@ class TransfermarktAPI:
             "dortmund": "borussia dortmund",
             "bvb": "borussia dortmund",
             "leverkusen": "bayer 04 leverkusen",
+            "bayer leverkusen": "bayer 04 leverkusen",
             "leipzig": "rb leipzig",
-            "rb leipzig": "rasenballsport leipzig",
-            "gladbach": "borussia mönchengladbach",
-            "frankfurt": "eintracht frankfurt",
-            "wolfsburg": "vfl wolfsburg",
-            "stuttgart": "vfb stuttgart",
-            "freiburg": "sc freiburg",
-            "hoffenheim": "tsg 1899 hoffenheim",
-            "tsg hoffenheim": "tsg 1899 hoffenheim",
-            "darmstadt": "sv darmstadt 98",
-            "darmstadt 98": "sv darmstadt 98",
-            "nurnberg": "1. fc nürnberg",
-            "nürnberg": "1. fc nürnberg",
-            "elversberg": "sv elversberg",
-            "sv elversberg": "sv 07 elversberg",
+            "greuther fürth": "spvgg greuther fürth",
+            "greuther furth": "spvgg greuther fürth",
+            "kaiserslautern": "1. fc kaiserslautern",
+            "unterhaching": "spvgg unterhaching",
             
             # Italian Teams
             "milan": "ac milan",
@@ -99,8 +90,10 @@ class TransfermarktAPI:
             "lazio": "lazio rom",
             "ss lazio": "lazio rom",
             "atalanta": "atalanta bergamo",
-            "fiorentina": "ac florenz",
-            "bologna": "fc bologna",
+            "cremonese": "us cremonese",
+            "salernitana": "us salernitana 1919",
+            "bari": "ssc bari",
+            "bari 1908": "ssc bari",
             
             # French Teams
             "psg": "paris saint-germain",
@@ -130,6 +123,8 @@ class TransfermarktAPI:
             "braga": "sc braga",
             "sporting braga": "sc braga",
             "guimaraes": "vitoria guimaraes",
+            "farense": "sc farense",
+            "estrela amadora": "cf estrela da amadora",
             
             # Dutch Teams
             "ajax": "ajax amsterdam",
@@ -147,6 +142,8 @@ class TransfermarktAPI:
             "gent": "kaa gent",
             "genk": "krc genk",
             "standard": "standard lüttich",
+            "sint-truiden": "vv sint-truiden",
+            "sint truiden": "vv sint-truiden",
             
             # Scottish Teams
             "celtic": "celtic glasgow",
@@ -179,6 +176,7 @@ class TransfermarktAPI:
             "trabzonspor": "trabzonspor",
             "bodrumspor": "bb bodrumspor",
             "bb bodrumspor": "bandirmaboluspor",
+            "rizespor": "caykur rizespor",
             
             # Greek Teams
             "paok": "paok thessaloniki",
@@ -186,6 +184,9 @@ class TransfermarktAPI:
             "olympiacos": "olympiakos piräus",
             "panathinaikos": "panathinaikos athen",
             "aek": "aek athen",
+            "levadiakos": "levadiakos fc",
+            "kallithea": "gps kallithea",
+            "panaitolikos": "panetolikos gfs",
             
             # Additional Teams
             "rigas fs": "riga fs",
@@ -231,6 +232,11 @@ class TransfermarktAPI:
             "viktoria plzen": "fc viktoria pilsen",
             "viktoria plzeň": "fc viktoria pilsen",
             "plzen": "fc viktoria pilsen",
+            "slovacko": "1. fc slovacko",
+            "slovácko": "1. fc slovacko",
+            "jablonec": "fk jablonec",
+            "mladá boleslav": "fk mlada boleslav",
+            "mlada boleslav": "fk mlada boleslav",
             
             # Polish Teams
             "legia": "legia warschau",
@@ -245,6 +251,8 @@ class TransfermarktAPI:
             "istra 1961": "nk istra 1961",
             "gorica": "hnk gorica",
             "hnk gorica": "hnk gorica",
+            "lokomotiva zagreb": "nk lokomotiva zagreb",
+            "osijek": "nk osijek",
             
             # Saudi & UAE Teams
             "al orubah": "al-orobah fc",
@@ -309,6 +317,12 @@ class TransfermarktAPI:
             "guingamp": "ea guingamp",
             "schalke 04": "fc schalke 04",
             "schalke": "fc schalke 04",
+            "monterrey": "cf monterrey",
+            "pachuca": "cf pachuca",
+            "atlas": "atlas fc",
+            "necaxa": "club necaxa",
+            "toluca": "deportivo toluca",
+            "guadalajara": "cd guadalajara",
         }
         
         # Set fuzzy matching thresholds

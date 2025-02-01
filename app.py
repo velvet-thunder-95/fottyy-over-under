@@ -364,6 +364,7 @@ def create_match_features_from_api(match_data):
     """Create features DataFrame from match data with error handling"""
     try:
         features = {}
+        logger = logging.getLogger(__name__)
 
         # First add features in the exact order they were used during training
         feature_order = [
@@ -383,25 +384,42 @@ def create_match_features_from_api(match_data):
             'implied_home_prob', 'implied_draw_prob', 'implied_away_prob'
         ]
 
-        # Basic features
-        features['season'] = int(match_data['season'].split('/')[0])
-        features['competition_id'] = match_data['competition_id']
+        # Basic features with safe defaults
+        try:
+            features['season'] = int(match_data.get('season', '2024/2025').split('/')[0])
+        except (ValueError, AttributeError):
+            features['season'] = 2024
+            
+        features['competition_id'] = int(match_data.get('competition_id', 0))
         
         # Match counts and form using completed matches - ensure minimum of 1
-        features['home_total_matches'] = max(1, match_data.get('matches_completed_minimum', 1))
-        features['away_total_matches'] = max(1, match_data.get('matches_completed_minimum', 1))
+        features['home_total_matches'] = max(1, float(match_data.get('matches_completed_minimum', 1)))
+        features['away_total_matches'] = max(1, float(match_data.get('matches_completed_minimum', 1)))
         
         # Win rates - use pre-match PPG with default values
-        home_ppg = max(0.1, match_data.get('pre_match_teamA_overall_ppg', 1.0))
-        away_ppg = max(0.1, match_data.get('pre_match_teamB_overall_ppg', 1.0))
+        try:
+            home_ppg = max(0.1, float(match_data.get('pre_match_teamA_overall_ppg', 1.0)))
+            away_ppg = max(0.1, float(match_data.get('pre_match_teamB_overall_ppg', 1.0)))
+        except (ValueError, TypeError):
+            logger.warning("Invalid PPG values, using defaults")
+            home_ppg = 1.0
+            away_ppg = 1.0
+            
         features['home_win_rate'] = home_ppg / 3.0
         features['away_win_rate'] = away_ppg / 3.0
         
         # Adjust win rates based on home/away specific PPG with safe division
-        home_ppg_specific = max(0.1, match_data.get('pre_match_home_ppg', home_ppg))
-        away_ppg_specific = max(0.1, match_data.get('pre_match_away_ppg', away_ppg))
-        home_ppg_ratio = home_ppg_specific / home_ppg
-        away_ppg_ratio = away_ppg_specific / away_ppg
+        try:
+            home_ppg_specific = max(0.1, float(match_data.get('pre_match_home_ppg', home_ppg)))
+            away_ppg_specific = max(0.1, float(match_data.get('pre_match_away_ppg', away_ppg)))
+            home_ppg_ratio = home_ppg_specific / home_ppg if home_ppg > 0 else 1.0
+            away_ppg_ratio = away_ppg_specific / away_ppg if away_ppg > 0 else 1.0
+        except (ValueError, TypeError):
+            logger.warning("Invalid specific PPG values, using defaults")
+            home_ppg_specific = home_ppg
+            away_ppg_specific = away_ppg
+            home_ppg_ratio = 1.0
+            away_ppg_ratio = 1.0
         
         features['home_win_rate'] *= max(0.5, min(1.5, home_ppg_ratio))
         features['away_win_rate'] *= max(0.5, min(1.5, away_ppg_ratio))
@@ -411,13 +429,23 @@ def create_match_features_from_api(match_data):
         features['away_form_points'] = away_ppg_specific
         
         # Use potential metrics with safe defaults
-        goal_potential = max(0.1, match_data.get('o25_potential', 50)) / 100.0
-        corner_potential = max(1.0, match_data.get('corners_potential', 10)) / 10.0
+        try:
+            goal_potential = max(0.1, float(match_data.get('o25_potential', 50))) / 100.0
+            corner_potential = max(1.0, float(match_data.get('corners_potential', 10))) / 10.0
+        except (ValueError, TypeError):
+            logger.warning("Invalid potential values, using defaults")
+            goal_potential = 0.5
+            corner_potential = 1.0
         
         # Shot statistics based on xG and potential metrics
         avg_shots_ratio = 12  # Average shots per expected goal
-        home_xg = max(0.1, match_data.get('team_a_xg_prematch', 1.0))
-        away_xg = max(0.1, match_data.get('team_b_xg_prematch', 1.0))
+        try:
+            home_xg = max(0.1, float(match_data.get('team_a_xg_prematch', 1.0)))
+            away_xg = max(0.1, float(match_data.get('team_b_xg_prematch', 1.0)))
+        except (ValueError, TypeError):
+            logger.warning("Invalid xG values, using defaults")
+            home_xg = 1.0
+            away_xg = 1.0
         
         features['home_shots'] = max(1, int(home_xg * avg_shots_ratio * goal_potential))
         features['away_shots'] = max(1, int(away_xg * avg_shots_ratio * goal_potential))
@@ -425,8 +453,13 @@ def create_match_features_from_api(match_data):
         features['away_shots_on_target'] = max(1, int(features['away_shots'] * 0.4))
         
         # Corner predictions using corner odds and potential
-        corner_odds_home = max(0.1, float(match_data.get('odds_corners_1', 2.0)))
-        corner_odds_away = max(0.1, float(match_data.get('odds_corners_2', 2.0)))
+        try:
+            corner_odds_home = max(0.1, float(match_data.get('odds_corners_1', 2.0)))
+            corner_odds_away = max(0.1, float(match_data.get('odds_corners_2', 2.0)))
+        except (ValueError, TypeError):
+            logger.warning("Invalid corner odds, using defaults")
+            corner_odds_home = 2.0
+            corner_odds_away = 2.0
         
         # Default corner predictions with safe values
         if corner_odds_home <= 0.1 or corner_odds_away <= 0.1:
@@ -438,13 +471,23 @@ def create_match_features_from_api(match_data):
             features['away_corners'] = max(1, int(corner_potential * (5 + 1/corner_odds_ratio)))
         
         # Fouls based on cards potential with safe defaults
-        cards_potential = max(1.0, match_data.get('cards_potential', 3.75))
+        try:
+            cards_potential = max(1.0, float(match_data.get('cards_potential', 3.75)))
+        except (ValueError, TypeError):
+            logger.warning("Invalid cards potential, using default")
+            cards_potential = 3.75
+            
         features['home_fouls'] = max(1, int(10 * cards_potential / 3.75))
         features['away_fouls'] = max(1, int(10 * cards_potential / 3.75))
         
         # Possession based on team strength and BTTS potential
-        btts_potential = max(0.1, match_data.get('btts_potential', 50)) / 100.0
-        strength_ratio = features['home_win_rate'] / features['away_win_rate']
+        try:
+            btts_potential = max(0.1, float(match_data.get('btts_potential', 50))) / 100.0
+        except (ValueError, TypeError):
+            logger.warning("Invalid BTTS potential, using default")
+            btts_potential = 0.5
+            
+        strength_ratio = features['home_win_rate'] / max(0.1, features['away_win_rate'])
         base_possession = 50.0
         possession_adjustment = min(15, max(-15, 10 * (strength_ratio - 1) * btts_potential))
         features['home_possession'] = max(35, min(65, base_possession + possession_adjustment))
@@ -454,7 +497,7 @@ def create_match_features_from_api(match_data):
         features['home_xg'] = home_xg
         features['away_xg'] = away_xg
         
-        # Shot accuracy
+        # Shot accuracy with safe division
         features['shot_accuracy_home'] = features['home_shots_on_target'] / max(1, features['home_shots'])
         features['shot_accuracy_away'] = features['away_shots_on_target'] / max(1, features['away_shots'])
         
@@ -466,9 +509,15 @@ def create_match_features_from_api(match_data):
         features['away_momentum'] = features['away_form_points'] / 3.0
         
         # Odds and implied probabilities with safe defaults
-        odds_home = max(1.1, float(match_data.get('odds_ft_1', 2.0)))
-        odds_draw = max(1.1, float(match_data.get('odds_ft_x', 3.0)))
-        odds_away = max(1.1, float(match_data.get('odds_ft_2', 2.0)))
+        try:
+            odds_home = max(1.1, float(match_data.get('odds_ft_1', 2.0)))
+            odds_draw = max(1.1, float(match_data.get('odds_ft_x', 3.0)))
+            odds_away = max(1.1, float(match_data.get('odds_ft_2', 2.0)))
+        except (ValueError, TypeError):
+            logger.warning("Invalid odds values, using defaults")
+            odds_home = 2.0
+            odds_draw = 3.0
+            odds_away = 2.0
         
         features['odds_home_win'] = odds_home
         features['odds_draw'] = odds_draw
@@ -476,9 +525,15 @@ def create_match_features_from_api(match_data):
         
         # Calculate implied probabilities with margin adjustment
         total_prob = (1/odds_home + 1/odds_draw + 1/odds_away)
-        features['implied_home_prob'] = (1/odds_home) / total_prob
-        features['implied_draw_prob'] = (1/odds_draw) / total_prob
-        features['implied_away_prob'] = (1/odds_away) / total_prob
+        if total_prob > 0:
+            features['implied_home_prob'] = (1/odds_home) / total_prob
+            features['implied_draw_prob'] = (1/odds_draw) / total_prob
+            features['implied_away_prob'] = (1/odds_away) / total_prob
+        else:
+            logger.warning("Invalid total probability, using default distribution")
+            features['implied_home_prob'] = 0.4
+            features['implied_draw_prob'] = 0.25
+            features['implied_away_prob'] = 0.35
         
         # Add derived features in the same order as training
         features['form_difference'] = features['home_form_points'] - features['away_form_points']
@@ -488,24 +543,18 @@ def create_match_features_from_api(match_data):
         features['xg_difference'] = features['home_xg'] - features['away_xg']
         features['total_momentum'] = features['home_momentum'] + features['away_momentum']
         features['momentum_difference'] = features['home_momentum'] - features['away_momentum']
-        features['odds_ratio'] = features['odds_home_win'] / features['odds_away_win']
-        features['implied_prob_sum'] = total_prob
-
-        # Convert to DataFrame
+        features['odds_ratio'] = features['odds_home_win'] / max(0.1, features['odds_away_win'])
+        features['implied_prob_sum'] = features['implied_home_prob'] + features['implied_draw_prob'] + features['implied_away_prob']
+        
+        # Convert to DataFrame with proper feature order
         df = pd.DataFrame([features])
-        
-        # Ensure all values are numeric
-        for col in df.columns:
-            df[col] = pd.to_numeric(df[col], errors='coerce')
-        
-        # Fill any NaN values with 0
-        df = df.fillna(0)
+        df = df[feature_order]  # Ensure columns are in the correct order
         
         return df
         
     except Exception as e:
-        logger.error(f"Error creating features: {str(e)}")
-        raise ValueError(f"Failed to create features: {str(e)}")
+        logger.error(f"Error in create_match_features_from_api: {str(e)}")
+        raise
 
 def adjust_probabilities(home_prob, draw_prob, away_prob, match_data):
     """Adjust probabilities based on odds and team strengths. Input and output are decimals (0-1)"""
@@ -1042,34 +1091,52 @@ def get_match_prediction(match_data):
         logger.info(f"Match data: {match_data}")
         
         if predictor is None:
-            raise ValueError("Model not loaded properly")
+            logger.error("Model not loaded properly")
+            return 0.4, 0.25, 0.35  # Return reasonable defaults
             
         # Create features DataFrame
-        features_df = create_match_features_from_api(match_data)
+        try:
+            features_df = create_match_features_from_api(match_data)
+        except Exception as e:
+            logger.error(f"Error creating features: {str(e)}")
+            return 0.4, 0.25, 0.35  # Return reasonable defaults if feature creation fails
         
         # Convert DataFrame to DMatrix
-        dmatrix = xgb.DMatrix(features_df)
-        
+        try:
+            dmatrix = xgb.DMatrix(features_df)
+        except Exception as e:
+            logger.error(f"Error creating DMatrix: {str(e)}")
+            return 0.4, 0.25, 0.35
+
         # Make prediction using DMatrix
-        probabilities = predictor.predict(dmatrix)
+        try:
+            probabilities = predictor.predict(dmatrix)
+        except Exception as e:
+            logger.error(f"Error making prediction: {str(e)}")
+            return 0.4, 0.25, 0.35
         
         # If the model outputs a single probability, convert it to three probabilities
         if len(probabilities.shape) == 1:
             home_prob = probabilities[0]
             
             # Get odds with safe defaults
-            odds_1 = match_data.get('odds_ft_1', 0)
-            odds_x = match_data.get('odds_ft_x', 0)
-            odds_2 = match_data.get('odds_ft_2', 0)
+            odds_1 = float(match_data.get('odds_ft_1', 2.0))
+            odds_x = float(match_data.get('odds_ft_x', 3.0))
+            odds_2 = float(match_data.get('odds_ft_2', 2.0))
             
-            # If no odds available, use model probabilities directly
-            if odds_1 <= 0 or odds_x <= 0 or odds_2 <= 0:
+            # Ensure odds are valid positive numbers
+            odds_1 = max(1.1, odds_1)
+            odds_x = max(1.1, odds_x)
+            odds_2 = max(1.1, odds_2)
+            
+            # Calculate implied probabilities with margin adjustment
+            total_prob = (1/odds_1 + 1/odds_x + 1/odds_2)
+            if total_prob > 0:
+                draw_prob = (1/odds_x) / total_prob
+                away_prob = (1/odds_2) / total_prob
+            else:
                 draw_prob = 0.25  # Default draw probability
                 away_prob = (1 - home_prob) * 0.75  # Remaining split between home/away
-            else:
-                odds_total = (1/odds_1 + 1/odds_x + 1/odds_2)
-                draw_prob = (1/odds_x) / odds_total
-                away_prob = (1/odds_2) / odds_total
         else:
             home_prob = probabilities[0][0]
             draw_prob = probabilities[0][1]
@@ -1089,14 +1156,19 @@ def get_match_prediction(match_data):
             draw_prob /= total
             away_prob /= total
         else:
+            logger.warning("Zero total probability, using defaults")
             home_prob = 0.4
             draw_prob = 0.25
             away_prob = 0.35
         
         # Adjust probabilities based on odds and team strengths
-        home_prob, draw_prob, away_prob = adjust_probabilities(
-            home_prob, draw_prob, away_prob, match_data
-        )
+        try:
+            home_prob, draw_prob, away_prob = adjust_probabilities(
+                home_prob, draw_prob, away_prob, match_data
+            )
+        except Exception as e:
+            logger.error(f"Error adjusting probabilities: {str(e)}")
+            # If adjustment fails, keep the normalized probabilities
         
         return home_prob, draw_prob, away_prob
         
