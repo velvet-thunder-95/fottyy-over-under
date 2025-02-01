@@ -387,103 +387,99 @@ def create_match_features_from_api(match_data):
         features['season'] = int(match_data['season'].split('/')[0])
         features['competition_id'] = match_data['competition_id']
         
-        # Match counts and form using completed matches
+        # Match counts and form using completed matches - ensure minimum of 1
         features['home_total_matches'] = max(1, match_data.get('matches_completed_minimum', 1))
         features['away_total_matches'] = max(1, match_data.get('matches_completed_minimum', 1))
         
-        # Win rates - use pre-match PPG and adjust based on home/away performance
-        features['home_win_rate'] = match_data.get('pre_match_teamA_overall_ppg', 0) / 3.0
-        features['away_win_rate'] = match_data.get('pre_match_teamB_overall_ppg', 0) / 3.0
+        # Win rates - use pre-match PPG with default values
+        home_ppg = max(0.1, match_data.get('pre_match_teamA_overall_ppg', 1.0))
+        away_ppg = max(0.1, match_data.get('pre_match_teamB_overall_ppg', 1.0))
+        features['home_win_rate'] = home_ppg / 3.0
+        features['away_win_rate'] = away_ppg / 3.0
         
-        # Adjust win rates based on home/away specific PPG
-        home_ppg_ratio = match_data.get('pre_match_home_ppg', 0) / max(0.1, match_data.get('pre_match_teamA_overall_ppg', 1))
-        away_ppg_ratio = match_data.get('pre_match_away_ppg', 0) / max(0.1, match_data.get('pre_match_teamB_overall_ppg', 1))
+        # Adjust win rates based on home/away specific PPG with safe division
+        home_ppg_specific = max(0.1, match_data.get('pre_match_home_ppg', home_ppg))
+        away_ppg_specific = max(0.1, match_data.get('pre_match_away_ppg', away_ppg))
+        home_ppg_ratio = home_ppg_specific / home_ppg
+        away_ppg_ratio = away_ppg_specific / away_ppg
+        
         features['home_win_rate'] *= max(0.5, min(1.5, home_ppg_ratio))
         features['away_win_rate'] *= max(0.5, min(1.5, away_ppg_ratio))
         
         # Form points with home/away adjustment
-        features['home_form_points'] = match_data.get('pre_match_home_ppg', features['home_win_rate'] * 3)
-        features['away_form_points'] = match_data.get('pre_match_away_ppg', features['away_win_rate'] * 3)
+        features['home_form_points'] = home_ppg_specific
+        features['away_form_points'] = away_ppg_specific
         
-        # Use potential metrics to estimate match stats
-        goal_potential = match_data.get('o25_potential', 50) / 100.0
-        corner_potential = match_data.get('corners_potential', 10) / 10.0
+        # Use potential metrics with safe defaults
+        goal_potential = max(0.1, match_data.get('o25_potential', 50)) / 100.0
+        corner_potential = max(1.0, match_data.get('corners_potential', 10)) / 10.0
         
         # Shot statistics based on xG and potential metrics
         avg_shots_ratio = 12  # Average shots per expected goal
-        home_xg = match_data.get('team_a_xg_prematch', 1.5)
-        away_xg = match_data.get('team_b_xg_prematch', 1.5)
+        home_xg = max(0.1, match_data.get('team_a_xg_prematch', 1.0))
+        away_xg = max(0.1, match_data.get('team_b_xg_prematch', 1.0))
         
-        features['home_shots'] = int(home_xg * avg_shots_ratio * goal_potential)
-        features['away_shots'] = int(away_xg * avg_shots_ratio * goal_potential)
-        features['home_shots_on_target'] = int(features['home_shots'] * 0.4)  # Typical shot accuracy
-        features['away_shots_on_target'] = int(features['away_shots'] * 0.4)
+        features['home_shots'] = max(1, int(home_xg * avg_shots_ratio * goal_potential))
+        features['away_shots'] = max(1, int(away_xg * avg_shots_ratio * goal_potential))
+        features['home_shots_on_target'] = max(1, int(features['home_shots'] * 0.4))
+        features['away_shots_on_target'] = max(1, int(features['away_shots'] * 0.4))
         
         # Corner predictions using corner odds and potential
-        corner_odds_home = float(match_data.get('odds_corners_1', 0))
-        corner_odds_away = float(match_data.get('odds_corners_2', 0))
+        corner_odds_home = max(0.1, float(match_data.get('odds_corners_1', 2.0)))
+        corner_odds_away = max(0.1, float(match_data.get('odds_corners_2', 2.0)))
         
-        # Default corner predictions if odds not available
-        if corner_odds_home == 0 or corner_odds_away == 0:
-            features['home_corners'] = int(corner_potential * 5)  # Default distribution
-            features['away_corners'] = int(corner_potential * 5)
+        # Default corner predictions with safe values
+        if corner_odds_home <= 0.1 or corner_odds_away <= 0.1:
+            features['home_corners'] = max(1, int(corner_potential * 5))
+            features['away_corners'] = max(1, int(corner_potential * 5))
         else:
             corner_odds_ratio = corner_odds_home / corner_odds_away
-            features['home_corners'] = int(corner_potential * (5 + corner_odds_ratio))
-            features['away_corners'] = int(corner_potential * (5 + 1/corner_odds_ratio))
+            features['home_corners'] = max(1, int(corner_potential * (5 + corner_odds_ratio)))
+            features['away_corners'] = max(1, int(corner_potential * (5 + 1/corner_odds_ratio)))
         
-        # Fouls based on cards potential
-        cards_potential = match_data.get('cards_potential', 3.75)
-        features['home_fouls'] = int(10 * cards_potential / 3.75)
-        features['away_fouls'] = int(10 * cards_potential / 3.75)
+        # Fouls based on cards potential with safe defaults
+        cards_potential = max(1.0, match_data.get('cards_potential', 3.75))
+        features['home_fouls'] = max(1, int(10 * cards_potential / 3.75))
+        features['away_fouls'] = max(1, int(10 * cards_potential / 3.75))
         
         # Possession based on team strength and BTTS potential
-        btts_potential = match_data.get('btts_potential', 50) / 100.0
-        strength_ratio = features['home_win_rate'] / max(0.1, features['away_win_rate'])
-        features['home_possession'] = 50 * (1 + 0.2 * (strength_ratio - 1) * btts_potential)
+        btts_potential = max(0.1, match_data.get('btts_potential', 50)) / 100.0
+        strength_ratio = features['home_win_rate'] / features['away_win_rate']
+        base_possession = 50.0
+        possession_adjustment = min(15, max(-15, 10 * (strength_ratio - 1) * btts_potential))
+        features['home_possession'] = max(35, min(65, base_possession + possession_adjustment))
         features['away_possession'] = 100 - features['home_possession']
         
-        # Expected goals - use prematch xG and adjust by potential
-        features['home_xg'] = match_data['team_a_xg_prematch'] * goal_potential
-        features['away_xg'] = match_data['team_b_xg_prematch'] * goal_potential
+        # Expected goals - use prematch xG with safe defaults
+        features['home_xg'] = home_xg
+        features['away_xg'] = away_xg
         
-        # Shot accuracy with better handling of edge cases
+        # Shot accuracy
         features['shot_accuracy_home'] = features['home_shots_on_target'] / max(1, features['home_shots'])
         features['shot_accuracy_away'] = features['away_shots_on_target'] / max(1, features['away_shots'])
         
-        # Advanced metrics using potential data
-        o15_potential = match_data.get('o15_potential', 70) / 100.0
-        o35_potential = match_data.get('o35_potential', 40) / 100.0
+        # Team strength ratios with safe division
+        features['home_win_rate_ratio'] = features['home_win_rate'] / max(0.1, features['away_win_rate'])
         
-        # Calculate momentum features with potential adjustments
-        features['home_win_rate_ratio'] = features['home_win_rate'] / max(0.001, features['away_win_rate'])
-        features['home_momentum'] = features['home_form_points'] * features['home_win_rate'] * o15_potential
-        features['away_momentum'] = features['away_form_points'] * features['away_win_rate'] * o15_potential
+        # Momentum based on recent form
+        features['home_momentum'] = features['home_form_points'] / 3.0
+        features['away_momentum'] = features['away_form_points'] / 3.0
         
-        # Odds and probabilities with margin adjustment
-        features['odds_home_win'] = match_data.get('odds_ft_1', 0)
-        features['odds_draw'] = match_data.get('odds_ft_x', 0)
-        features['odds_away_win'] = match_data.get('odds_ft_2', 0)
+        # Odds and implied probabilities with safe defaults
+        odds_home = max(1.1, float(match_data.get('odds_ft_1', 2.0)))
+        odds_draw = max(1.1, float(match_data.get('odds_ft_x', 3.0)))
+        odds_away = max(1.1, float(match_data.get('odds_ft_2', 2.0)))
         
-        # Calculate implied probabilities with dynamic margin based on league level
-        margin = 1.07 - (0.02 * (match_data.get('competition_id', 0) % 3))  # Adjust margin by competition level
-        raw_home_prob = 1 / features['odds_home_win']
-        raw_draw_prob = 1 / features['odds_draw']
-        raw_away_prob = 1 / features['odds_away_win']
-        total_prob = raw_home_prob + raw_draw_prob + raw_away_prob
+        features['odds_home_win'] = odds_home
+        features['odds_draw'] = odds_draw
+        features['odds_away_win'] = odds_away
         
-        # Adjust probabilities using BTTS and over/under potential
-        btts_factor = btts_potential * o35_potential
-        features['implied_home_prob'] = (raw_home_prob / (total_prob * margin)) * (1 + 0.1 * btts_factor)
-        features['implied_draw_prob'] = (raw_draw_prob / (total_prob * margin)) * (1 - 0.1 * btts_factor)
-        features['implied_away_prob'] = (raw_away_prob / (total_prob * margin)) * (1 + 0.1 * btts_factor)
+        # Calculate implied probabilities with margin adjustment
+        total_prob = (1/odds_home + 1/odds_draw + 1/odds_away)
+        features['implied_home_prob'] = (1/odds_home) / total_prob
+        features['implied_draw_prob'] = (1/odds_draw) / total_prob
+        features['implied_away_prob'] = (1/odds_away) / total_prob
         
-        # Normalize probabilities
-        prob_sum = features['implied_home_prob'] + features['implied_draw_prob'] + features['implied_away_prob']
-        features['implied_home_prob'] /= prob_sum
-        features['implied_draw_prob'] /= prob_sum
-        features['implied_away_prob'] /= prob_sum
-
         # Add derived features in the same order as training
         features['form_difference'] = features['home_form_points'] - features['away_form_points']
         features['win_rate_difference'] = features['home_win_rate'] - features['away_win_rate']
@@ -493,7 +489,7 @@ def create_match_features_from_api(match_data):
         features['total_momentum'] = features['home_momentum'] + features['away_momentum']
         features['momentum_difference'] = features['home_momentum'] - features['away_momentum']
         features['odds_ratio'] = features['odds_home_win'] / features['odds_away_win']
-        features['implied_prob_sum'] = prob_sum
+        features['implied_prob_sum'] = total_prob
 
         # Convert to DataFrame
         df = pd.DataFrame([features])
@@ -788,6 +784,71 @@ def display_probability_bars(home_prob, draw_prob, away_prob, home_team, away_te
         </div>
     """, unsafe_allow_html=True)
 
+def display_market_values(home_team, away_team):
+    """Display market values for both teams in a styled box"""
+    try:
+        api = TransfermarktAPI(max_workers=20)  # Increased to 20 worker threads for better parallelization
+        market_values = api.get_both_teams_market_value(home_team, away_team)
+        
+        st.markdown(f"""
+            <div style="
+                background-color: #f8fafc;
+                border: 2px solid #64748b;
+                border-radius: 8px;
+                padding: 16px;
+                margin: 12px 0;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <h4 style="
+                    color: #334155;
+                    margin: 0 0 12px 0;
+                    font-size: 1.1rem;
+                    font-weight: 600;">
+                    Team Market Values
+                </h4>
+                <div style="
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-top: 8px;">
+                    <div>
+                        <span style="color: #64748b; font-size: 0.9rem;">Home Team:</span>
+                        <span style="
+                            color: #0f172a;
+                            font-weight: 600;
+                            font-size: 1.1rem;
+                            margin-left: 8px;">
+                            €{market_values['home_market_value']:,.0f}
+                        </span>
+                    </div>
+                    <div>
+                        <span style="color: #64748b; font-size: 0.9rem;">Away Team:</span>
+                        <span style="
+                            color: #0f172a;
+                            font-weight: 600;
+                            font-size: 1.1rem;
+                            margin-left: 8px;">
+                            €{market_values['away_market_value']:,.0f}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+    except Exception as e:
+        st.warning("Market values not available")
+        logging.error(f"Error displaying market values: {str(e)}")
+
+@st.cache_data(ttl=3600)  # Cache for 1 hour
+def get_market_values(home_team, away_team):
+    """Get market values for both teams with caching"""
+    api = TransfermarktAPI(max_workers=20)  # Increased to 20 worker threads for better parallelization
+    return api.get_both_teams_market_value(home_team, away_team)
+
+@st.cache_data(ttl=3600)  # Cache for 1 hour
+def get_multiple_market_values(teams):
+    """Get market values for multiple teams with caching"""
+    api = TransfermarktAPI(max_workers=20)  # Increased to 20 worker threads for better parallelization
+    return api.get_multiple_teams_market_value(teams)
+
 def display_match_odds(match_data):
     """Display FootyStats match odds in an organized box."""
     st.markdown("""
@@ -841,7 +902,7 @@ def display_match_odds(match_data):
                 margin: 0 10px;
                 padding: 15px;
                 border-radius: 8px;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             }
         </style>
     """, unsafe_allow_html=True)
@@ -995,18 +1056,44 @@ def get_match_prediction(match_data):
         # If the model outputs a single probability, convert it to three probabilities
         if len(probabilities.shape) == 1:
             home_prob = probabilities[0]
-            odds_total = (1/match_data.get('odds_ft_1', 3.0) + 
-                         1/match_data.get('odds_ft_x', 3.0) + 
-                         1/match_data.get('odds_ft_2', 3.0))
-            draw_prob = (1/match_data.get('odds_ft_x', 3.0)) / odds_total
-            away_prob = (1/match_data.get('odds_ft_2', 3.0)) / odds_total
+            
+            # Get odds with safe defaults
+            odds_1 = match_data.get('odds_ft_1', 0)
+            odds_x = match_data.get('odds_ft_x', 0)
+            odds_2 = match_data.get('odds_ft_2', 0)
+            
+            # If no odds available, use model probabilities directly
+            if odds_1 <= 0 or odds_x <= 0 or odds_2 <= 0:
+                draw_prob = 0.25  # Default draw probability
+                away_prob = (1 - home_prob) * 0.75  # Remaining split between home/away
+            else:
+                odds_total = (1/odds_1 + 1/odds_x + 1/odds_2)
+                draw_prob = (1/odds_x) / odds_total
+                away_prob = (1/odds_2) / odds_total
         else:
             home_prob = probabilities[0][0]
             draw_prob = probabilities[0][1]
             away_prob = probabilities[0][2]
         
+        # Ensure probabilities are valid
+        if not all(0 <= p <= 1 for p in [home_prob, draw_prob, away_prob]):
+            logger.warning("Invalid probability values, using defaults")
+            home_prob = 0.4
+            draw_prob = 0.25
+            away_prob = 0.35
+            
+        # Normalize probabilities to sum to 1
+        total = home_prob + draw_prob + away_prob
+        if total > 0:
+            home_prob /= total
+            draw_prob /= total
+            away_prob /= total
+        else:
+            home_prob = 0.4
+            draw_prob = 0.25
+            away_prob = 0.35
+        
         # Adjust probabilities based on odds and team strengths
-        # Note: adjust_probabilities handles decimal conversion
         home_prob, draw_prob, away_prob = adjust_probabilities(
             home_prob, draw_prob, away_prob, match_data
         )
@@ -1015,7 +1102,7 @@ def get_match_prediction(match_data):
         
     except Exception as e:
         logger.error(f"Error in get_match_prediction: {str(e)}")
-        return None, None, None
+        return 0.4, 0.25, 0.35  # Return reasonable defaults instead of None
 
 def normalize_probabilities(probs):
     """Normalize probabilities to sum to 100"""
@@ -1200,82 +1287,39 @@ def process_match_prediction(match):
         logger.error(f"Error in process_match_prediction: {str(e)}")
         return None, None
 
-def display_market_values(home_team, away_team):
-    """Display market values for both teams in a styled box"""
-    try:
-        api = TransfermarktAPI(max_workers=20)  # Increased to 20 worker threads for better parallelization
-        market_values = api.get_both_teams_market_value(home_team, away_team)
-        
-        st.markdown(f"""
-            <div style="
-                background-color: #f8fafc;
-                border: 2px solid #64748b;
-                border-radius: 8px;
-                padding: 16px;
-                margin: 12px 0;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                <h4 style="
-                    color: #334155;
-                    margin: 0 0 12px 0;
-                    font-size: 1.1rem;
-                    font-weight: 600;">
-                    Team Market Values
-                </h4>
-                <div style="
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    margin-top: 8px;">
-                    <div>
-                        <span style="color: #64748b; font-size: 0.9rem;">Home Team:</span>
-                        <span style="
-                            color: #0f172a;
-                            font-weight: 600;
-                            font-size: 1.1rem;
-                            margin-left: 8px;">
-                            €{market_values['home_market_value']:,.0f}
-                        </span>
-                    </div>
-                    <div>
-                        <span style="color: #64748b; font-size: 0.9rem;">Away Team:</span>
-                        <span style="
-                            color: #0f172a;
-                            font-weight: 600;
-                            font-size: 1.1rem;
-                            margin-left: 8px;">
-                            €{market_values['away_market_value']:,.0f}
-                        </span>
-                    </div>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
-    except Exception as e:
-        st.warning("Market values not available")
-        logging.error(f"Error displaying market values: {str(e)}")
-
-@st.cache_data(ttl=3600)  # Cache for 1 hour
-def get_market_values(home_team, away_team):
-    """Get market values for both teams with caching"""
-    api = TransfermarktAPI(max_workers=20)  # Increased to 20 worker threads for better parallelization
-    return api.get_both_teams_market_value(home_team, away_team)
-
-@st.cache_data(ttl=3600)  # Cache for 1 hour
-def get_multiple_market_values(teams):
-    """Get market values for multiple teams with caching"""
-    api = TransfermarktAPI(max_workers=20)  # Increased to 20 worker threads for better parallelization
-    return api.get_multiple_teams_market_value(teams)
-
 def display_match_details(match, prediction_data, confidence):
     """Display match details, prediction, and odds"""
     try:
-        # Display league name and prediction
-        st.markdown(f"### {prediction_data['league']}")
-        prediction = f"{match.get('home_name', '')} vs {match.get('away_name', '')} - {prediction_data['predicted_outcome']}"
-        display_prediction(prediction, confidence)
+        # Handle case where prediction_data is None
+        if prediction_data is None:
+            logger.warning("No prediction data available")
+            st.warning("Unable to display match details - prediction data not available")
+            return
+            
+        # Get league name with fallback
+        league_name = prediction_data.get('league')
+        if not league_name:
+            league_name = get_league_name(match)
+        if not league_name:
+            league_name = extract_league_name(match.get('match_url', ''))
+        if not league_name:
+            league_name = "Unknown League"
+            
+        st.markdown(f"### {league_name}")
+        
+        # Get team names with fallbacks
+        home_team = match.get('home_name', 'Home Team')
+        away_team = match.get('away_name', 'Away Team')
+        
+        prediction = f"{home_team} vs {away_team} - {prediction_data.get('predicted_outcome', 'No Prediction')}"
+        display_prediction(prediction, confidence or 0)
         
         # Display market values
-        display_market_values(match.get('home_name', ''), match.get('away_name', ''))
-
+        try:
+            display_market_values(home_team, away_team)
+        except Exception as e:
+            logger.error(f"Error displaying market values: {str(e)}")
+            
         # Display date and kickoff time
         try:
             match_date = datetime.fromtimestamp(match['date_unix'], pytz.UTC).date()
@@ -1283,42 +1327,36 @@ def display_match_details(match, prediction_data, confidence):
             kickoff = match.get('kickoff', '')
             if kickoff:
                 cet_time = convert_to_cet(kickoff)
-                st.markdown(f"""
-                    <div style="display: inline-block;
-                                background-color: #f0f9ff;
-                                border: 2px solid #0ea5e9;
-                                border-radius: 8px;
-                                padding: 10px 16px;
-                                margin: 12px 0;
-                                font-family: 'SF Mono', monospace;
-                                font-size: 0.95rem;
-                                font-weight: 500;
-                                color: #0369a1;
-                                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
-                        📅 {match_date_str} &nbsp;|&nbsp; 🕒 {cet_time}
-                    </div>
-                """, unsafe_allow_html=True)
-        except Exception as date_error:
-            logger.error(f"Error processing match date: {str(date_error)}")
-            st.warning("Match date information unavailable")
-        
+                if cet_time:
+                    st.markdown(f"**Kickoff:** {match_date_str} {cet_time}")
+                else:
+                    st.markdown(f"**Date:** {match_date_str}")
+        except Exception as e:
+            logger.error(f"Error displaying date/time: {str(e)}")
+            
         # Display probability bars
-        display_probability_bars(
-            match.get('home_prob', 0), 
-            match.get('draw_prob', 0), 
-            match.get('away_prob', 0), 
-            match.get('home_name', ''), 
-            match.get('away_name', '')
-        )
-        
-        # Display match odds
-        display_match_odds(match)
-        
+        try:
+            display_probability_bars(
+                match.get('home_prob', 0), 
+                match.get('draw_prob', 0), 
+                match.get('away_prob', 0), 
+                home_team,
+                away_team
+            )
+        except Exception as e:
+            logger.error(f"Error displaying probability bars: {str(e)}")
+            
+        # Display odds if available
+        try:
+            display_match_odds(match)
+        except Exception as e:
+            logger.error(f"Error displaying odds: {str(e)}")
+            
         # Add separator between predictions
         st.markdown("---")
-        
+            
     except Exception as e:
-        logger.error(f"Error displaying match details: {str(e)}", exc_info=True)
+        logger.error(f"Error displaying match details: {str(e)}")
         st.error("An error occurred while displaying match details")
 
 def display_kickoff_time(match_data):
