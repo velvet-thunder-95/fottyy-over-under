@@ -231,7 +231,7 @@ def get_matches(date_str):
 
 
 def get_match_result(match_id):
-    """Get match result from database instead of API"""
+    """Get match result from API"""
     try:
         # Make API request to get match result
         url = f"{BASE_URL}/match/{match_id}"
@@ -246,7 +246,8 @@ def get_match_result(match_id):
             return {
                 "status": "SCHEDULED",
                 "home_score": None,
-                "away_score": None
+                "away_score": None,
+                "winner": None
             }
             
         response.raise_for_status()
@@ -254,23 +255,46 @@ def get_match_result(match_id):
         data = response.json()
         
         if not data.get("success"):
+            print(f"API error for match {match_id}: {data.get('error', 'Unknown error')}")
             return None
             
         match_data = data.get("data", {})
         
+        # Normalize status values
+        raw_status = match_data.get("status", "").lower()
+        if raw_status in ["complete", "finished", "completed"]:
+            status = "FINISHED"
+        elif raw_status in ["scheduled", "pending"]:
+            status = "SCHEDULED"
+        else:
+            status = raw_status.upper()
+        
+        home_score = match_data.get("home_score")
+        away_score = match_data.get("away_score")
+        
+        # Determine winner if match is finished
+        winner = None
+        if status == "FINISHED" and home_score is not None and away_score is not None:
+            if home_score > away_score:
+                winner = "HOME"
+            elif away_score > home_score:
+                winner = "AWAY"
+            else:
+                winner = "DRAW"
+        
         # Return formatted match result
         return {
-            "status": "FINISHED" if match_data.get("status") == "complete" else match_data.get("status", "SCHEDULED"),
-            "home_score": match_data.get("home_score", None),
-            "away_score": match_data.get("away_score", None)
+            "status": status,
+            "home_score": home_score,
+            "away_score": away_score,
+            "winner": winner
         }
     except requests.exceptions.RequestException as e:
-        print(f"Error getting match result: {str(e)}")
-        return {
-            "status": "SCHEDULED",
-            "home_score": None,
-            "away_score": None
-        }
+        print(f"Network error getting match result for {match_id}: {str(e)}")
+        return None
+    except Exception as e:
+        print(f"Unexpected error getting match result for {match_id}: {str(e)}")
+        return None
 
 
 def get_results_by_date(date_str):

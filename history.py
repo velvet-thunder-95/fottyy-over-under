@@ -7,6 +7,7 @@ import sqlite3
 from football_api import get_match_by_teams, get_match_result
 from session_state import init_session_state, check_login_state
 from match_analyzer import MatchAnalyzer
+import logging
 
 class PredictionHistory:
     def __init__(self):
@@ -228,39 +229,52 @@ class PredictionHistory:
 
     def update_match_results(self):
         """Update completed match results using match_analyzer"""
+        import logging
+        logging.basicConfig(level=logging.INFO)
+        logger = logging.getLogger(__name__)
+        
         analyzer = MatchAnalyzer("633379bdd5c4c3eb26919d8570866801e1c07f399197ba8c5311446b8ea77a49")
         
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
         
         # Get pending predictions
-        c.execute("SELECT * FROM predictions WHERE status = 'Pending'")
+        c.execute("SELECT * FROM predictions WHERE status IN ('Pending', 'pending')")
         pending_predictions = c.fetchall()
+        logger.info(f"Found {len(pending_predictions)} pending predictions")
         
         for pred in pending_predictions:
             try:
                 match_id = pred[16]  # match_id
                 if not match_id:
+                    logger.warning(f"Skipping prediction {pred[0]}: No match_id")
                     continue
                     
+                logger.info(f"Processing match {match_id} for prediction {pred[0]}")
+                
                 # Get match data from analyzer
                 match_data = analyzer.get_match_details(match_id)
                 if not match_data:
+                    logger.warning(f"No match data found for match {match_id}")
                     continue
                     
                 # Get match result
                 result = analyzer.analyze_match_result(match_data)
                 if not result:
+                    logger.warning(f"No result data for match {match_id}")
                     continue
                     
                 match_status = result.get('status', '').lower()
+                logger.info(f"Match {match_id} status: {match_status}")
                 
-                # Only update if match is complete
-                if match_status == 'complete':
+                # Only update if match is complete (handle different status values)
+                if match_status in ['complete', 'finished', 'completed']:
                     # Calculate profit/loss
                     bet_amount = pred[10]  # bet_amount
                     predicted_outcome = pred[5]  # predicted_outcome
                     actual_outcome = result.get('winner', 'Pending')
+                    
+                    logger.info(f"Match {match_id}: Predicted={predicted_outcome}, Actual={actual_outcome}")
                     
                     # Get the odds based on predicted outcome
                     if predicted_outcome == 'HOME':
@@ -279,17 +293,17 @@ class PredictionHistory:
                     # Update prediction with result
                     c.execute('''
                         UPDATE predictions 
-                        SET actual_outcome = ?, profit_loss = ?, status = 'complete'
+                        SET actual_outcome = ?, profit_loss = ?, status = 'Completed'
                         WHERE id = ?
                     ''', (actual_outcome, profit, pred[0]))
                     
                     conn.commit()
-                    print(f"Updated result for match {match_id}: {actual_outcome} (Profit: {profit})")
+                    logger.info(f"Updated result for match {match_id}: {actual_outcome} (Profit: {profit})")
                 else:
-                    print(f"Match not complete, status: {match_status}")
+                    logger.info(f"Match {match_id} not complete, status: {match_status}")
                     
             except Exception as e:
-                print(f"Error updating match result: {str(e)}")
+                logger.error(f"Error updating match result for prediction {pred[0]}: {str(e)}", exc_info=True)
                 continue
         
         conn.close()
