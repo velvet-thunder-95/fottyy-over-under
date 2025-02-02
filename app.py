@@ -1003,7 +1003,9 @@ def display_probability_bars(home_prob, draw_prob, away_prob, home_team, away_te
 def display_market_values(home_team, away_team):
     """Display market values for both teams in a styled box"""
     try:
+        logger.info(f"Starting to display market values for {home_team} vs {away_team}")
         home_value, away_value = get_market_values(home_team, away_team)
+        logger.info(f"Retrieved market values from cache/API - Home: {home_value}, Away: {away_value}")
         
         st.markdown(f"""
             <div style="
@@ -1046,9 +1048,11 @@ def display_market_values(home_team, away_team):
                 </div>
             </div>
         """, unsafe_allow_html=True)
+        logger.info("Successfully displayed market values")
     except Exception as e:
         st.warning("Market values not available")
         logger.error(f"Error displaying market values: {str(e)}")
+        logger.exception("Full traceback:")
 
 @st.cache_data(ttl=3600)  # Cache for 1 hour
 def get_market_values(home_team, away_team):
@@ -1062,6 +1066,7 @@ def get_market_values(home_team, away_team):
         return home_value, away_value
     except Exception as e:
         logger.error(f"Error getting market values: {str(e)}")
+        logger.exception("Full traceback:")
         return 'N/A', 'N/A'
 
 @st.cache_data(ttl=3600)  # Cache for 1 hour
