@@ -552,30 +552,36 @@ def create_match_features_from_api(match_data):
         features['odds_ratio'] = features['odds_home_win'] / max(0.1, features['odds_away_win'])
         features['total_momentum'] = features['home_momentum'] + features['away_momentum']
         
+        # All features needed by the model
+        training_features = [
+            'season', 'competition_id', 'home_total_matches', 'away_total_matches',
+            'home_win_rate', 'away_win_rate', 'home_form_points', 'away_form_points',
+            'home_shots', 'away_shots', 'home_shots_on_target', 'away_shots_on_target',
+            'home_corners', 'away_corners', 'home_fouls', 'away_fouls',
+            'home_possession', 'away_possession', 'home_xg', 'away_xg',
+            'shot_accuracy_home', 'shot_accuracy_away', 'home_win_rate_ratio',
+            'home_momentum', 'away_momentum', 'odds_home_win', 'odds_draw',
+            'odds_away_win', 'implied_home_prob', 'implied_draw_prob',
+            'implied_away_prob', 'form_difference', 'win_rate_difference',
+            'shot_difference', 'possession_difference', 'xg_difference',
+            'total_momentum', 'momentum_difference', 'odds_ratio', 'implied_prob_sum'
+        ]
+
+        # Add any missing training features with default values
+        for feature in training_features:
+            if feature not in features:
+                if feature in ['season', 'competition_id', 'home_total_matches', 'away_total_matches']:
+                    features[feature] = 0
+                elif feature in ['shot_accuracy_home', 'shot_accuracy_away', 'home_win_rate_ratio']:
+                    features[feature] = 0.5
+                else:
+                    features[feature] = 0
+
         # Convert to DataFrame with proper feature order
         df = pd.DataFrame([features])
         
-        # Ensure all required features are present with default values
-        required_features = [
-            'win_rate_difference', 'possession_difference', 'xg_difference',
-            'shot_difference', 'momentum_difference', 'implied_prob_sum',
-            'form_difference', 'odds_ratio', 'total_momentum', 'goal_difference',
-            'xg_ratio', 'form_ratio', 'win_rate_ratio', 'total_goals', 'total_xg',
-            'home_win_rate', 'away_win_rate', 'home_possession', 'away_possession',
-            'home_xg', 'away_xg', 'home_shots', 'away_shots', 'home_momentum',
-            'away_momentum', 'implied_home_prob', 'implied_draw_prob', 'implied_away_prob',
-            'home_form_points', 'away_form_points', 'odds_home_win', 'odds_draw',
-            'odds_away_win', 'home_goals', 'away_goals'
-        ]
-        
-        # Add any missing features with default values
-        for feature in required_features:
-            if feature not in df.columns:
-                logger.warning(f"Missing feature {feature}, adding with default value 0")
-                df[feature] = 0
-                
         # Ensure columns are in the correct order
-        df = df[required_features]
+        df = df[training_features]
         
         return df
         
