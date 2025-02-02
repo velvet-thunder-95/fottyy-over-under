@@ -855,42 +855,76 @@ class TransfermarktAPI:
     def get_team_market_value(self, team_name):
         """Get market value for a team"""
         try:
+            logger.info(f"Getting market value for team: {team_name}")
             if not team_name:
+                logger.warning("Team name is empty")
                 return None
                 
             # Clean and normalize team name
-            team_name = self.clean_team_name(team_name)
+            cleaned_name = self.clean_team_name(team_name)
+            logger.info(f"Cleaned team name: {cleaned_name} (original: {team_name})")
             
             # Check direct mappings first
-            if team_name in self.direct_mappings:
-                team_id = self.direct_mappings[team_name]["id"]
+            if cleaned_name in self.direct_mappings:
+                logger.info(f"Found direct mapping for {cleaned_name}")
+                team_id = self.direct_mappings[cleaned_name]["id"]
+                logger.info(f"Team ID from direct mapping: {team_id}")
+                
                 # Make API request to get market value
                 url = f"{self.base_url}/clubs/{team_id}"
+                logger.info(f"Making API request to: {url}")
                 response = requests.get(url, headers=self.headers)
+                logger.info(f"API response status: {response.status_code}")
+                
                 if response.status_code == 200:
                     data = response.json()
+                    logger.debug(f"API response data: {data}")
                     market_value = data.get("marketValue", {}).get("value")
                     if market_value:
-                        return f"€{market_value}m"
+                        value = f"€{market_value}m"
+                        logger.info(f"Found market value from direct mapping: {value}")
+                        return value
+                    else:
+                        logger.warning(f"No market value found in response for {cleaned_name}")
+            else:
+                logger.info(f"No direct mapping found for {cleaned_name}, trying search")
             
             # If not in direct mappings, try to search
             search_url = f"{self.base_url}/search"
-            params = {"query": team_name}
+            params = {"query": cleaned_name}
+            logger.info(f"Making search API request to: {search_url} with params: {params}")
             response = requests.get(search_url, headers=self.headers, params=params)
+            logger.info(f"Search API response status: {response.status_code}")
             
             if response.status_code == 200:
                 results = response.json()
+                logger.debug(f"Search API response: {results}")
                 if results and "clubs" in results and results["clubs"]:
                     team_id = results["clubs"][0]["id"]
+                    logger.info(f"Found team ID from search: {team_id}")
+                    
                     # Make API request to get market value
                     url = f"{self.base_url}/clubs/{team_id}"
+                    logger.info(f"Making API request to: {url}")
                     response = requests.get(url, headers=self.headers)
+                    logger.info(f"API response status: {response.status_code}")
+                    
                     if response.status_code == 200:
                         data = response.json()
+                        logger.debug(f"API response data: {data}")
                         market_value = data.get("marketValue", {}).get("value")
                         if market_value:
-                            return f"€{market_value}m"
+                            value = f"€{market_value}m"
+                            logger.info(f"Found market value from search: {value}")
+                            return value
+                        else:
+                            logger.warning(f"No market value found in response for {cleaned_name}")
+                else:
+                    logger.warning(f"No clubs found in search results for {cleaned_name}")
+            else:
+                logger.error(f"Search API request failed with status {response.status_code}")
             
+            logger.warning(f"Could not find market value for {team_name}")
             return None
             
         except Exception as e:
@@ -899,6 +933,9 @@ class TransfermarktAPI:
 
     def get_both_teams_market_value(self, home_team, away_team):
         """Get market values for both teams"""
+        logger.info(f"Getting market values for: {home_team} vs {away_team}")
         home_value = self.get_team_market_value(home_team)
+        logger.info(f"Home team ({home_team}) market value: {home_value}")
         away_value = self.get_team_market_value(away_team)
+        logger.info(f"Away team ({away_team}) market value: {away_value}")
         return home_value or 'N/A', away_value or 'N/A'

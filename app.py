@@ -1056,10 +1056,12 @@ def display_market_values(home_team, away_team):
 @st.cache_data(ttl=3600)  # Cache for 1 hour
 def get_market_values(home_team, away_team):
     """Get market values for both teams with caching"""
+    logger.info(f"Fetching market values for {home_team} vs {away_team}")
     api = TransfermarktAPI()
     try:
         # Get market values using the correct method
         home_value, away_value = api.get_both_teams_market_value(home_team, away_team)
+        logger.info(f"Retrieved market values - Home: {home_value}, Away: {away_value}")
         return home_value, away_value
     except Exception as e:
         logger.error(f"Error getting market values: {str(e)}")
