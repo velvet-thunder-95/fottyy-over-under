@@ -1003,8 +1003,7 @@ def display_probability_bars(home_prob, draw_prob, away_prob, home_team, away_te
 def display_market_values(home_team, away_team):
     """Display market values for both teams in a styled box"""
     try:
-        api = TransfermarktAPI(max_workers=20)  # Increased to 20 worker threads for better parallelization
-        market_values = api.get_both_teams_market_value(home_team, away_team)
+        home_value, away_value = get_market_values(home_team, away_team)
         
         st.markdown(f"""
             <div style="
@@ -1027,23 +1026,21 @@ def display_market_values(home_team, away_team):
                     align-items: center;
                     margin-top: 8px;">
                     <div>
-                        <span style="color: #64748b; font-size: 0.9rem;">Home Team:</span>
+                        <span style="color: #64748b; font-size: 0.9rem;">Home Market Value</span><br/>
                         <span style="
                             color: #0f172a;
                             font-weight: 600;
-                            font-size: 1.1rem;
-                            margin-left: 8px;">
-                            €{market_values['home_market_value']:,.0f}
+                            font-size: 1.1rem;">
+                            {home_value}
                         </span>
                     </div>
                     <div>
-                        <span style="color: #64748b; font-size: 0.9rem;">Away Team:</span>
+                        <span style="color: #64748b; font-size: 0.9rem;">Away Market Value</span><br/>
                         <span style="
                             color: #0f172a;
                             font-weight: 600;
-                            font-size: 1.1rem;
-                            margin-left: 8px;">
-                            €{market_values['away_market_value']:,.0f}
+                            font-size: 1.1rem;">
+                            {away_value}
                         </span>
                     </div>
                 </div>
@@ -1051,7 +1048,7 @@ def display_market_values(home_team, away_team):
         """, unsafe_allow_html=True)
     except Exception as e:
         st.warning("Market values not available")
-        logging.error(f"Error displaying market values: {str(e)}")
+        logger.error(f"Error displaying market values: {str(e)}")
 
 @st.cache_data(ttl=3600)  # Cache for 1 hour
 def get_market_values(home_team, away_team):
