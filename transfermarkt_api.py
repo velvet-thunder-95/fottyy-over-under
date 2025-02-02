@@ -574,7 +574,7 @@ class TransfermarktAPI:
             tried_names.add(variation)
             
             try:
-                url = f"{self.base_url}/search"
+                url = f"{self.base_url}/v1/clubs/search"
                 response = self._make_api_request(url, {"query": variation, "domain": domain})
                 response.raise_for_status()
                 data = response.json()
@@ -840,9 +840,8 @@ class TransfermarktAPI:
             
         logger.debug(f"Fetching squad for team ID: {team_id}")
         
-        url = f"{self.base_url}/clubs/get-squad"
+        url = f"{self.base_url}/v1/clubs/{team_id}/squad"
         params = {
-            "id": str(team_id),
             "domain": domain
         }
         
@@ -880,8 +879,8 @@ class TransfermarktAPI:
                 logger.info(f"Team ID from direct mapping: {team_id}")
                 
                 # Make API request to get market value
-                url = f"{self.base_url}/clubs/get-info"
-                params = {"id": str(team_id)}
+                url = f"{self.base_url}/v1/clubs/{team_id}/info"
+                params = {}
                 logger.info(f"Making API request to: {url} with params: {params}")
                 response = self._make_api_request(url, params)
                 logger.info(f"API response status: {response.status_code}")
@@ -902,7 +901,7 @@ class TransfermarktAPI:
                 logger.info(f"No direct mapping found for {cleaned_name}, trying search")
             
             # If not in direct mappings, try to search
-            search_url = f"{self.base_url}/search"
+            search_url = f"{self.base_url}/v1/clubs/search"
             params = {"query": cleaned_name}
             logger.info(f"Making search API request to: {search_url} with params: {params}")
             response = self._make_api_request(search_url, params)
@@ -916,8 +915,8 @@ class TransfermarktAPI:
                     logger.info(f"Found team ID from search: {team_id}")
                     
                     # Make API request to get market value
-                    url = f"{self.base_url}/clubs/get-info"
-                    params = {"id": str(team_id)}
+                    url = f"{self.base_url}/v1/clubs/{team_id}/info"
+                    params = {}
                     logger.info(f"Making API request to: {url} with params: {params}")
                     response = self._make_api_request(url, params)
                     logger.info(f"API response status: {response.status_code}")
