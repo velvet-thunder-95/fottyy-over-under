@@ -849,3 +849,56 @@ class TransfermarktAPI:
         except Exception as e:
             logger.error(f"Error fetching team squad: {str(e)}")
             return []
+
+    def get_team_market_value(self, team_name):
+        """Get market value for a team"""
+        logger.info(f"Getting market value for team: {team_name}")
+        
+        try:
+            # Search for the team first
+            search_result = self.search_team(team_name)
+            if not search_result:
+                logger.warning(f"No search results found for team: {team_name}")
+                return None
+                
+            # Get team ID from search result
+            team_id = search_result.get('id')
+            if not team_id:
+                logger.warning(f"No team ID found in search result for {team_name}")
+                return None
+                
+            # Get squad data to calculate total market value
+            squad = self.get_team_squad(team_id)
+            if not squad:
+                logger.warning(f"No squad data found for team ID {team_id}")
+                return None
+                
+            # Calculate total market value from squad
+            total_value = sum(player.get('marketValue', {}).get('value', 0) for player in squad)
+            
+            if total_value:
+                formatted_value = f"€{total_value:,}"
+                logger.info(f"Found market value for {team_name}: {formatted_value}")
+                return formatted_value
+            else:
+                logger.warning(f"No market value found for {team_name}")
+                return None
+            
+        except Exception as e:
+            logger.error(f"Error getting market value for {team_name}: {str(e)}")
+            return None
+
+    def get_both_teams_market_value(self, home_team, away_team, domain="de"):
+        """Get market values for both teams in a match"""
+        logger.info(f"Getting market values for match: {home_team} vs {away_team}")
+        
+        try:
+            home_value = self.get_team_market_value(home_team)
+            away_value = self.get_team_market_value(away_team)
+            
+            logger.info(f"Market values - Home: {home_value}, Away: {away_value}")
+            return home_value, away_value
+            
+        except Exception as e:
+            logger.error(f"Error getting market values: {str(e)}")
+            return None, None

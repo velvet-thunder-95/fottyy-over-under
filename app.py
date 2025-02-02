@@ -1062,9 +1062,8 @@ def get_market_values(home_team, away_team):
     logger.info(f"Fetching market values for {home_team} vs {away_team}")
     try:
         api = TransfermarktAPI()
-        # Search for teams and get their market values
-        home_value = api.search_team(home_team)
-        away_value = api.search_team(away_team)
+        # Get market values using the new method
+        home_value, away_value = api.get_both_teams_market_value(home_team, away_team)
         
         logger.info(f"Retrieved market values - Home: {home_value}, Away: {away_value}")
         return home_value or 'N/A', away_value or 'N/A'
