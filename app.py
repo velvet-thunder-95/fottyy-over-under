@@ -1056,8 +1056,22 @@ def display_market_values(home_team, away_team):
 @st.cache_data(ttl=3600)  # Cache for 1 hour
 def get_market_values(home_team, away_team):
     """Get market values for both teams with caching"""
-    api = TransfermarktAPI(max_workers=20)  # Increased to 20 worker threads for better parallelization
-    return api.get_both_teams_market_value(home_team, away_team)
+    api = TransfermarktAPI()
+    try:
+        # Get market values
+        home_value = api.get_team_market_value(home_team)
+        away_value = api.get_team_market_value(away_team)
+        
+        # Return N/A if values not found
+        if not home_value:
+            home_value = 'N/A'
+        if not away_value:
+            away_value = 'N/A'
+            
+        return home_value, away_value
+    except Exception as e:
+        logger.error(f"Error getting market values: {str(e)}")
+        return 'N/A', 'N/A'
 
 @st.cache_data(ttl=3600)  # Cache for 1 hour
 def get_multiple_market_values(teams):
@@ -1570,10 +1584,29 @@ def display_match_details(match, prediction_data, confidence):
         
         # Display market values in stats grid
         try:
-            home_value, away_value = get_market_values(
-                match.get('home_name', ''), 
-                match.get('away_name', '')
-            )
+            home_team = match.get('home_name', '')
+            away_team = match.get('away_name', '')
+            
+            # Get market values
+            home_value, away_value = get_market_values(home_team, away_team)
+            
+            # Format market values with currency symbol and proper formatting
+            def format_market_value(value):
+                if not value or value == 'N/A':
+                    return 'N/A'
+                try:
+                    # Convert to float and format
+                    value = float(value.replace('€', '').replace('m', '').strip())
+                    if value >= 1:
+                        return f'€{value:.1f}m'
+                    else:
+                        value_k = value * 1000
+                        return f'€{value_k:.0f}k'
+                except:
+                    return value
+            
+            formatted_home_value = format_market_value(home_value)
+            formatted_away_value = format_market_value(away_value)
             
             st.markdown("""
                 <div class="stats-grid">
@@ -1587,8 +1620,8 @@ def display_match_details(match, prediction_data, confidence):
                     </div>
                 </div>
             """.format(
-                home_value=home_value,
-                away_value=away_value
+                home_value=formatted_home_value,
+                away_value=formatted_away_value
             ), unsafe_allow_html=True)
         except Exception as e:
             logger.error(f"Error displaying market values: {str(e)}")
