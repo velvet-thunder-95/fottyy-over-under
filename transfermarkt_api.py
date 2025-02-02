@@ -272,7 +272,7 @@ class TransfermarktAPI:
             # Hungarian Teams
             "ferencvaros": "ferencvarosi tc",
             "ferencváros": "ferencvarosi tc",
-
+            
             # Additional Missing Teams
             "dhamk": "damac fc",
             "al quadisiya": "al-qadisiyah",
@@ -323,6 +323,24 @@ class TransfermarktAPI:
             "necaxa": "club necaxa",
             "toluca": "deportivo toluca",
             "guadalajara": "cd guadalajara",
+            
+            # Additional Teams
+            "hoffenheim": "tsg hoffenheim",
+            "tsg hoffenheim": "tsg 1899 hoffenheim",
+            "kaiserslautern": "1. fc kaiserslautern",
+            "1. fc kaiserslautern": "1. fc kaiserslautern",
+            "benfica": "sl benfica",
+            "sl benfica": "benfica lissabon",
+            "la equidad": "cd la equidad seguros",
+            "levadiakos": "levadiakos fc",
+            "levadiakos fc": "apo levadiakos",
+            "kallithea": "gps kallithea",
+            "gps kallithea": "kallithea fc",
+            "sint-truiden": "vv sint-truiden",
+            "sint truiden": "vv sint-truiden",
+            "vv sint-truiden": "k. sint-truidense vv",
+            
+            # Add more mappings here
         }
         
         # Set fuzzy matching thresholds
@@ -454,6 +472,49 @@ class TransfermarktAPI:
             
         logger.info(f"Searching for team: {team_name}")
         
+        # Try to find in abbreviations first (case-insensitive)
+        team_lower = team_name.lower().strip()
+        
+        # Try direct match with abbreviations
+        if team_lower in self.abbreviations:
+            team_name = self.abbreviations[team_lower]
+            logger.debug(f"Using abbreviated name: {team_name}")
+        
+        # Try fuzzy match with abbreviations if direct match fails
+        if team_name.lower() not in self.abbreviations:
+            matches = get_close_matches(team_lower, self.abbreviations.keys(), n=1, cutoff=0.8)
+            if matches:
+                team_name = self.abbreviations[matches[0]]
+                logger.debug(f"Using fuzzy matched abbreviated name: {team_name}")
+        
+        # Clean the team name for searching
+        search_key = self.get_search_key(team_name)
+        logger.debug(f"Search key: {search_key}")
+        
+        # Check cache first
+        cache_key = f"{search_key}:{domain}"
+        if cache_key in self.search_cache:
+            logger.info(f"Found in cache: {team_name}")
+            return self.search_cache[cache_key]
+        
+        # Check direct mappings with both original and cleaned names
+        clean_name = self.clean_team_name(team_name).lower()
+        for key, value in direct_mappings.items():
+            if clean_name == self.clean_team_name(key).lower():
+                logger.info(f"Found direct mapping: {value['name']}")
+                self.search_cache[cache_key] = value
+                return value
+                
+        # Also check if the cleaned name matches any abbreviation's cleaned value
+        for abbr_key, abbr_value in self.abbreviations.items():
+            if clean_name == self.clean_team_name(abbr_value).lower():
+                # Try to find in direct mappings using the full name
+                if abbr_value.lower() in direct_mappings:
+                    value = direct_mappings[abbr_value.lower()]
+                    logger.info(f"Found direct mapping via abbreviation: {value['name']}")
+                    self.search_cache[cache_key] = value
+                    return value
+        
         # Special direct mappings for problematic teams
         direct_mappings = {
             "bodo/glimt": {"id": "2619", "name": "FK Bodø/Glimt"},
@@ -466,32 +527,17 @@ class TransfermarktAPI:
             "darmstadt 98": {"id": "105", "name": "SV Darmstadt 98"},
             "nürnberg": {"id": "4", "name": "1. FC Nürnberg"},
             "bastia": {"id": "3444", "name": "SC Bastia"},
-            "real sociedad": {"id": "681", "name": "Real Sociedad San Sebastián"}
+            "real sociedad": {"id": "681", "name": "Real Sociedad San Sebastián"},
+            
+            # Add new direct mappings
+            "hoffenheim": {"id": "533", "name": "TSG 1899 Hoffenheim"},
+            "1. fc kaiserslautern": {"id": "2", "name": "1. FC Kaiserslautern"},
+            "sl benfica": {"id": "294", "name": "Benfica Lissabon"},
+            "la equidad": {"id": "6954", "name": "CD La Equidad Seguros"},
+            "levadiakos fc": {"id": "2186", "name": "APO Levadiakos"},
+            "gps kallithea": {"id": "5847", "name": "Kallithea FC"},
+            "vv sint-truiden": {"id": "1773", "name": "K. Sint-Truidense VV"},
         }
-        
-        # Try to find in abbreviations first (case-insensitive)
-        team_lower = team_name.lower()
-        if team_lower in self.abbreviations:
-            team_name = self.abbreviations[team_lower]
-            logger.debug(f"Using abbreviated name: {team_name}")
-        
-        # Clean the team name for searching
-        search_key = self.get_search_key(team_name)
-        logger.debug(f"Search key: {search_key}")
-        
-        # Check cache first
-        cache_key = f"{search_key}:{domain}"
-        if cache_key in self.search_cache:
-            logger.info(f"Found in cache: {team_name}")
-            return self.search_cache[cache_key]
-        
-        # Check direct mappings first
-        clean_name = self.clean_team_name(team_name).lower()
-        for key, value in direct_mappings.items():
-            if clean_name in [self.clean_team_name(k).lower() for k in self.abbreviations if self.abbreviations[k].lower() == key]:
-                logger.info(f"Found direct mapping: {value['name']}")
-                self.search_cache[cache_key] = value
-                return value
         
         # Generate search variations
         search_variations = [

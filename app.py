@@ -381,7 +381,12 @@ def create_match_features_from_api(match_data):
             'shot_accuracy_home', 'shot_accuracy_away',
             'home_win_rate_ratio', 'home_momentum', 'away_momentum',
             'odds_home_win', 'odds_draw', 'odds_away_win',
-            'implied_home_prob', 'implied_draw_prob', 'implied_away_prob'
+            'implied_home_prob', 'implied_draw_prob', 'implied_away_prob',
+            'win_rate_difference', 'possession_difference', 'xg_difference',
+            'shot_difference', 'momentum_difference', 'implied_prob_sum',
+            'form_difference', 'odds_ratio', 'total_momentum',
+            'goal_difference', 'xg_ratio', 'form_ratio', 'win_rate_ratio',
+            'total_goals', 'total_xg', 'home_goals', 'away_goals'
         ]
 
         # Basic features with safe defaults
@@ -535,20 +540,49 @@ def create_match_features_from_api(match_data):
             features['implied_draw_prob'] = 0.25
             features['implied_away_prob'] = 0.35
         
-        # Add derived features in the same order as training
-        features['form_difference'] = features['home_form_points'] - features['away_form_points']
+        # Add all required derived features
         features['win_rate_difference'] = features['home_win_rate'] - features['away_win_rate']
-        features['shot_difference'] = features['home_shots'] - features['away_shots']
         features['possession_difference'] = features['home_possession'] - features['away_possession']
         features['xg_difference'] = features['home_xg'] - features['away_xg']
-        features['total_momentum'] = features['home_momentum'] + features['away_momentum']
+        features['shot_difference'] = features['home_shots'] - features['away_shots']
         features['momentum_difference'] = features['home_momentum'] - features['away_momentum']
-        features['odds_ratio'] = features['odds_home_win'] / max(0.1, features['odds_away_win'])
         features['implied_prob_sum'] = features['implied_home_prob'] + features['implied_draw_prob'] + features['implied_away_prob']
+        features['form_difference'] = features['home_form_points'] - features['away_form_points']
+        features['odds_ratio'] = features['odds_home_win'] / max(0.1, features['odds_away_win'])
+        features['total_momentum'] = features['home_momentum'] + features['away_momentum']
+        
+        # Add additional derived features that might be expected by the model
+        features['goal_difference'] = features['home_goals'] - features['away_goals']
+        features['xg_ratio'] = features['home_xg'] / max(0.1, features['away_xg'])
+        features['form_ratio'] = features['home_form_points'] / max(0.1, features['away_form_points'])
+        features['win_rate_ratio'] = features['home_win_rate'] / max(0.1, features['away_win_rate'])
+        features['total_goals'] = features['home_goals'] + features['away_goals']
+        features['total_xg'] = features['home_xg'] + features['away_xg']
         
         # Convert to DataFrame with proper feature order
         df = pd.DataFrame([features])
-        df = df[feature_order]  # Ensure columns are in the correct order
+        
+        # Ensure all required features are present with default values
+        required_features = [
+            'win_rate_difference', 'possession_difference', 'xg_difference',
+            'shot_difference', 'momentum_difference', 'implied_prob_sum',
+            'form_difference', 'odds_ratio', 'total_momentum', 'goal_difference',
+            'xg_ratio', 'form_ratio', 'win_rate_ratio', 'total_goals', 'total_xg',
+            'home_win_rate', 'away_win_rate', 'home_possession', 'away_possession',
+            'home_xg', 'away_xg', 'home_shots', 'away_shots', 'home_momentum',
+            'away_momentum', 'implied_home_prob', 'implied_draw_prob', 'implied_away_prob',
+            'home_form_points', 'away_form_points', 'odds_home_win', 'odds_draw',
+            'odds_away_win', 'home_goals', 'away_goals'
+        ]
+        
+        # Add any missing features with default values
+        for feature in required_features:
+            if feature not in df.columns:
+                logger.warning(f"Missing feature {feature}, adding with default value 0")
+                df[feature] = 0
+                
+        # Ensure columns are in the correct order
+        df = df[required_features]
         
         return df
         
@@ -1133,10 +1167,15 @@ def get_match_prediction(match_data):
             total_prob = (1/odds_1 + 1/odds_x + 1/odds_2)
             if total_prob > 0:
                 draw_prob = (1/odds_x) / total_prob
-                away_prob = (1/odds_2) / total_prob
+                away_prob = 1 - home_prob - draw_prob  # Ensure probabilities sum to 1
+                
+                # Validate probabilities
+                if away_prob < 0:
+                    draw_prob = 0.25
+                    away_prob = 1 - home_prob - draw_prob
             else:
                 draw_prob = 0.25  # Default draw probability
-                away_prob = (1 - home_prob) * 0.75  # Remaining split between home/away
+                away_prob = (1 - home_prob - draw_prob)  # Remaining probability
         else:
             home_prob = probabilities[0][0]
             draw_prob = probabilities[0][1]
