@@ -365,9 +365,7 @@ class TransfermarktAPI:
             "vv sint-truiden": {"id": "1773", "name": "K. Sint-Truidense VV"},
             "sporting cp": {"id": "336", "name": "Sporting CP"},
             "farense": {"id": "2420", "name": "SC Farense"},
-            "estrela amadora": {"id": "15804", "name": "CF Estrela da Amadora"},
-            "1. fc slovacko": {"id": "5226", "name": "1. FC Slovácko"},
-            "sparta prag": {"id": "197", "name": "AC Sparta Praha"},
+            "estrela amadora": {"id": "15804", "name": "CF Estrela da Amadora"}
         }
         
         # Set fuzzy matching thresholds
@@ -574,7 +572,7 @@ class TransfermarktAPI:
             tried_names.add(variation)
             
             try:
-                url = f"{self.base_url}/v1/clubs/search"
+                url = f"{self.base_url}/search"
                 response = self._make_api_request(url, {"query": variation, "domain": domain})
                 response.raise_for_status()
                 data = response.json()
@@ -793,7 +791,7 @@ class TransfermarktAPI:
         
         self.request_times.append(current_time)
 
-    def _make_api_request(self, url, params=None):
+    def _make_api_request(self, url, params):
         """Make an API request with rate limiting and retries"""
         max_retries = 3
         retry_delay = 1.0
@@ -801,7 +799,6 @@ class TransfermarktAPI:
         for attempt in range(max_retries):
             try:
                 self._rate_limit()  # Apply rate limiting
-                logger.debug(f"Making API request - URL: {url}, Params: {params}, Headers: {self.headers}")
                 response = requests.get(url, headers=self.headers, params=params)
                 
                 if response.status_code == 429:  # Too Many Requests
@@ -810,12 +807,6 @@ class TransfermarktAPI:
                         logger.warning(f"Rate limit hit, waiting {sleep_time} seconds...")
                         time.sleep(sleep_time)
                         continue
-                
-                try:
-                    response_data = response.json()
-                    logger.debug(f"API Response Data: {response_data}")
-                except ValueError:
-                    logger.error(f"Invalid JSON response: {response.text}")
                 
                 response.raise_for_status()
                 return response
@@ -826,8 +817,6 @@ class TransfermarktAPI:
                     logger.warning(f"Request failed, retrying in {sleep_time} seconds... Error: {str(e)}")
                     time.sleep(sleep_time)
                 else:
-                    logger.error(f"All retries failed for URL: {url}")
-                    logger.error(f"Last error: {str(e)}")
                     raise
         
         raise Exception("Max retries exceeded")
@@ -840,8 +829,9 @@ class TransfermarktAPI:
             
         logger.debug(f"Fetching squad for team ID: {team_id}")
         
-        url = f"{self.base_url}/v1/clubs/{team_id}/squad"
+        url = f"{self.base_url}/clubs/get-squad"
         params = {
+            "id": str(team_id),
             "domain": domain
         }
         
@@ -859,100 +849,3 @@ class TransfermarktAPI:
         except Exception as e:
             logger.error(f"Error fetching team squad: {str(e)}")
             return []
-
-    def get_team_market_value(self, team_name):
-        """Get market value for a team"""
-        try:
-            logger.info(f"Getting market value for team: {team_name}")
-            if not team_name:
-                logger.warning("Team name is empty")
-                return None
-                
-            # Clean and normalize team name
-            cleaned_name = self.clean_team_name(team_name)
-            logger.info(f"Cleaned team name: {cleaned_name} (original: {team_name})")
-            
-            # Check direct mappings first
-            if cleaned_name in self.direct_mappings:
-                logger.info(f"Found direct mapping for {cleaned_name}")
-                team_id = self.direct_mappings[cleaned_name]["id"]
-                logger.info(f"Team ID from direct mapping: {team_id}")
-                
-                # Make API request to get market value
-                url = f"{self.base_url}/v1/clubs/{team_id}/info"
-                params = {}
-                logger.info(f"Making API request to: {url} with params: {params}")
-                response = self._make_api_request(url, params)
-                logger.info(f"API response status: {response.status_code}")
-                
-                if response.status_code == 200:
-                    data = response.json()
-                    logger.debug(f"API response data: {data}")
-                    market_value = data.get("marketValue", {}).get("value")
-                    if market_value:
-                        value = f"€{market_value}m"
-                        logger.info(f"Found market value from direct mapping: {value}")
-                        return value
-                    else:
-                        logger.warning(f"No market value found in response for {cleaned_name}")
-                else:
-                    logger.error(f"API response: {response.text}")
-            else:
-                logger.info(f"No direct mapping found for {cleaned_name}, trying search")
-            
-            # If not in direct mappings, try to search
-            search_url = f"{self.base_url}/v1/clubs/search"
-            params = {"query": cleaned_name}
-            logger.info(f"Making search API request to: {search_url} with params: {params}")
-            response = self._make_api_request(search_url, params)
-            logger.info(f"Search API response status: {response.status_code}")
-            
-            if response.status_code == 200:
-                results = response.json()
-                logger.debug(f"Search API response: {results}")
-                if results and "clubs" in results and results["clubs"]:
-                    team_id = results["clubs"][0]["id"]
-                    logger.info(f"Found team ID from search: {team_id}")
-                    
-                    # Make API request to get market value
-                    url = f"{self.base_url}/v1/clubs/{team_id}/info"
-                    params = {}
-                    logger.info(f"Making API request to: {url} with params: {params}")
-                    response = self._make_api_request(url, params)
-                    logger.info(f"API response status: {response.status_code}")
-                    
-                    if response.status_code == 200:
-                        data = response.json()
-                        logger.debug(f"API response data: {data}")
-                        market_value = data.get("marketValue", {}).get("value")
-                        if market_value:
-                            value = f"€{market_value}m"
-                            logger.info(f"Found market value from search: {value}")
-                            return value
-                        else:
-                            logger.warning(f"No market value found in response for {cleaned_name}")
-                            logger.debug(f"Response data structure: {data}")
-                    else:
-                        logger.error(f"API response: {response.text}")
-                else:
-                    logger.warning(f"No clubs found in search results for {cleaned_name}")
-            else:
-                logger.error(f"Search API request failed with status {response.status_code}")
-                logger.error(f"API response: {response.text}")
-            
-            logger.warning(f"Could not find market value for {team_name}")
-            return None
-            
-        except Exception as e:
-            logger.error(f"Error getting market value for {team_name}: {str(e)}")
-            logger.exception("Full traceback:")
-            return None
-
-    def get_both_teams_market_value(self, home_team, away_team):
-        """Get market values for both teams"""
-        logger.info(f"Getting market values for: {home_team} vs {away_team}")
-        home_value = self.get_team_market_value(home_team)
-        logger.info(f"Home team ({home_team}) market value: {home_value}")
-        away_value = self.get_team_market_value(away_team)
-        logger.info(f"Away team ({away_team}) market value: {away_value}")
-        return home_value or 'N/A', away_value or 'N/A'
