@@ -793,7 +793,7 @@ class TransfermarktAPI:
         
         self.request_times.append(current_time)
 
-    def _make_api_request(self, url, params):
+    def _make_api_request(self, url, params=None):
         """Make an API request with rate limiting and retries"""
         max_retries = 3
         retry_delay = 1.0
@@ -871,15 +871,15 @@ class TransfermarktAPI:
                 logger.info(f"Team ID from direct mapping: {team_id}")
                 
                 # Make API request to get market value
-                url = f"{self.base_url}/clubs/{team_id}/market-value"  # Changed endpoint
+                url = f"{self.base_url}/clubs/{team_id}"  
                 logger.info(f"Making API request to: {url}")
-                response = requests.get(url, headers=self.headers)
+                response = self._make_api_request(url)  
                 logger.info(f"API response status: {response.status_code}")
                 
                 if response.status_code == 200:
                     data = response.json()
                     logger.debug(f"API response data: {data}")
-                    market_value = data.get("value")  # Changed path to value
+                    market_value = data.get("marketValue", {}).get("value")  
                     if market_value:
                         value = f"€{market_value}m"
                         logger.info(f"Found market value from direct mapping: {value}")
@@ -895,7 +895,7 @@ class TransfermarktAPI:
             search_url = f"{self.base_url}/search"
             params = {"query": cleaned_name}
             logger.info(f"Making search API request to: {search_url} with params: {params}")
-            response = requests.get(search_url, headers=self.headers, params=params)
+            response = self._make_api_request(search_url, params)  
             logger.info(f"Search API response status: {response.status_code}")
             
             if response.status_code == 200:
@@ -906,15 +906,15 @@ class TransfermarktAPI:
                     logger.info(f"Found team ID from search: {team_id}")
                     
                     # Make API request to get market value
-                    url = f"{self.base_url}/clubs/{team_id}/market-value"  # Changed endpoint
+                    url = f"{self.base_url}/clubs/{team_id}"  
                     logger.info(f"Making API request to: {url}")
-                    response = requests.get(url, headers=self.headers)
+                    response = self._make_api_request(url)  
                     logger.info(f"API response status: {response.status_code}")
                     
                     if response.status_code == 200:
                         data = response.json()
                         logger.debug(f"API response data: {data}")
-                        market_value = data.get("value")  # Changed path to value
+                        market_value = data.get("marketValue", {}).get("value")  
                         if market_value:
                             value = f"€{market_value}m"
                             logger.info(f"Found market value from search: {value}")
