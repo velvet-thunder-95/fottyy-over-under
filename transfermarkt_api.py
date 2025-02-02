@@ -343,6 +343,31 @@ class TransfermarktAPI:
             # Add more mappings here
         }
         
+        # Special direct mappings for problematic teams
+        self.direct_mappings = {
+            "bodo/glimt": {"id": "2619", "name": "FK Bodø/Glimt"},
+            "ludogorets": {"id": "31614", "name": "Ludogorets Razgrad"},
+            "riga fs": {"id": "35159", "name": "Riga FC"},
+            "istra 1961": {"id": "4051", "name": "NK Istra 1961"},
+            "gorica": {"id": "2947", "name": "HNK Gorica"},
+            "bb bodrumspor": {"id": "24134", "name": "Bandırmaboluspor"},
+            "elversberg": {"id": "4097", "name": "SV 07 Elversberg"},
+            "darmstadt 98": {"id": "105", "name": "SV Darmstadt 98"},
+            "nürnberg": {"id": "4", "name": "1. FC Nürnberg"},
+            "bastia": {"id": "3444", "name": "SC Bastia"},
+            "real sociedad": {"id": "681", "name": "Real Sociedad San Sebastián"},
+            "hoffenheim": {"id": "533", "name": "TSG 1899 Hoffenheim"},
+            "1. fc kaiserslautern": {"id": "2", "name": "1. FC Kaiserslautern"},
+            "sl benfica": {"id": "294", "name": "Benfica Lissabon"},
+            "la equidad": {"id": "6954", "name": "CD La Equidad Seguros"},
+            "levadiakos fc": {"id": "2186", "name": "APO Levadiakos"},
+            "gps kallithea": {"id": "5847", "name": "Kallithea FC"},
+            "vv sint-truiden": {"id": "1773", "name": "K. Sint-Truidense VV"},
+            "sporting cp": {"id": "336", "name": "Sporting CP"},
+            "farense": {"id": "2420", "name": "SC Farense"},
+            "estrela amadora": {"id": "15804", "name": "CF Estrela da Amadora"}
+        }
+        
         # Set fuzzy matching thresholds
         self.exact_match_threshold = 0.90  # Slightly reduced for better matching
         self.fuzzy_match_threshold = 0.65  # Slightly reduced for better matching
@@ -499,7 +524,7 @@ class TransfermarktAPI:
         
         # Check direct mappings with both original and cleaned names
         clean_name = self.clean_team_name(team_name).lower()
-        for key, value in direct_mappings.items():
+        for key, value in self.direct_mappings.items():
             if clean_name == self.clean_team_name(key).lower():
                 logger.info(f"Found direct mapping: {value['name']}")
                 self.search_cache[cache_key] = value
@@ -509,35 +534,11 @@ class TransfermarktAPI:
         for abbr_key, abbr_value in self.abbreviations.items():
             if clean_name == self.clean_team_name(abbr_value).lower():
                 # Try to find in direct mappings using the full name
-                if abbr_value.lower() in direct_mappings:
-                    value = direct_mappings[abbr_value.lower()]
+                if abbr_value.lower() in self.direct_mappings:
+                    value = self.direct_mappings[abbr_value.lower()]
                     logger.info(f"Found direct mapping via abbreviation: {value['name']}")
                     self.search_cache[cache_key] = value
                     return value
-        
-        # Special direct mappings for problematic teams
-        direct_mappings = {
-            "bodo/glimt": {"id": "2619", "name": "FK Bodø/Glimt"},
-            "ludogorets": {"id": "31614", "name": "Ludogorets Razgrad"},
-            "riga fs": {"id": "35159", "name": "Riga FC"},
-            "istra 1961": {"id": "4051", "name": "NK Istra 1961"},
-            "gorica": {"id": "2947", "name": "HNK Gorica"},
-            "bb bodrumspor": {"id": "24134", "name": "Bandırmaboluspor"},
-            "elversberg": {"id": "4097", "name": "SV 07 Elversberg"},
-            "darmstadt 98": {"id": "105", "name": "SV Darmstadt 98"},
-            "nürnberg": {"id": "4", "name": "1. FC Nürnberg"},
-            "bastia": {"id": "3444", "name": "SC Bastia"},
-            "real sociedad": {"id": "681", "name": "Real Sociedad San Sebastián"},
-            
-            # Add new direct mappings
-            "hoffenheim": {"id": "533", "name": "TSG 1899 Hoffenheim"},
-            "1. fc kaiserslautern": {"id": "2", "name": "1. FC Kaiserslautern"},
-            "sl benfica": {"id": "294", "name": "Benfica Lissabon"},
-            "la equidad": {"id": "6954", "name": "CD La Equidad Seguros"},
-            "levadiakos fc": {"id": "2186", "name": "APO Levadiakos"},
-            "gps kallithea": {"id": "5847", "name": "Kallithea FC"},
-            "vv sint-truiden": {"id": "1773", "name": "K. Sint-Truidense VV"},
-        }
         
         # Generate search variations
         search_variations = [

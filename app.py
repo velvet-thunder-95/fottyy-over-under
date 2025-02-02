@@ -502,6 +502,15 @@ def create_match_features_from_api(match_data):
         features['home_xg'] = home_xg
         features['away_xg'] = away_xg
         
+        # Goals - use prematch goals with safe defaults
+        try:
+            features['home_goals'] = max(0, float(match_data.get('team_a_goals_prematch', 0)))
+            features['away_goals'] = max(0, float(match_data.get('team_b_goals_prematch', 0)))
+        except (ValueError, TypeError):
+            logger.warning("Invalid goals values, using defaults")
+            features['home_goals'] = 0
+            features['away_goals'] = 0
+        
         # Shot accuracy with safe division
         features['shot_accuracy_home'] = features['home_shots_on_target'] / max(1, features['home_shots'])
         features['shot_accuracy_away'] = features['away_shots_on_target'] / max(1, features['away_shots'])
