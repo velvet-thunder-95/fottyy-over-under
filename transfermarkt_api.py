@@ -871,7 +871,7 @@ class TransfermarktAPI:
                 logger.info(f"Team ID from direct mapping: {team_id}")
                 
                 # Make API request to get market value
-                url = f"{self.base_url}/clubs/{team_id}"
+                url = f"{self.base_url}/clubs/{team_id}/market-value"  # Changed endpoint
                 logger.info(f"Making API request to: {url}")
                 response = requests.get(url, headers=self.headers)
                 logger.info(f"API response status: {response.status_code}")
@@ -879,13 +879,15 @@ class TransfermarktAPI:
                 if response.status_code == 200:
                     data = response.json()
                     logger.debug(f"API response data: {data}")
-                    market_value = data.get("marketValue", {}).get("value")
+                    market_value = data.get("value")  # Changed path to value
                     if market_value:
                         value = f"€{market_value}m"
                         logger.info(f"Found market value from direct mapping: {value}")
                         return value
                     else:
                         logger.warning(f"No market value found in response for {cleaned_name}")
+                else:
+                    logger.error(f"API response: {response.text}")
             else:
                 logger.info(f"No direct mapping found for {cleaned_name}, trying search")
             
@@ -904,7 +906,7 @@ class TransfermarktAPI:
                     logger.info(f"Found team ID from search: {team_id}")
                     
                     # Make API request to get market value
-                    url = f"{self.base_url}/clubs/{team_id}"
+                    url = f"{self.base_url}/clubs/{team_id}/market-value"  # Changed endpoint
                     logger.info(f"Making API request to: {url}")
                     response = requests.get(url, headers=self.headers)
                     logger.info(f"API response status: {response.status_code}")
@@ -912,23 +914,28 @@ class TransfermarktAPI:
                     if response.status_code == 200:
                         data = response.json()
                         logger.debug(f"API response data: {data}")
-                        market_value = data.get("marketValue", {}).get("value")
+                        market_value = data.get("value")  # Changed path to value
                         if market_value:
                             value = f"€{market_value}m"
                             logger.info(f"Found market value from search: {value}")
                             return value
                         else:
                             logger.warning(f"No market value found in response for {cleaned_name}")
+                            logger.debug(f"Response data structure: {data}")
+                    else:
+                        logger.error(f"API response: {response.text}")
                 else:
                     logger.warning(f"No clubs found in search results for {cleaned_name}")
             else:
                 logger.error(f"Search API request failed with status {response.status_code}")
+                logger.error(f"API response: {response.text}")
             
             logger.warning(f"Could not find market value for {team_name}")
             return None
             
         except Exception as e:
             logger.error(f"Error getting market value for {team_name}: {str(e)}")
+            logger.exception("Full traceback:")
             return None
 
     def get_both_teams_market_value(self, home_team, away_team):
