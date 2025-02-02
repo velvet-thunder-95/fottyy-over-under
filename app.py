@@ -274,6 +274,140 @@ st.markdown("""
         font-weight: 600 !important;
         margin: 1.5rem 0 1rem 0 !important;
     }
+
+    /* Match card styles */
+    .match-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 2rem;
+        border: 1px solid #e2e8f0;
+    }
+
+    .league-name {
+        color: #4a5568;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 1rem;
+    }
+
+    .teams-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .team-name {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #2d3748;
+    }
+
+    .vs-badge {
+        background: #edf2f7;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        color: #4a5568;
+        font-weight: 500;
+    }
+
+    .prediction-wrapper {
+        border-radius: 8px;
+        padding: 1rem;
+        margin: 1rem 0;
+        text-align: center;
+    }
+
+    .prediction-high {
+        background-color: #c6f6d5;
+        border: 1px solid #9ae6b4;
+    }
+
+    .prediction-medium {
+        background-color: #feebc8;
+        border: 1px solid #fbd38d;
+    }
+
+    .prediction-low {
+        background-color: #fed7d7;
+        border: 1px solid #feb2b2;
+    }
+
+    .prediction-text {
+        color: #2d3748 !important;
+        font-size: 1.2rem !important;
+        font-weight: 600 !important;
+        margin-bottom: 0.5rem !important;
+    }
+
+    .confidence-text {
+        color: #4a5568;
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+
+    .stat-box {
+        background: #f7fafc;
+        border-radius: 8px;
+        padding: 1rem;
+        text-align: center;
+    }
+
+    .stat-label {
+        color: #4a5568;
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-value {
+        color: #2d3748;
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+
+    /* Progress bar styles */
+    .progress-container {
+        margin-top: 1.5rem;
+    }
+
+    .progress-bar {
+        height: 8px;
+        border-radius: 4px;
+        background: #e2e8f0;
+        overflow: hidden;
+        margin-bottom: 0.5rem;
+    }
+
+    .progress-fill {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.3s ease;
+    }
+
+    .legend-item {
+        display: inline-flex;
+        align-items: center;
+        margin-right: 1rem;
+        font-size: 0.8rem;
+        color: #4a5568;
+    }
+
+    .legend-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-right: 4px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -1415,18 +1549,47 @@ def display_match_details(match, prediction_data, confidence):
         if not league_name:
             league_name = "Unknown League"
             
-        st.markdown(f"### {league_name}")
+        # Create match card container
+        st.markdown("""
+            <div class="match-card">
+                <div class="league-name">{league_name}</div>
+                <div class="teams-container">
+                    <span class="team-name">{home_team}</span>
+                    <span class="vs-badge">VS</span>
+                    <span class="team-name">{away_team}</span>
+                </div>
+        """.format(
+            league_name=league_name,
+            home_team=match.get('home_name', 'Home Team'),
+            away_team=match.get('away_name', 'Away Team')
+        ), unsafe_allow_html=True)
         
-        # Get team names with fallbacks
-        home_team = match.get('home_name', 'Home Team')
-        away_team = match.get('away_name', 'Away Team')
-        
-        prediction = f"{home_team} vs {away_team} - {prediction_data.get('predicted_outcome', 'No Prediction')}"
+        # Display prediction
+        prediction = f"{match.get('home_name', 'Home Team')} vs {match.get('away_name', 'Away Team')} - {prediction_data.get('predicted_outcome', 'No Prediction')}"
         display_prediction(prediction, confidence or 0)
         
-        # Display market values
+        # Display market values in stats grid
         try:
-            display_market_values(home_team, away_team)
+            home_value, away_value = get_market_values(
+                match.get('home_name', ''), 
+                match.get('away_name', '')
+            )
+            
+            st.markdown("""
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-label">Home Market Value</div>
+                        <div class="stat-value">{home_value}</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Away Market Value</div>
+                        <div class="stat-value">{away_value}</div>
+                    </div>
+                </div>
+            """.format(
+                home_value=home_value,
+                away_value=away_value
+            ), unsafe_allow_html=True)
         except Exception as e:
             logger.error(f"Error displaying market values: {str(e)}")
             
@@ -1438,21 +1601,49 @@ def display_match_details(match, prediction_data, confidence):
             if kickoff:
                 cet_time = convert_to_cet(kickoff)
                 if cet_time:
-                    st.markdown(f"**Kickoff:** {match_date_str} {cet_time}")
-                else:
-                    st.markdown(f"**Date:** {match_date_str}")
+                    st.markdown(f"""
+                        <div style="text-align: center; margin: 1rem 0;">
+                            <span style="background: #edf2f7; padding: 0.5rem 1rem; border-radius: 20px; color: #4a5568; font-weight: 500;">
+                                {match_date_str} {cet_time}
+                            </span>
+                        </div>
+                    """, unsafe_allow_html=True)
         except Exception as e:
             logger.error(f"Error displaying date/time: {str(e)}")
             
         # Display probability bars
         try:
-            display_probability_bars(
-                match.get('home_prob', 0), 
-                match.get('draw_prob', 0), 
-                match.get('away_prob', 0), 
-                home_team,
-                away_team
-            )
+            home_prob = match.get('home_prob', 0)
+            draw_prob = match.get('draw_prob', 0)
+            away_prob = match.get('away_prob', 0)
+            
+            st.markdown("""
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: {home_pct}%; background: #48bb78;"></div>
+                        <div class="progress-fill" style="width: {draw_pct}%; background: #ed8936;"></div>
+                        <div class="progress-fill" style="width: {away_pct}%; background: #3182ce;"></div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-top: 0.5rem;">
+                        <div class="legend-item">
+                            <div class="legend-dot" style="background: #48bb78;"></div>
+                            Home Win ({home_pct:.1f}%)
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-dot" style="background: #ed8936;"></div>
+                            Draw ({draw_pct:.1f}%)
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-dot" style="background: #3182ce;"></div>
+                            Away Win ({away_pct:.1f}%)
+                        </div>
+                    </div>
+                </div>
+            """.format(
+                home_pct=home_prob * 100,
+                draw_pct=draw_prob * 100,
+                away_pct=away_prob * 100
+            ), unsafe_allow_html=True)
         except Exception as e:
             logger.error(f"Error displaying probability bars: {str(e)}")
             
@@ -1462,8 +1653,8 @@ def display_match_details(match, prediction_data, confidence):
         except Exception as e:
             logger.error(f"Error displaying odds: {str(e)}")
             
-        # Add separator between predictions
-        st.markdown("---")
+        # Close match card container
+        st.markdown("</div>", unsafe_allow_html=True)
             
     except Exception as e:
         logger.error(f"Error displaying match details: {str(e)}")
