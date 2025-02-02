@@ -368,25 +368,17 @@ def create_match_features_from_api(match_data):
 
         # First add features in the exact order they were used during training
         feature_order = [
-            'season', 'competition_id',
-            'home_total_matches', 'away_total_matches',
-            'home_win_rate', 'away_win_rate',
-            'home_form_points', 'away_form_points',
-            'home_shots', 'away_shots',
-            'home_shots_on_target', 'away_shots_on_target',
-            'home_corners', 'away_corners',
-            'home_fouls', 'away_fouls',
-            'home_possession', 'away_possession',
-            'home_xg', 'away_xg',
-            'shot_accuracy_home', 'shot_accuracy_away',
-            'home_win_rate_ratio', 'home_momentum', 'away_momentum',
-            'odds_home_win', 'odds_draw', 'odds_away_win',
-            'implied_home_prob', 'implied_draw_prob', 'implied_away_prob',
             'win_rate_difference', 'possession_difference', 'xg_difference',
             'shot_difference', 'momentum_difference', 'implied_prob_sum',
             'form_difference', 'odds_ratio', 'total_momentum',
-            'goal_difference', 'xg_ratio', 'form_ratio', 'win_rate_ratio',
-            'total_goals', 'total_xg', 'home_goals', 'away_goals'
+            'home_win_rate', 'away_win_rate', 'home_possession', 'away_possession',
+            'home_xg', 'away_xg', 'home_shots', 'away_shots', 'home_momentum',
+            'away_momentum', 'implied_home_prob', 'implied_draw_prob', 'implied_away_prob',
+            'home_form_points', 'away_form_points', 'odds_home_win', 'odds_draw',
+            'odds_away_win', 'season', 'competition_id', 'home_total_matches',
+            'away_total_matches', 'home_shots_on_target', 'away_shots_on_target',
+            'home_corners', 'away_corners', 'home_fouls', 'away_fouls',
+            'shot_accuracy_home', 'shot_accuracy_away', 'home_win_rate_ratio'
         ]
 
         # Basic features with safe defaults
@@ -559,14 +551,6 @@ def create_match_features_from_api(match_data):
         features['form_difference'] = features['home_form_points'] - features['away_form_points']
         features['odds_ratio'] = features['odds_home_win'] / max(0.1, features['odds_away_win'])
         features['total_momentum'] = features['home_momentum'] + features['away_momentum']
-        
-        # Add additional derived features that might be expected by the model
-        features['goal_difference'] = features['home_goals'] - features['away_goals']
-        features['xg_ratio'] = features['home_xg'] / max(0.1, features['away_xg'])
-        features['form_ratio'] = features['home_form_points'] / max(0.1, features['away_form_points'])
-        features['win_rate_ratio'] = features['home_win_rate'] / max(0.1, features['away_win_rate'])
-        features['total_goals'] = features['home_goals'] + features['away_goals']
-        features['total_xg'] = features['home_xg'] + features['away_xg']
         
         # Convert to DataFrame with proper feature order
         df = pd.DataFrame([features])
