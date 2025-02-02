@@ -801,6 +801,7 @@ class TransfermarktAPI:
         for attempt in range(max_retries):
             try:
                 self._rate_limit()  # Apply rate limiting
+                logger.debug(f"Making API request - URL: {url}, Params: {params}, Headers: {self.headers}")
                 response = requests.get(url, headers=self.headers, params=params)
                 
                 if response.status_code == 429:  # Too Many Requests
@@ -809,6 +810,12 @@ class TransfermarktAPI:
                         logger.warning(f"Rate limit hit, waiting {sleep_time} seconds...")
                         time.sleep(sleep_time)
                         continue
+                
+                try:
+                    response_data = response.json()
+                    logger.debug(f"API Response Data: {response_data}")
+                except ValueError:
+                    logger.error(f"Invalid JSON response: {response.text}")
                 
                 response.raise_for_status()
                 return response
@@ -819,6 +826,8 @@ class TransfermarktAPI:
                     logger.warning(f"Request failed, retrying in {sleep_time} seconds... Error: {str(e)}")
                     time.sleep(sleep_time)
                 else:
+                    logger.error(f"All retries failed for URL: {url}")
+                    logger.error(f"Last error: {str(e)}")
                     raise
         
         raise Exception("Max retries exceeded")
@@ -871,15 +880,16 @@ class TransfermarktAPI:
                 logger.info(f"Team ID from direct mapping: {team_id}")
                 
                 # Make API request to get market value
-                url = f"{self.base_url}/clubs/{team_id}"  
-                logger.info(f"Making API request to: {url}")
-                response = self._make_api_request(url)  
+                url = f"{self.base_url}/clubs/get-info"
+                params = {"id": str(team_id)}
+                logger.info(f"Making API request to: {url} with params: {params}")
+                response = self._make_api_request(url, params)
                 logger.info(f"API response status: {response.status_code}")
                 
                 if response.status_code == 200:
                     data = response.json()
                     logger.debug(f"API response data: {data}")
-                    market_value = data.get("marketValue", {}).get("value")  
+                    market_value = data.get("marketValue", {}).get("value")
                     if market_value:
                         value = f"€{market_value}m"
                         logger.info(f"Found market value from direct mapping: {value}")
@@ -895,7 +905,7 @@ class TransfermarktAPI:
             search_url = f"{self.base_url}/search"
             params = {"query": cleaned_name}
             logger.info(f"Making search API request to: {search_url} with params: {params}")
-            response = self._make_api_request(search_url, params)  
+            response = self._make_api_request(search_url, params)
             logger.info(f"Search API response status: {response.status_code}")
             
             if response.status_code == 200:
@@ -906,15 +916,16 @@ class TransfermarktAPI:
                     logger.info(f"Found team ID from search: {team_id}")
                     
                     # Make API request to get market value
-                    url = f"{self.base_url}/clubs/{team_id}"  
-                    logger.info(f"Making API request to: {url}")
-                    response = self._make_api_request(url)  
+                    url = f"{self.base_url}/clubs/get-info"
+                    params = {"id": str(team_id)}
+                    logger.info(f"Making API request to: {url} with params: {params}")
+                    response = self._make_api_request(url, params)
                     logger.info(f"API response status: {response.status_code}")
                     
                     if response.status_code == 200:
                         data = response.json()
                         logger.debug(f"API response data: {data}")
-                        market_value = data.get("marketValue", {}).get("value")  
+                        market_value = data.get("marketValue", {}).get("value")
                         if market_value:
                             value = f"€{market_value}m"
                             logger.info(f"Found market value from search: {value}")
