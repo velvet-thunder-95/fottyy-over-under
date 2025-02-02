@@ -365,7 +365,9 @@ class TransfermarktAPI:
             "vv sint-truiden": {"id": "1773", "name": "K. Sint-Truidense VV"},
             "sporting cp": {"id": "336", "name": "Sporting CP"},
             "farense": {"id": "2420", "name": "SC Farense"},
-            "estrela amadora": {"id": "15804", "name": "CF Estrela da Amadora"}
+            "estrela amadora": {"id": "15804", "name": "CF Estrela da Amadora"},
+            "1. fc slovacko": {"id": "5226", "name": "1. FC Slovácko"},
+            "sparta prag": {"id": "197", "name": "AC Sparta Praha"},
         }
         
         # Set fuzzy matching thresholds
@@ -849,3 +851,54 @@ class TransfermarktAPI:
         except Exception as e:
             logger.error(f"Error fetching team squad: {str(e)}")
             return []
+
+    def get_team_market_value(self, team_name):
+        """Get market value for a team"""
+        try:
+            if not team_name:
+                return None
+                
+            # Clean and normalize team name
+            team_name = self.clean_team_name(team_name)
+            
+            # Check direct mappings first
+            if team_name in self.direct_mappings:
+                team_id = self.direct_mappings[team_name]["id"]
+                # Make API request to get market value
+                url = f"{self.base_url}/clubs/{team_id}"
+                response = requests.get(url, headers=self.headers)
+                if response.status_code == 200:
+                    data = response.json()
+                    market_value = data.get("marketValue", {}).get("value")
+                    if market_value:
+                        return f"€{market_value}m"
+            
+            # If not in direct mappings, try to search
+            search_url = f"{self.base_url}/search"
+            params = {"query": team_name}
+            response = requests.get(search_url, headers=self.headers, params=params)
+            
+            if response.status_code == 200:
+                results = response.json()
+                if results and "clubs" in results and results["clubs"]:
+                    team_id = results["clubs"][0]["id"]
+                    # Make API request to get market value
+                    url = f"{self.base_url}/clubs/{team_id}"
+                    response = requests.get(url, headers=self.headers)
+                    if response.status_code == 200:
+                        data = response.json()
+                        market_value = data.get("marketValue", {}).get("value")
+                        if market_value:
+                            return f"€{market_value}m"
+            
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error getting market value for {team_name}: {str(e)}")
+            return None
+
+    def get_both_teams_market_value(self, home_team, away_team):
+        """Get market values for both teams"""
+        home_value = self.get_team_market_value(home_team)
+        away_value = self.get_team_market_value(away_team)
+        return home_value or 'N/A', away_value or 'N/A'

@@ -1058,16 +1058,8 @@ def get_market_values(home_team, away_team):
     """Get market values for both teams with caching"""
     api = TransfermarktAPI()
     try:
-        # Get market values
-        home_value = api.get_team_market_value(home_team)
-        away_value = api.get_team_market_value(away_team)
-        
-        # Return N/A if values not found
-        if not home_value:
-            home_value = 'N/A'
-        if not away_value:
-            away_value = 'N/A'
-            
+        # Get market values using the correct method
+        home_value, away_value = api.get_both_teams_market_value(home_team, away_team)
         return home_value, away_value
     except Exception as e:
         logger.error(f"Error getting market values: {str(e)}")
