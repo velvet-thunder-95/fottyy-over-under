@@ -26,7 +26,6 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-
 # Get the absolute path of the current file (app.py)
 current_file_path = os.path.abspath(__file__)
 
@@ -39,8 +38,6 @@ project_root = current_dir
 # Add the src directory to the Python path
 src_dir = os.path.join(project_root, 'src')
 sys.path.insert(0, src_dir)
-
-
 
 
 # Custom CSS
@@ -1005,7 +1002,12 @@ def display_market_values(home_team, away_team):
     try:
         logger.info(f"Starting to display market values for {home_team} vs {away_team}")
         home_value, away_value = get_market_values(home_team, away_team)
-        logger.info(f"Retrieved market values from cache/API - Home: {home_value}, Away: {away_value}")
+        
+        # Format values for display
+        home_display = home_value if home_value != 'N/A' else 'Not Available'
+        away_display = away_value if away_value != 'N/A' else 'Not Available'
+        
+        logger.info(f"Displaying market values - Home: {home_display}, Away: {away_display}")
         
         st.markdown(f"""
             <div style="
@@ -1033,7 +1035,7 @@ def display_market_values(home_team, away_team):
                             color: #0f172a;
                             font-weight: 600;
                             font-size: 1.1rem;">
-                            {home_value}
+                            {home_display}
                         </span>
                     </div>
                     <div>
@@ -1042,7 +1044,7 @@ def display_market_values(home_team, away_team):
                             color: #0f172a;
                             font-weight: 600;
                             font-size: 1.1rem;">
-                            {away_value}
+                            {away_display}
                         </span>
                     </div>
                 </div>
@@ -1058,12 +1060,14 @@ def display_market_values(home_team, away_team):
 def get_market_values(home_team, away_team):
     """Get market values for both teams with caching"""
     logger.info(f"Fetching market values for {home_team} vs {away_team}")
-    api = TransfermarktAPI()
     try:
-        # Get market values using the correct method
-        home_value, away_value = api.get_both_teams_market_value(home_team, away_team)
+        api = TransfermarktAPI()
+        # Search for teams and get their market values
+        home_value = api.search_team(home_team)
+        away_value = api.search_team(away_team)
+        
         logger.info(f"Retrieved market values - Home: {home_value}, Away: {away_value}")
-        return home_value, away_value
+        return home_value or 'N/A', away_value or 'N/A'
     except Exception as e:
         logger.error(f"Error getting market values: {str(e)}")
         logger.exception("Full traceback:")
