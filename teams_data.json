@@ -640,5 +640,29 @@
         "logo_path": "team_logos/Spain - La Liga_Girona.png",
         "logo_url": "https://tmssl.akamaized.net/images/wappen/medium/12321.png",
         "team_id": "12321"
+    },
+    "Queens Park Rangers": {
+        "league": "England - Championship",
+        "logo_path": "team_logos/England - Championship_Queens Park Rangers.png",
+        "logo_url": "https://tmssl.akamaized.net/images/wappen/medium/1039.png",
+        "team_id": "1039"
+    },
+    "Blackburn Rovers": {
+        "league": "England - Championship",
+        "logo_path": "team_logos/England - Championship_Blackburn Rovers.png",
+        "logo_url": "https://tmssl.akamaized.net/images/wappen/medium/164.png",
+        "team_id": "164"
+    },
+    "Atalanta": {
+        "league": "Italy - Serie A",
+        "logo_path": "team_logos/Italy - Serie A_Atalanta.png",
+        "logo_url": "https://tmssl.akamaized.net/images/wappen/medium/800.png",
+        "team_id": "800"
+    },
+    "Al Gharafa": {
+        "league": "Qatar - Stars League",
+        "logo_path": "team_logos/Qatar - Stars League_Al Gharafa.png",
+        "logo_url": "https://tmssl.akamaized.net/images/wappen/medium/6297.png",
+        "team_id": "6297"
     }
 }
