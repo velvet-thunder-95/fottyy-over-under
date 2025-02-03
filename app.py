@@ -2020,7 +2020,8 @@ def calculate_ev(predicted_prob, odds):
 def get_team_logo_path(team_name):
     """Get the logo path for a team from teams_data.json"""
     try:
-        teams_data_path = os.path.join(project_root, 'teams_data.json')
+        # Use relative path for teams_data.json
+        teams_data_path = 'teams_data.json'
         if not os.path.exists(teams_data_path):
             logger.error(f"teams_data.json not found at {teams_data_path}")
             return None
@@ -2096,12 +2097,15 @@ def get_team_logo_path(team_name):
         # Try each variation
         for variant in variations:
             if variant in teams_data:
+                # Convert absolute path to relative path
                 logo_path = teams_data[variant]['logo_path']
-                if os.path.exists(logo_path):
+                relative_path = os.path.join('team_logos', os.path.basename(logo_path))
+                
+                if os.path.exists(relative_path):
                     logger.info(f"Found logo for {original_name} using variant: {variant}")
-                    return logo_path
+                    return relative_path
                 else:
-                    logger.warning(f"Logo file not found at {logo_path} for {variant}")
+                    logger.warning(f"Logo file not found at {relative_path} for {variant}")
                     
         logger.error(f"No logo found for {original_name}. Tried variations: {variations}")
         return None
