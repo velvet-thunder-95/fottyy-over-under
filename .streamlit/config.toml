@@ -1,0 +1,23 @@
+[server]
+enableXsrfProtection = true
+enableCORS = false
+maxUploadSize = 200
+maxMessageSize = 200
+
+[browser]
+gatherUsageStats = false
+serverAddress = "0.0.0.0"
+serverPort = 8501
+
+[theme]
+primaryColor = "#3b82f6"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f8fafc"
+textColor = "#1e293b"
+
+[logger]
+level = "info"
+
+[client]
+toolbarMode = "minimal"
+showErrorDetails = false
