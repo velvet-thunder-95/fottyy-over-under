@@ -21,6 +21,8 @@ import pytz
 from zoneinfo import ZoneInfo
 import time
 from transfermarkt_api import TransfermarktAPI
+import base64
+from unidecode import unidecode as unidecode_text
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -405,6 +407,106 @@ st.markdown("""
         border-radius: 50%;
         margin-right: 4px;
     }
+    
+    /* Team logo styling */
+    .team-info {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .team-logo {
+        width: 48px;
+        height: 48px;
+        object-fit: contain;
+        border-radius: 50%;
+        background: white;
+        padding: 4px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .teams-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+        gap: 1rem;
+    }
+    
+    .vs-badge {
+        background: #2c5282;
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+    
+    .team-name {
+        font-weight: 600;
+        font-size: 1rem;
+        color: #2d3748;
+        text-align: center;
+    }
+    
+    /* Team Logos and Match Card */
+    .match-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin: 1rem 0;
+    }
+
+    .league-name {
+        font-size: 0.9rem;
+        color: #718096;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 1rem;
+        text-align: center;
+    }
+
+    .teams-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin: 1rem 0;
+    }
+
+    .team-info {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        flex: 1;
+    }
+
+    .team-logo {
+        width: 60px;
+        height: 60px;
+        object-fit: contain;
+        margin-bottom: 0.5rem;
+    }
+
+    .team-name {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #2d3748;
+        text-align: center;
+    }
+
+    .vs-badge {
+        background: #edf2f7;
+        color: #4a5568;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        margin: 0 1rem;
+    }
+    
+    /* Add more styles after this */
 </style>
 """, unsafe_allow_html=True)
 
@@ -1016,7 +1118,11 @@ def display_market_values(home_team, away_team):
                 border-radius: 8px;
                 padding: 16px;
                 margin: 12px 0;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                font-family: 'SF Mono', monospace;
+                font-size: 0.95rem;
+                font-weight: 500;
+                color: #0369a1;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
                 <h4 style="
                     color: #334155;
                     margin: 0 0 12px 0;
@@ -1081,7 +1187,7 @@ def get_multiple_market_values(teams):
 def display_match_odds(match_data):
     """Display FootyStats match odds in an organized box."""
     st.markdown("""
-        <h3 style="text-align: center; color: #1f2937; margin: 20px 0; font-size: 1.5rem;">Match Stats & Odds</h3>
+        <h3 style="text-align: center; color: #1f2937; margin: 20px 0; font-size: 1.5rem;"></h3>
     """, unsafe_allow_html=True)
     
     # Get predicted probabilities for all markets
@@ -1137,7 +1243,6 @@ def display_match_odds(match_data):
     """, unsafe_allow_html=True)
 
     # Display match odds
-    st.markdown("<h3>Match Odds</h3>", unsafe_allow_html=True)
     col1, col2, col3 = st.columns(3)
     with col1:
         display_odds_box("Home Win", home_odds, home_implied, home_ev)
@@ -1167,7 +1272,6 @@ def display_match_odds(match_data):
             under_ev = calculate_ev(under_pred, under)
             
             # Display Over/Under odds
-            st.markdown("<h3>Over/Under 2.5 Goals</h3>", unsafe_allow_html=True)
             col6, col7 = st.columns(2)
             with col6:
                 display_odds_box("Over 2.5", over, over_implied, over_ev)
@@ -1197,7 +1301,6 @@ def display_match_odds(match_data):
             btts_no_ev = calculate_ev(btts_no_pred, btts_no)
             
             # Display BTTS odds
-            st.markdown("<h3>Both Teams To Score</h3>", unsafe_allow_html=True)
             col8, col9 = st.columns(2)
             with col8:
                 display_odds_box("BTTS Yes", btts_yes, btts_implied, btts_ev)
@@ -1205,64 +1308,6 @@ def display_match_odds(match_data):
                 display_odds_box("BTTS No", btts_no, btts_no_implied, btts_no_ev)
     except Exception as e:
         print(f"Error processing BTTS: {str(e)}")
-
-def get_ev_color(ev_percentage):
-    """
-    Get background color based on EV percentage
-    
-    Args:
-        ev_percentage (float): Expected Value percentage
-        
-    Returns:
-        str: Hex color code
-    """
-    try:
-        if ev_percentage > 25:
-            return "#00AF50"  # Dark Green - PLUS EV over 25%
-        elif ev_percentage > 15:
-            return "#A9D08F"  # Light Green - PLUS EV 15-25%
-        elif ev_percentage > 5:
-            return "#E2EFDB"  # Very Light Green - PLUS EV 5-15%
-        elif ev_percentage >= -5:
-            return "#FFFF00"  # Yellow - Breakeven -5% to 5%
-        elif ev_percentage >= -15:
-            return "#F4AF84"  # Light Red - MINUS EV -5% to -15%
-        else:
-            return "#FE0000"  # Dark Red - MINUS EV below -15%
-    except Exception as e:
-        logger.error(f"Error getting EV color: {str(e)}")
-        return "#FFFFFF"  # White as fallback
-
-def calculate_ev(predicted_prob, odds):
-    """
-    Calculate Expected Value (EV) for a bet using the formula: (Bookie Odds/Breakeven Odds - 1) * 100
-    where Breakeven Odds = 1/Probability
-    
-    Args:
-        predicted_prob (float): Our predicted probability (0-100)
-        odds (float): Decimal odds from bookmaker
-        
-    Returns:
-        float: Expected Value percentage
-    """
-    try:
-        # Convert probability to decimal (0-1)
-        prob_decimal = predicted_prob / 100
-        
-        # Calculate breakeven odds
-        breakeven_odds = 1 / prob_decimal
-        
-        # Calculate EV percentage
-        ev_percentage = (odds / breakeven_odds - 1) * 100
-        
-        return round(ev_percentage, 2)
-        
-    except ZeroDivisionError:
-        logger.error("Division by zero in EV calculation - probability cannot be 0")
-        return 0.0
-    except Exception as e:
-        logger.error(f"Error calculating EV: {str(e)}")
-        return 0.0
 
 def get_match_prediction(match_data):
     """Calculate match prediction using the loaded model"""
@@ -1562,25 +1607,145 @@ def display_match_details(match, prediction_data, confidence):
         if not league_name:
             league_name = "Unknown League"
             
-        # Create match card container
+        # Get team names
+        home_team = match.get('home_name', 'Home Team')
+        away_team = match.get('away_name', 'Away Team')
+        
+        # Get team logos
+        home_logo = get_team_logo_path(home_team)
+        away_logo = get_team_logo_path(away_team)
+        
+        # Convert logo paths to base64 if they exist
+        home_logo_html = ''
+        away_logo_html = ''
+        
+        try:
+            if home_logo and os.path.exists(home_logo):
+                with open(home_logo, "rb") as f:
+                    home_encoded = base64.b64encode(f.read()).decode()
+                    home_logo_html = f'<img src="data:image/png;base64,{home_encoded}" class="team-logo" alt="{home_team} logo">'
+            else:
+                home_logo_html = f'<div class="team-logo-placeholder">{home_team[:3].upper()}</div>'
+                
+            if away_logo and os.path.exists(away_logo):
+                with open(away_logo, "rb") as f:
+                    away_encoded = base64.b64encode(f.read()).decode()
+                    away_logo_html = f'<img src="data:image/png;base64,{away_encoded}" class="team-logo" alt="{away_team} logo">'
+            else:
+                away_logo_html = f'<div class="team-logo-placeholder">{away_team[:3].upper()}</div>'
+        except Exception as e:
+            logger.error(f"Error loading team logos: {str(e)}")
+            home_logo_html = f'<div class="team-logo-placeholder">{home_team[:3].upper()}</div>'
+            away_logo_html = f'<div class="team-logo-placeholder">{away_team[:3].upper()}</div>'
+        
+        # Add CSS for team display
         st.markdown("""
-            <div class="match-card">
-                <div class="league-name">{league_name}</div>
-                <div class="teams-container">
+            <style>
+                .match-container {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin: 20px 0;
+                }
+                .team-info {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    text-align: center;
+                    min-width: 120px;
+                }
+                .team-logo, .team-logo-placeholder {
+                    width: 60px;
+                    height: 60px;
+                    margin-bottom: 8px;
+                }
+                .team-logo-placeholder {
+                    background: #f0f0f0;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-weight: bold;
+                    color: #666;
+                    font-size: 18px;
+                }
+                .team-name {
+                    font-size: 1.1rem;
+                    font-weight: 500;
+                    color: #2d3748;
+                }
+                .vs-badge {
+                    margin: 0 20px;
+                    font-size: 1.2rem;
+                    font-weight: 500;
+                    color: #4a5568;
+                }
+            </style>
+        """, unsafe_allow_html=True)
+        
+        # Display teams with logos or placeholders
+        st.markdown(f"""
+            <div class="match-container">
+                <div class="team-info">
+                    {home_logo_html}
                     <span class="team-name">{home_team}</span>
-                    <span class="vs-badge">VS</span>
+                </div>
+                <span class="vs-badge">VS</span>
+                <div class="team-info">
+                    {away_logo_html}
                     <span class="team-name">{away_team}</span>
                 </div>
-        """.format(
-            league_name=league_name,
-            home_team=match.get('home_name', 'Home Team'),
-            away_team=match.get('away_name', 'Away Team')
-        ), unsafe_allow_html=True)
+            </div>
+        """, unsafe_allow_html=True)
         
         # Display prediction
         prediction = f"{match.get('home_name', 'Home Team')} vs {match.get('away_name', 'Away Team')} - {prediction_data.get('predicted_outcome', 'No Prediction')}"
         display_prediction(prediction, confidence or 0)
         
+        # Display probability box
+        try:
+            # Get probabilities from match data
+            home_prob = float(match.get('home_prob', 0))
+            draw_prob = float(match.get('draw_prob', 0))
+            away_prob = float(match.get('away_prob', 0))
+            
+            # Normalize probabilities to ensure they sum to 100%
+            total = home_prob + draw_prob + away_prob
+            if total > 0:
+                home_prob = (home_prob / total) * 100
+                draw_prob = (draw_prob / total) * 100
+                away_prob = (away_prob / total) * 100
+            
+            # Create probability box with inline styles
+            html = f'''
+                <div style="width: 100%; max-width: 800px; margin: 5px auto 0 auto; background-color: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 8px 4px 8px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0; margin-bottom: 4px;">
+                        <div style="text-align: center;">
+                            <div style="color: #2d3748; font-weight: 600; font-size: 0.9rem;">Home</div>
+                            <div style="color: #48bb78; font-size: 1.1rem; font-weight: 700;">{home_prob:.1f}%</div>
+                        </div>
+                        <div style="text-align: center; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
+                            <div style="color: #2d3748; font-weight: 600; font-size: 0.9rem;">Draw</div>
+                            <div style="color: #ed8936; font-size: 1.1rem; font-weight: 700;">{draw_prob:.1f}%</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="color: #2d3748; font-weight: 600; font-size: 0.9rem;">Away</div>
+                            <div style="color: #3182ce; font-size: 1.1rem; font-weight: 700;">{away_prob:.1f}%</div>
+                        </div>
+                    </div>
+                    <div style="width: 100%; height: 4px; background: #edf2f7; border-radius: 2px 2px 0 0; overflow: hidden; display: flex; margin: 0;">
+                        <div style="width: {home_prob}%; height: 100%; background-color: #48bb78;"></div>
+                        <div style="width: {draw_prob}%; height: 100%; background-color: #ed8936;"></div>
+                        <div style="width: {away_prob}%; height: 100%; background-color: #3182ce;"></div>
+                    </div>
+                </div>
+            '''
+            
+            st.markdown(html, unsafe_allow_html=True)
+            
+        except Exception as e:
+            logger.error(f"Error displaying probability box: {str(e)}")
+            
         # Display market values in stats grid
         try:
             home_team = match.get('home_name', '')
@@ -1607,6 +1772,8 @@ def display_match_details(match, prediction_data, confidence):
             formatted_home_value = format_market_value(home_value)
             formatted_away_value = format_market_value(away_value)
             
+            logger.info(f"Displaying market values - Home: {formatted_home_value}, Away: {formatted_away_value}")
+            
             st.markdown("""
                 <div class="stats-grid">
                     <div class="stat-box">
@@ -1628,56 +1795,23 @@ def display_match_details(match, prediction_data, confidence):
         # Display date and kickoff time
         try:
             match_date = datetime.fromtimestamp(match['date_unix'], pytz.UTC).date()
-            match_date_str = match_date.strftime('%Y-%m-%d')
+            match_date_str = match_date.strftime('%A, %d %B %Y')
             kickoff = match.get('kickoff', '')
             if kickoff:
                 cet_time = convert_to_cet(kickoff)
                 if cet_time:
                     st.markdown(f"""
-                        <div style="text-align: center; margin: 1rem 0;">
-                            <span style="background: #edf2f7; padding: 0.5rem 1rem; border-radius: 20px; color: #4a5568; font-weight: 500;">
-                                {match_date_str} {cet_time}
-                            </span>
+                        <div style="width: 100%; max-width: 800px; margin: 5px auto; background-color: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; text-align: center;">
+                            <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                <span style="color: #4a5568; font-size: 1.1rem;">🕒</span>
+                                <span style="color: #2d3748; font-weight: 500; font-size: 1.1rem;">
+                                    {match_date_str} {cet_time} (German Time)
+                                </span>
+                            </div>
                         </div>
                     """, unsafe_allow_html=True)
         except Exception as e:
             logger.error(f"Error displaying date/time: {str(e)}")
-            
-        # Display probability bars
-        try:
-            home_prob = match.get('home_prob', 0)
-            draw_prob = match.get('draw_prob', 0)
-            away_prob = match.get('away_prob', 0)
-            
-            st.markdown("""
-                <div class="progress-container">
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: {home_pct}%; background: #48bb78;"></div>
-                        <div class="progress-fill" style="width: {draw_pct}%; background: #ed8936;"></div>
-                        <div class="progress-fill" style="width: {away_pct}%; background: #3182ce;"></div>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; margin-top: 0.5rem;">
-                        <div class="legend-item">
-                            <div class="legend-dot" style="background: #48bb78;"></div>
-                            Home Win ({home_pct:.1f}%)
-                        </div>
-                        <div class="legend-item">
-                            <div class="legend-dot" style="background: #ed8936;"></div>
-                            Draw ({draw_pct:.1f}%)
-                        </div>
-                        <div class="legend-item">
-                            <div class="legend-dot" style="background: #3182ce;"></div>
-                            Away Win ({away_pct:.1f}%)
-                        </div>
-                    </div>
-                </div>
-            """.format(
-                home_pct=home_prob * 100,
-                draw_pct=draw_prob * 100,
-                away_pct=away_prob * 100
-            ), unsafe_allow_html=True)
-        except Exception as e:
-            logger.error(f"Error displaying probability bars: {str(e)}")
             
         # Display odds if available
         try:
@@ -1711,18 +1845,13 @@ def display_kickoff_time(match_data):
         
         # Display kickoff time with styled box
         st.markdown(f"""
-            <div style="display: inline-block;
-                        background-color: #f0f9ff;
-                        border: 2px solid #0ea5e9;
-                        border-radius: 8px;
-                        padding: 10px 16px;
-                        margin: 12px 0;
-                        font-family: 'SF Mono', monospace;
-                        font-size: 0.95rem;
-                        font-weight: 500;
-                        color: #0369a1;
-                        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
-                🕒 {formatted_time} (German Time)
+            <div style="width: 100%; max-width: 800px; margin: 5px auto; background-color: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; text-align: center;">
+                <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <span style="color: #4a5568; font-size: 1.1rem;">🕒</span>
+                    <span style="color: #2d3748; font-weight: 500; font-size: 1.1rem;">
+                        {formatted_time} (German Time)
+                    </span>
+                </div>
             </div>
         """, unsafe_allow_html=True)
         
@@ -1829,6 +1958,157 @@ def display_odds_box(title, odds, implied_prob, ev):
             </div>
         </div>
     """, unsafe_allow_html=True)
+
+def get_ev_color(ev_percentage):
+    """
+    Get background color based on EV percentage
+    
+    Args:
+        ev_percentage (float): Expected Value percentage
+        
+    Returns:
+        str: Hex color code
+    """
+    try:
+        if ev_percentage > 25:
+            return "#00AF50"  # Dark Green - PLUS EV over 25%
+        elif ev_percentage > 15:
+            return "#A9D08F"  # Light Green - PLUS EV 15-25%
+        elif ev_percentage > 5:
+            return "#E2EFDB"  # Very Light Green - PLUS EV 5-15%
+        elif ev_percentage >= -5:
+            return "#FFFF00"  # Yellow - Breakeven -5% to 5%
+        elif ev_percentage >= -15:
+            return "#F4AF84"  # Light Red - MINUS EV -5% to -15%
+        else:
+            return "#FE0000"  # Dark Red - MINUS EV below -15%
+    except Exception as e:
+        logger.error(f"Error getting EV color: {str(e)}")
+        return "#FFFFFF"  # White as fallback
+
+def calculate_ev(predicted_prob, odds):
+    """
+    Calculate Expected Value (EV) for a bet using the formula: (Bookie Odds/Breakeven Odds - 1) * 100
+    where Breakeven Odds = 1/Probability
+    
+    Args:
+        predicted_prob (float): Our predicted probability (0-100)
+        odds (float): Decimal odds from bookmaker
+        
+    Returns:
+        float: Expected Value percentage
+    """
+    try:
+        # Convert probability to decimal (0-1)
+        prob_decimal = predicted_prob / 100
+        
+        # Calculate breakeven odds
+        breakeven_odds = 1 / prob_decimal
+        
+        # Calculate EV percentage
+        ev_percentage = (odds / breakeven_odds - 1) * 100
+        
+        return round(ev_percentage, 2)
+        
+    except ZeroDivisionError:
+        logger.error("Division by zero in EV calculation - probability cannot be 0")
+        return 0.0
+    except Exception as e:
+        logger.error(f"Error calculating EV: {str(e)}")
+        return 0.0
+
+def get_team_logo_path(team_name):
+    """Get the logo path for a team from teams_data.json"""
+    try:
+        teams_data_path = os.path.join(project_root, 'teams_data.json')
+        if not os.path.exists(teams_data_path):
+            logger.error(f"teams_data.json not found at {teams_data_path}")
+            return None
+            
+        with open(teams_data_path, 'r') as f:
+            teams_data = json.load(f)
+        
+        original_name = team_name
+        
+        # Handle common variations in team names
+        variations = []
+        
+        # Original name
+        variations.append(team_name)
+        
+        # Remove common suffixes
+        team_name = team_name.replace(' FC', '').replace(' CF', '')
+        team_name = team_name.replace(' SAD', '').replace(' CD', '')
+        team_name = team_name.replace(' SC', '').replace(' SK', '')
+        team_name = team_name.replace(' FK', '').replace(' JK', '')
+        team_name = team_name.strip()
+        variations.append(team_name)
+        
+        # Try without accents
+        unaccented = unidecode_text(team_name)
+        if unaccented != team_name:
+            variations.append(unaccented)
+            
+        # Try with/without UD prefix
+        if team_name.startswith('UD '):
+            variations.append(team_name[3:])
+        else:
+            variations.append('UD ' + team_name)
+            
+        # Handle Turkish team variations
+        turkish_teams = {
+            'Gaziantep': [
+                'Gaziantep',
+                'Gaziantep FK',
+                'Gazişehir Gaziantep',
+                'Gazisehir Gaziantep',
+                'Gaziantep Football Club'
+            ],
+            'Galatasaray': [
+                'Galatasaray',
+                'Galatasaray SK',
+                'Galatasaray Istanbul'
+            ],
+            'Fenerbahce': [
+                'Fenerbahce',
+                'Fenerbahçe',
+                'Fenerbahce SK',
+                'Fenerbahce Istanbul'
+            ],
+            'Besiktas': [
+                'Besiktas',
+                'Beşiktaş',
+                'Besiktas JK',
+                'Besiktas Istanbul'
+            ],
+            'Trabzonspor': [
+                'Trabzonspor',
+                'Trabzon'
+            ]
+        }
+        
+        # Check if team name contains any Turkish team variation
+        for base_team, team_variations in turkish_teams.items():
+            if any(variant.lower() in team_name.lower() for variant in team_variations):
+                variations.extend(team_variations)
+                break
+            
+        # Try each variation
+        for variant in variations:
+            if variant in teams_data:
+                logo_path = teams_data[variant]['logo_path']
+                if os.path.exists(logo_path):
+                    logger.info(f"Found logo for {original_name} using variant: {variant}")
+                    return logo_path
+                else:
+                    logger.warning(f"Logo file not found at {logo_path} for {variant}")
+                    
+        logger.error(f"No logo found for {original_name}. Tried variations: {variations}")
+        return None
+            
+    except Exception as e:
+        logger.error(f"Error getting logo path for {team_name}: {str(e)}")
+        return None
 
 def show_main_app():
     # Update results automatically
