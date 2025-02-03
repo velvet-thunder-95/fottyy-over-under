@@ -5,7 +5,6 @@ maxUploadSize = 200
 maxMessageSize = 200
 enableWebsocketCompression = true
 headless = true
-runOnSave = true
 
 [browser]
 gatherUsageStats = false
@@ -13,48 +12,18 @@ serverAddress = "0.0.0.0"
 serverPort = 8501
 
 [theme]
-# Modern color scheme
-primaryColor = "#3b82f6"  # Bright blue
-backgroundColor = "#ffffff"  # Pure white
-secondaryBackgroundColor = "#f8fafc"  # Light gray
-textColor = "#1e293b"  # Dark slate
-secondaryColor = "#38bdf8"  # Light blue for secondary elements
-tertiaryColor = "#818cf8"   # Purple for tertiary elements
+primaryColor = "#3b82f6"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f8fafc"
+textColor = "#1e293b"
 base = "light"
-
-[ui]
-hideSidebarNav = true
-animation = true
-transition = 1000
 
 [logger]
 level = "info"
-messageFormat = "%(asctime)s %(message)s"
-formatters = "simple"
 
 [client]
 toolbarMode = "minimal"
 showErrorDetails = false
-caching = true
 
 [runner]
 fastReruns = true
-enforceSerializableSessionState = false
-
-[deprecation]
-showfileUploaderEncoding = false
-showPyplotGlobalUse = false
-
-[mapbox]
-token = ""  # Add your mapbox token if using maps
-
-[global]
-developmentMode = false
-disableWatchdogWarning = true
-suppressDeprecationWarnings = true
-
-[server.fileWatcherType]
-type = "auto"
-
-[browser.serverSentEvents]
-enabled = true
