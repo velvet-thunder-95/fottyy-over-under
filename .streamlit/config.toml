@@ -18,12 +18,9 @@ primaryColor = "#3b82f6"  # Bright blue
 backgroundColor = "#ffffff"  # Pure white
 secondaryBackgroundColor = "#f8fafc"  # Light gray
 textColor = "#1e293b"  # Dark slate
-font = "sans serif"
-
-# Additional theme customization
-base = "light"
 secondaryColor = "#38bdf8"  # Light blue for secondary elements
 tertiaryColor = "#818cf8"   # Purple for tertiary elements
+base = "light"
 
 [ui]
 hideSidebarNav = true
@@ -61,20 +58,3 @@ type = "auto"
 
 [browser.serverSentEvents]
 enabled = true
-
-[theme.components]
-# Custom styling for specific components
-stButton = "#3b82f6"  # Primary button color
-stProgress = "#10b981"  # Progress bar color
-stSuccess = "#34d399"  # Success message color
-stError = "#ef4444"  # Error message color
-stWarning = "#f59e0b"  # Warning message color
-stInfo = "#3b82f6"  # Info message color
-
-[theme.font]
-# Font settings
-sansSerif = "Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif"
-monospace = "Source Code Pro, Consolas, Monaco, Lucida Console, Liberation Mono, DejaVu Sans Mono, Bitstream Vera Sans Mono, Courier New, monospace"
-sizeSmall = "12px"
-sizeMedium = "14px"
-sizeLarge = "16px"
