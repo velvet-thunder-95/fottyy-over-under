@@ -340,6 +340,39 @@ class TransfermarktAPI:
             "sint truiden": "vv sint-truiden",
             "vv sint-truiden": "k. sint-truidense vv",
             
+            # Colombian Teams
+            "union magdalena": "unión magdalena",
+            "unión magdalena": "union magdalena",
+            
+            # Greek Teams
+            "lamia": "pae lamia",
+            "pae lamia": "pae lamia 1964",
+            
+            # Turkish Teams
+            "gazisehir gaziantep": "gaziantep fk",
+            "gazişehir gaziantep": "gaziantep fk",
+            "gaziantep": "gaziantep fk",
+            
+            # Spanish Teams
+            "racing ferrol": "racing club de ferrol",
+            "racing de ferrol": "racing club de ferrol",
+            "racing club ferrol": "racing club de ferrol",
+            
+            # English Teams
+            "sunderland": "sunderland afc",
+            "oxford": "oxford united",
+            "oxford utd": "oxford united",
+            
+            # Swiss Teams
+            "grasshopper": "grasshopper club zürich",
+            "grasshoppers": "grasshopper club zürich",
+            "gc zürich": "grasshopper club zürich",
+            
+            # Iraqi Teams
+            "al shorta": "al-shorta sc",
+            "al-shorta": "al-shorta sc",
+            "police club": "al-shorta sc",
+            
             # Add more mappings here
         }
         
@@ -365,7 +398,17 @@ class TransfermarktAPI:
             "vv sint-truiden": {"id": "1773", "name": "K. Sint-Truidense VV"},
             "sporting cp": {"id": "336", "name": "Sporting CP"},
             "farense": {"id": "2420", "name": "SC Farense"},
-            "estrela amadora": {"id": "15804", "name": "CF Estrela da Amadora"}
+            "estrela amadora": {"id": "15804", "name": "CF Estrela da Amadora"},
+            
+            # Add new direct mappings
+            "union magdalena": {"id": "2442", "name": "Unión Magdalena"},
+            "pae lamia": {"id": "7955", "name": "PAS Lamia 1964"},
+            "gaziantep fk": {"id": "18562", "name": "Gaziantep FK"},
+            "racing club de ferrol": {"id": "2859", "name": "Racing de Ferrol"},
+            "sunderland afc": {"id": "289", "name": "Sunderland AFC"},
+            "oxford united": {"id": "1072", "name": "Oxford United"},
+            "grasshopper club zürich": {"id": "405", "name": "Grasshopper Club Zürich"},
+            "al-shorta sc": {"id": "24162", "name": "Al-Shorta SC"},
         }
         
         # Set fuzzy matching thresholds

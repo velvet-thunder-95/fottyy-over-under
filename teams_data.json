@@ -556,5 +556,89 @@
         "logo_path": "team_logos/England - Premier League_West Ham United.png",
         "logo_url": "https://tmssl.akamaized.net/images/wappen/medium/379.png",
         "team_id": "379"
+    },
+    "Bologna": {
+        "league": "Italy - Serie A",
+        "logo_path": "team_logos/Italy - Serie A_Bologna.png",
+        "logo_url": "https://tmssl.akamaized.net/images/wappen/medium/1025.png",
+        "team_id": "1025"
+    },
+    "Stuttgart": {
+        "league": "Germany - Bundesliga",
+        "logo_path": "team_logos/Germany - Bundesliga_Stuttgart.png",
+        "logo_url": "https://tmssl.akamaized.net/images/wappen/medium/79.png",
+        "team_id": "79"
+    },
+    "Augsburg": {
+        "league": "Germany - Bundesliga",
+        "logo_path": "team_logos/Germany - Bundesliga_Augsburg.png",
+        "logo_url": "https://tmssl.akamaized.net/images/wappen/medium/167.png",
+        "team_id": "167"
+    },
+    "Grasshopper": {
+        "league": "Switzerland - Super League",
+        "logo_path": "team_logos/Switzerland - Super League_Grasshopper.png",
+        "logo_url": "https://tmssl.akamaized.net/images/wappen/medium/504.png",
+        "team_id": "504"
+    },
+    "Lausanne Sport": {
+        "league": "Switzerland - Super League",
+        "logo_path": "team_logos/Switzerland - Super League_Lausanne Sport.png",
+        "logo_url": "https://tmssl.akamaized.net/images/wappen/medium/527.png",
+        "team_id": "527"
+    },
+    "Sion": {
+        "league": "Switzerland - Super League",
+        "logo_path": "team_logos/Switzerland - Super League_Sion.png",
+        "logo_url": "https://tmssl.akamaized.net/images/wappen/medium/321.png",
+        "team_id": "321"
+    },
+    "Servette": {
+        "league": "Switzerland - Super League",
+        "logo_path": "team_logos/Switzerland - Super League_Servette.png",
+        "logo_url": "https://tmssl.akamaized.net/images/wappen/medium/61.png",
+        "team_id": "61"
+    },
+    "Llaneros": {
+        "league": "Colombia - Primera A",
+        "logo_path": "team_logos/Colombia - Primera A_Llaneros.png",
+        "logo_url": "https://tmssl.akamaized.net/images/wappen/medium/38628.png",
+        "team_id": "38628"
+    },
+    "Union Magdalena": {
+        "league": "Colombia - Primera A",
+        "logo_path": "team_logos/Colombia - Primera A_Union Magdalena.png",
+        "logo_url": "https://tmssl.akamaized.net/images/wappen/medium/14680.png",
+        "team_id": "14680"
+    },
+    "Deportivo Pereira": {
+        "league": "Colombia - Primera A",
+        "logo_path": "team_logos/Colombia - Primera A_Deportivo Pereira.png",
+        "logo_url": "https://tmssl.akamaized.net/images/wappen/medium/9811.png",
+        "team_id": "9811"
+    },
+    "Alianza Petrolera": {
+        "league": "Colombia - Primera A",
+        "logo_path": "team_logos/Colombia - Primera A_Alianza Petrolera.png",
+        "logo_url": "https://tmssl.akamaized.net/images/wappen/medium/22902.png",
+        "team_id": "22902"
+    },
+    "Burnley": {
+        "league": "England - Premier League",
+        "logo_path": "team_logos/England - Premier League_Burnley.png",
+        "logo_url": "https://tmssl.akamaized.net/images/wappen/medium/1132.png",
+        "team_id": "1132"
+    },
+    "Oxford United": {
+        "league": "England - League One",
+        "logo_path": "team_logos/England - League One_Oxford United.png",
+        "logo_url": "https://tmssl.akamaized.net/images/wappen/medium/988.png",
+        "team_id": "988"
+    },
+    "Girona": {
+        "league": "Spain - La Liga",
+        "logo_path": "team_logos/Spain - La Liga_Girona.png",
+        "logo_url": "https://tmssl.akamaized.net/images/wappen/medium/12321.png",
+        "team_id": "12321"
     }
 }

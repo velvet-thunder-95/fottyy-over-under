@@ -531,7 +531,6 @@ def logout():
     st.session_state.logged_in = False
 
 def show_login_page():
-    st.markdown('<h1 class="app-title">⚽ Football Match Predictor</h1>', unsafe_allow_html=True)
     
     with st.container():
         st.markdown("""
@@ -2122,7 +2121,6 @@ def show_main_app():
     add_navigation_buttons()
     
     st.markdown('<div id="top"></div>', unsafe_allow_html=True)
-    st.markdown("<h1>⚽ Football Match Predictor ⚽</h1>", unsafe_allow_html=True)
     
     germany_tz = ZoneInfo("Europe/Berlin")
 
