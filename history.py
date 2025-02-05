@@ -180,7 +180,7 @@ class PredictionHistory:
         finally:
             conn.close()
 
-    def get_predictions(self, start_date=None, end_date=None, status=None, confidence_level=None, league=None):
+    def get_predictions(self, start_date=None, end_date=None, status=None, confidence_levels=None, leagues=None):
         """Get predictions with optional filters"""
         conn = sqlite3.connect(self.db_path)
         
@@ -199,69 +199,108 @@ class PredictionHistory:
         if start_date:
             query += " AND date >= ?"
             params.append(start_date)
+            
         if end_date:
             query += " AND date <= ?"
             params.append(end_date)
+            
         if status:
             query += " AND status = ?"
             params.append(status)
-        if confidence_level:
-            if confidence_level == "High":
-                query += " AND confidence >= 70"
-            elif confidence_level == "Medium":
-                query += " AND confidence >= 50 AND confidence < 70"
-            elif confidence_level == "Low":
-                query += " AND confidence < 50"
-        if league and league != "All":
-            query += " AND league = ?"
-            params.append(league)
-            
-        df = pd.read_sql_query(query, conn, params=params)
-        conn.close()
-        
-        return df
 
-    def calculate_statistics(self, confidence_level=None, league=None):
-        """Calculate prediction statistics with optional confidence level and league filter"""
+        # Handle multiple confidence levels
+        if confidence_levels and "All" not in confidence_levels:
+            confidence_conditions = []
+            for level in confidence_levels:
+                if level == "High":
+                    confidence_conditions.append("confidence >= 70")
+                elif level == "Medium":
+                    confidence_conditions.append("(confidence >= 50 AND confidence < 70)")
+                elif level == "Low":
+                    confidence_conditions.append("confidence < 50")
+            if confidence_conditions:
+                query += f" AND ({' OR '.join(confidence_conditions)})"
+
+        # Handle multiple leagues
+        if leagues and "All" not in leagues:
+            placeholders = ','.join('?' * len(leagues))
+            query += f" AND league IN ({placeholders})"
+            params.extend(leagues)
+            
+        query += " ORDER BY date DESC"
+        
+        try:
+            df = pd.read_sql_query(query, conn, params=params)
+            return df
+        except Exception as e:
+            logging.error(f"Error getting predictions: {str(e)}")
+            return pd.DataFrame()
+        finally:
+            conn.close()
+
+    def calculate_statistics(self, confidence_levels=None, leagues=None):
+        """Calculate prediction statistics with optional confidence level and league filters"""
         conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
         
         query = """
-            SELECT COUNT(*) as total,
-                   SUM(CASE WHEN predicted_outcome = actual_outcome AND actual_outcome IS NOT NULL THEN 1 ELSE 0 END) as correct,
-                   SUM(profit_loss) as total_profit,
-                   COUNT(CASE WHEN actual_outcome IS NULL THEN 1 END) as pending
+            SELECT 
+                COUNT(*) as total_predictions,
+                SUM(CASE WHEN predicted_outcome = actual_outcome AND actual_outcome IS NOT NULL THEN 1 ELSE 0 END) as correct_predictions,
+                SUM(CASE WHEN status = 'Pending' THEN 1 ELSE 0 END) as pending_predictions,
+                SUM(CASE WHEN profit_loss IS NOT NULL THEN profit_loss ELSE 0 END) as total_profit,
+                SUM(CASE WHEN bet_amount IS NOT NULL THEN bet_amount ELSE 0 END) as total_bet_amount
             FROM predictions
             WHERE 1=1
         """
         params = []
-        
-        if confidence_level:
-            if confidence_level == "High":
-                query += " AND confidence >= 70"
-            elif confidence_level == "Medium":
-                query += " AND confidence >= 50 AND confidence < 70"
-            elif confidence_level == "Low":
-                query += " AND confidence < 50"
-        
-        if league and league != "All":
-            query += " AND league = ?"
-            params.append(league)
+
+        # Handle multiple confidence levels
+        if confidence_levels and "All" not in confidence_levels:
+            confidence_conditions = []
+            for level in confidence_levels:
+                if level == "High":
+                    confidence_conditions.append("confidence >= 70")
+                elif level == "Medium":
+                    confidence_conditions.append("(confidence >= 50 AND confidence < 70)")
+                elif level == "Low":
+                    confidence_conditions.append("confidence < 50")
+            if confidence_conditions:
+                query += f" AND ({' OR '.join(confidence_conditions)})"
+
+        # Handle multiple leagues
+        if leagues and "All" not in leagues:
+            placeholders = ','.join('?' * len(leagues))
+            query += f" AND league IN ({placeholders})"
+            params.extend(leagues)
+
+        try:
+            df = pd.read_sql_query(query, conn, params=params)
+            row = df.iloc[0]
             
-        cursor.execute(query, params)
-        result = cursor.fetchone()
-        
-        total = result[0] or 0
-        correct = result[1] or 0
-        total_profit = result[2] or 0
-        pending_count = result[3] or 0
-        
-        success_rate = (correct / (total - pending_count) * 100) if total - pending_count > 0 else 0
-        roi = (total_profit / total * 100) if total > 0 else 0
-        
-        conn.close()
-        
-        return [total, correct, success_rate, total_profit, roi], pending_count
+            total_predictions = row['total_predictions']
+            correct_predictions = row['correct_predictions']
+            pending_predictions = row['pending_predictions']
+            total_profit = row['total_profit']
+            total_bet_amount = row['total_bet_amount']
+            
+            # Calculate success rate and ROI
+            completed_predictions = total_predictions - pending_predictions
+            success_rate = (correct_predictions / completed_predictions * 100) if completed_predictions > 0 else 0
+            roi = (total_profit / total_bet_amount * 100) if total_bet_amount > 0 else 0
+            
+            return (
+                total_predictions,
+                correct_predictions,
+                success_rate,
+                total_profit,
+                roi
+            ), pending_predictions
+            
+        except Exception as e:
+            logging.error(f"Error calculating statistics: {str(e)}")
+            return (0, 0, 0, 0, 0), 0
+        finally:
+            conn.close()
 
     def update_match_results(self, match_id, result):
         """Update match results in the database"""
@@ -743,27 +782,29 @@ def show_history_page():
             )
 
             # Add confidence level filter
-            confidence_level = st.sidebar.selectbox(
-                "Confidence Level",
+            confidence_levels = st.sidebar.multiselect(
+                "Confidence Levels",
                 ["All", "High", "Medium", "Low"],
-                help="Filter predictions by confidence level: High (≥70%), Medium (50-69%), Low (<50%)"
+                default=["All"],
+                help="Filter predictions by confidence levels: High (≥70%), Medium (50-69%), Low (<50%)"
             )
             
             # Add league filter
             leagues = all_predictions['league'].unique().tolist()
             leagues.insert(0, "All")
-            league = st.sidebar.selectbox(
-                "League",
+            selected_leagues = st.sidebar.multiselect(
+                "Competitions",
                 leagues,
-                index=0
+                default=["All"],
+                help="Filter predictions by competitions"
             )
             
             # Get filtered predictions
             predictions = history.get_predictions(
                 start_date=start_date.strftime('%Y-%m-%d'),
                 end_date=end_date.strftime('%Y-%m-%d'),
-                confidence_level=None if confidence_level == "All" else confidence_level,
-                league=league
+                confidence_levels=None if "All" in confidence_levels else confidence_levels,
+                leagues=None if "All" in selected_leagues else selected_leagues
             )
             
             if not predictions.empty:
@@ -774,14 +815,17 @@ def show_history_page():
                 predictions = history.get_predictions(
                     start_date=start_date.strftime('%Y-%m-%d'),
                     end_date=end_date.strftime('%Y-%m-%d'),
-                    confidence_level=None if confidence_level == "All" else confidence_level,
-                    league=league
+                    confidence_levels=None if "All" in confidence_levels else confidence_levels,
+                    leagues=None if "All" in selected_leagues else selected_leagues
                 )
                 
                 # Calculate statistics
-                current_confidence = None if confidence_level == "All" else confidence_level
-                current_league = None if league == "All" else league
-                stats, pending_count = history.calculate_statistics(confidence_level=current_confidence, league=current_league)
+                current_confidence = None if "All" in confidence_levels else confidence_levels
+                current_leagues = None if "All" in selected_leagues else selected_leagues
+                stats, pending_count = history.calculate_statistics(
+                    confidence_levels=current_confidence,
+                    leagues=current_leagues
+                )
                 
                 # Create metrics container
                 st.markdown('<div class="metrics-container">', unsafe_allow_html=True)

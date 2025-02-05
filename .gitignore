@@ -48,4 +48,3 @@ credentials.json
 # OS
 .DS_Store
 Thumbs.db
-predictions.db

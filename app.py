@@ -2176,29 +2176,27 @@ def show_main_app():
                 available_leagues[league_name] = match.get('competition_id')
         
         # League filter
-        selected_league = st.selectbox(
-            "Select Competition",
+        selected_leagues = st.multiselect(
+            "Select Competitions",
             options=list(available_leagues.keys()),
-            index=0,
-            help="Filter matches by competition"
+            default=["All Matches"],
+            help="Filter matches by competitions (select multiple)"
         )
         
         # Confidence filter
-        confidence_level = st.selectbox(
-            "Filter by Confidence Level",
+        confidence_levels = st.multiselect(
+            "Filter by Confidence Levels",
             options=["All", "High", "Medium", "Low"],
-            index=0,
-            help="Filter predictions by confidence level (High: ≥70%, Medium: 50-69%, Low: <50%)"
+            default=["All"],
+            help="Filter predictions by confidence levels (High: ≥70%, Medium: 50-69%, Low: <50%)"
         )
         
-        # Filter matches by selected league
-        if selected_league != "All Matches":
-            matches = [m for m in matches if get_league_name(m) == selected_league]
-        else:
-            matches = matches
+        # Filter matches by selected leagues
+        if "All Matches" not in selected_leagues:
+            matches = [m for m in matches if get_league_name(m) in selected_leagues]
         
         if not matches:
-            st.info(f"No matches found for {selected_league} on {start_date} to {end_date}.")
+            st.info(f"No matches found for selected competitions between {start_date} and {end_date}.")
             return
         
         # Group matches by league for better organization
@@ -2218,15 +2216,18 @@ def show_main_app():
                 result = process_match_prediction(match)
                 if result:
                     prediction_data, confidence = result
-                    show_match = True
+                    show_match = False
                     
-                    if confidence_level != "All":
-                        if confidence_level == "High" and confidence < 70:  
-                            show_match = False
-                        elif confidence_level == "Medium" and (confidence < 50 or confidence >= 70):  
-                            show_match = False
-                        elif confidence_level == "Low" and confidence >= 50:  
-                            show_match = False
+                    if "All" in confidence_levels:
+                        show_match = True
+                    else:
+                        # Check if match confidence matches any selected confidence level
+                        if "High" in confidence_levels and confidence >= 70:  
+                            show_match = True
+                        elif "Medium" in confidence_levels and 50 <= confidence < 70:  
+                            show_match = True
+                        elif "Low" in confidence_levels and confidence < 50:  
+                            show_match = True
                     
                     if show_match:
                         matches_to_display.append((match, prediction_data, confidence))
@@ -2240,7 +2241,7 @@ def show_main_app():
                     display_kickoff_time(match)
                     display_match_details(match, prediction_data, confidence)
             else:
-                st.info(f"No matches with {confidence_level.lower()} confidence predictions found in {league_name}.")
+                st.info(f"No matches with selected confidence levels found in {league_name}.")
                 
 # Add Navigation JavaScript
 st.markdown("""
