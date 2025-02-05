@@ -760,46 +760,61 @@ def show_history_page():
             </div>
         """, unsafe_allow_html=True)
         
-        # Get min and max dates from predictions
+        # Add filters to sidebar
+        st.sidebar.markdown("## Filters", help="Filter your prediction history")
+        
+        # Date filters
+        start_date = st.sidebar.date_input(
+            "Start Date",
+            value=datetime.now().date() - timedelta(days=30),
+            help="Filter predictions from this date"
+        )
+        
+        end_date = st.sidebar.date_input(
+            "End Date",
+            value=datetime.now().date(),
+            help="Filter predictions until this date"
+        )
+        
+        # Get unique leagues from predictions
         all_predictions = history.get_predictions()
-        if not all_predictions.empty:
-            min_date = pd.to_datetime(all_predictions['date']).min()
-            max_date = pd.to_datetime(all_predictions['date']).max()
+        available_leagues = ["All"] + sorted(all_predictions['league'].unique().tolist()) if not all_predictions.empty else ["All"]
+        
+        # League multiselect
+        selected_leagues = st.sidebar.multiselect(
+            "Select Competitions",
+            options=available_leagues,
+            default=["All"],
+            help="Filter predictions by competition. Select multiple competitions or 'All'"
+        )
+        
+        if not selected_leagues:
+            selected_leagues = ["All"]
+        
+        # Confidence level multiselect
+        confidence_levels = st.sidebar.multiselect(
+            "Confidence Levels",
+            options=["All", "High", "Medium", "Low"],
+            default=["All"],
+            help="Filter predictions by confidence level: High (≥70%), Medium (50-69%), Low (<50%). Select multiple levels or 'All'"
+        )
+        
+        if not confidence_levels:
+            confidence_levels = ["All"]
+        
+        # Get filtered predictions
+        predictions = history.get_predictions(
+            start_date=start_date.strftime('%Y-%m-%d'),
+            end_date=end_date.strftime('%Y-%m-%d'),
+            confidence_levels=None if "All" in confidence_levels else confidence_levels,
+            leagues=None if "All" in selected_leagues else selected_leagues
+        )
+        
+        if not predictions.empty:
+            # Update any pending predictions
+            history.update_match_results_all()
             
-            # Date range selector
-            start_date = st.sidebar.date_input(
-                "Start Date",
-                min_date,
-                min_value=min_date,
-                max_value=max_date
-            )
-            
-            end_date = st.sidebar.date_input(
-                "End Date",
-                max_date,
-                min_value=start_date,
-                max_value=max_date
-            )
-
-            # Add confidence level filter
-            confidence_levels = st.sidebar.multiselect(
-                "Confidence Levels",
-                ["All", "High", "Medium", "Low"],
-                default=["All"],
-                help="Filter predictions by confidence levels: High (≥70%), Medium (50-69%), Low (<50%)"
-            )
-            
-            # Add league filter
-            leagues = all_predictions['league'].unique().tolist()
-            leagues.insert(0, "All")
-            selected_leagues = st.sidebar.multiselect(
-                "Competitions",
-                leagues,
-                default=["All"],
-                help="Filter predictions by competitions"
-            )
-            
-            # Get filtered predictions
+            # Refresh predictions after update
             predictions = history.get_predictions(
                 start_date=start_date.strftime('%Y-%m-%d'),
                 end_date=end_date.strftime('%Y-%m-%d'),
@@ -807,122 +822,110 @@ def show_history_page():
                 leagues=None if "All" in selected_leagues else selected_leagues
             )
             
-            if not predictions.empty:
-                # Update any pending predictions
-                history.update_match_results_all()
-                
-                # Refresh predictions after update
-                predictions = history.get_predictions(
-                    start_date=start_date.strftime('%Y-%m-%d'),
-                    end_date=end_date.strftime('%Y-%m-%d'),
-                    confidence_levels=None if "All" in confidence_levels else confidence_levels,
-                    leagues=None if "All" in selected_leagues else selected_leagues
-                )
-                
-                # Calculate statistics
-                current_confidence = None if "All" in confidence_levels else confidence_levels
-                current_leagues = None if "All" in selected_leagues else selected_leagues
-                stats, pending_count = history.calculate_statistics(
-                    confidence_levels=current_confidence,
-                    leagues=current_leagues
-                )
-                
-                # Create metrics container
-                st.markdown('<div class="metrics-container">', unsafe_allow_html=True)
-                
-                # Display each metric
-                metrics = [
-                    {"label": "Total Predictions", "value": stats[0], "is_percentage": False, "is_currency": False},
-                    {"label": "Correct Predictions", "value": stats[1], "is_percentage": False, "is_currency": False},
-                    {"label": "Success Rate", "value": stats[2], "is_percentage": True, "is_currency": False},
-                    {"label": "Total Profit", "value": stats[3], "is_currency": True, "is_percentage": False},
-                    {"label": "ROI", "value": stats[4], "is_percentage": True, "is_currency": False},
-                    {"label": "Pending Predictions", "value": pending_count, "is_percentage": False, "is_currency": False}
-                ]
-                
-                for metric in metrics:
-                    if metric.get("is_currency"):
-                        formatted_value = f"£{metric['value']:.2f}"
-                    elif metric.get("is_percentage"):
-                        formatted_value = f"{metric['value']:.1f}%"
-                    else:
-                        formatted_value = str(metric['value'])
-                    
-                    value_class = ""
-                    if metric.get("is_currency") or metric.get("is_percentage"):
-                        try:
-                            value = float(metric['value'])
-                            value_class = " positive-value" if value > 0 else " negative-value" if value < 0 else ""
-                        except (ValueError, TypeError):
-                            value_class = ""
-                    
-                    st.markdown(f"""
-                        <div class="metric-box">
-                            <div class="metric-label">{metric['label']}</div>
-                            <div class="metric-value{value_class}">{formatted_value}</div>
-                        </div>
-                    """, unsafe_allow_html=True)
-                
-                st.markdown('</div>', unsafe_allow_html=True)
-                
-                # Display predictions table
-                if not predictions.empty:
-                    st.markdown("""
-                        <h2 style='color: #1e3c72; font-size: 1.5em; margin: 30px 0 20px;'>
-                            Recent Predictions
-                        </h2>
-                    """, unsafe_allow_html=True)
-                    
-                    try:
-                        # Convert confidence to numeric and create display version
-                        predictions['confidence_num'] = pd.to_numeric(predictions['confidence'], errors='coerce')
-                        predictions['Confidence'] = predictions['confidence_num'].apply(get_confidence_level)
-                        
-                        # Convert date to datetime
-                        predictions['date'] = pd.to_datetime(predictions['date']).dt.strftime('%Y-%m-%d')
-                        
-                        # Create Result column
-                        predictions['Result'] = predictions.apply(
-                            lambda x: '✅ Won' if pd.notna(x['predicted_outcome']) and x['predicted_outcome'] == x['actual_outcome']
-                            else '❌ Lost' if pd.notna(x['actual_outcome'])
-                            else '⏳ Pending',
-                            axis=1
-                        )
-                        
-                        # Define display columns mapping
-                        display_columns = {
-                            'date': 'Date',
-                            'league': 'League',
-                            'home_team': 'Home Team',
-                            'away_team': 'Away Team',
-                            'predicted_outcome': 'Prediction',
-                            'Confidence': 'Confidence',
-                            'actual_outcome': 'Actual Outcome',
-                            'Result': 'Result',
-                            'profit_loss': 'Profit/Loss',
-                            'status': 'Status'
-                        }
-                        
-                        # Create final dataframe
-                        final_df = predictions[list(display_columns.keys())].copy()
-                        final_df = final_df.rename(columns=display_columns)
-                        
-                        # Apply styling
-                        styled_df = style_dataframe(final_df)
-                        
-                        # Display the styled dataframe
-                        st.dataframe(
-                            styled_df,
-                            use_container_width=True,
-                            hide_index=True
-                        )
-                        
-                    except Exception as e:
-                        st.error(f"Error displaying predictions table: {str(e)}")
-                        st.exception(e)
+            # Calculate statistics
+            current_confidence = None if "All" in confidence_levels else confidence_levels
+            current_leagues = None if "All" in selected_leagues else selected_leagues
+            stats, pending_count = history.calculate_statistics(
+                confidence_levels=current_confidence,
+                leagues=current_leagues
+            )
+            
+            # Create metrics container
+            st.markdown('<div class="metrics-container">', unsafe_allow_html=True)
+            
+            # Display each metric
+            metrics = [
+                {"label": "Total Predictions", "value": stats[0], "is_percentage": False, "is_currency": False},
+                {"label": "Correct Predictions", "value": stats[1], "is_percentage": False, "is_currency": False},
+                {"label": "Success Rate", "value": stats[2], "is_percentage": True, "is_currency": False},
+                {"label": "Total Profit", "value": stats[3], "is_currency": True, "is_percentage": False},
+                {"label": "ROI", "value": stats[4], "is_percentage": True, "is_currency": False},
+                {"label": "Pending Predictions", "value": pending_count, "is_percentage": False, "is_currency": False}
+            ]
+            
+            for metric in metrics:
+                if metric.get("is_currency"):
+                    formatted_value = f"£{metric['value']:.2f}"
+                elif metric.get("is_percentage"):
+                    formatted_value = f"{metric['value']:.1f}%"
                 else:
-                    st.info("No predictions found for the selected date range.")
+                    formatted_value = str(metric['value'])
                 
+                value_class = ""
+                if metric.get("is_currency") or metric.get("is_percentage"):
+                    try:
+                        value = float(metric['value'])
+                        value_class = " positive-value" if value > 0 else " negative-value" if value < 0 else ""
+                    except (ValueError, TypeError):
+                        value_class = ""
+                
+                st.markdown(f"""
+                    <div class="metric-box">
+                        <div class="metric-label">{metric['label']}</div>
+                        <div class="metric-value{value_class}">{formatted_value}</div>
+                    </div>
+                """, unsafe_allow_html=True)
+            
+            st.markdown('</div>', unsafe_allow_html=True)
+            
+            # Display predictions table
+            if not predictions.empty:
+                st.markdown("""
+                    <h2 style='color: #1e3c72; font-size: 1.5em; margin: 30px 0 20px;'>
+                        Recent Predictions
+                    </h2>
+                """, unsafe_allow_html=True)
+                
+                try:
+                    # Convert confidence to numeric and create display version
+                    predictions['confidence_num'] = pd.to_numeric(predictions['confidence'], errors='coerce')
+                    predictions['Confidence'] = predictions['confidence_num'].apply(get_confidence_level)
+                    
+                    # Convert date to datetime
+                    predictions['date'] = pd.to_datetime(predictions['date']).dt.strftime('%Y-%m-%d')
+                    
+                    # Create Result column
+                    predictions['Result'] = predictions.apply(
+                        lambda x: '✅ Won' if pd.notna(x['predicted_outcome']) and x['predicted_outcome'] == x['actual_outcome']
+                        else '❌ Lost' if pd.notna(x['actual_outcome'])
+                        else '⏳ Pending',
+                        axis=1
+                    )
+                    
+                    # Define display columns mapping
+                    display_columns = {
+                        'date': 'Date',
+                        'league': 'League',
+                        'home_team': 'Home Team',
+                        'away_team': 'Away Team',
+                        'predicted_outcome': 'Prediction',
+                        'Confidence': 'Confidence',
+                        'actual_outcome': 'Actual Outcome',
+                        'Result': 'Result',
+                        'profit_loss': 'Profit/Loss',
+                        'status': 'Status'
+                    }
+                    
+                    # Create final dataframe
+                    final_df = predictions[list(display_columns.keys())].copy()
+                    final_df = final_df.rename(columns=display_columns)
+                    
+                    # Apply styling
+                    styled_df = style_dataframe(final_df)
+                    
+                    # Display the styled dataframe
+                    st.dataframe(
+                        styled_df,
+                        use_container_width=True,
+                        hide_index=True
+                    )
+                    
+                except Exception as e:
+                    st.error(f"Error displaying predictions table: {str(e)}")
+                    st.exception(e)
+            else:
+                st.info("No predictions found for the selected date range.")
+        
     except Exception as e:
         st.error(f"Error displaying predictions table: {str(e)}")
         st.exception(e)
