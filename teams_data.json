@@ -1078,5 +1078,29 @@
         "logo_path": "team_logos/Colombia - Primera A_Santa Fe.png",
         "logo_url": "https://tmssl.akamaized.net/images/wappen/head/6424.png",
         "team_id": "6424"
+    },
+    "Grenoble Foot 38": {
+        "league": "France - Ligue 2",
+        "logo_path": "team_logos/France - Ligue 2_Grenoble Foot 38.png",
+        "logo_url": "https://tmssl.akamaized.net/images/wappen/head/1390.png",
+        "team_id": "1390"
+    },
+    "Red Star": {
+        "league": "France - Ligue 2",
+        "logo_path": "team_logos/France - Ligue 2_Red Star.png",
+        "logo_url": "https://tmssl.akamaized.net/images/wappen/head/1094.png",
+        "team_id": "1094"
+    },
+    "Rayo Vallecano": {
+        "league": "Spain - LaLiga",
+        "logo_path": "team_logos/Spain - LaLiga_Rayo Vallecano.png",
+        "logo_url": "https://tmssl.akamaized.net/images/wappen/head/367.png",
+        "team_id": "367"
+    },
+    "Real Valladolid": {
+        "league": "Spain - LaLiga",
+        "logo_path": "team_logos/Spain - LaLiga_Real Valladolid.png",
+        "logo_url": "https://tmssl.akamaized.net/images/wappen/head/366.png",
+        "team_id": "366"
     }
 }
