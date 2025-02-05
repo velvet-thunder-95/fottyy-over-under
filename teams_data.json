@@ -599,6 +599,30 @@
         "logo_url": "https://tmssl.akamaized.net/images/wappen/medium/61.png",
         "team_id": "61"
     },
+    "St. Gallen": {
+        "league": "Switzerland - Super League",
+        "logo_path": "team_logos/Switzerland - Super League_St. Gallen.png",
+        "logo_url": "https://tmssl.akamaized.net/images/wappen/medium/321.png",
+        "team_id": "321"
+    },
+    "Lugano": {
+        "league": "Switzerland - Super League",
+        "logo_path": "team_logos/Switzerland - Super League_Lugano.png",
+        "logo_url": "https://tmssl.akamaized.net/images/wappen/medium/1018.png",
+        "team_id": "1018"
+    },
+    "Young Boys": {
+        "league": "Switzerland - Super League",
+        "logo_path": "team_logos/Switzerland - Super League_Young Boys.png",
+        "logo_url": "https://tmssl.akamaized.net/images/wappen/medium/452.png",
+        "team_id": "452"
+    },
+    "Yverdon Sport": {
+        "league": "Switzerland - Super League",
+        "logo_path": "team_logos/Switzerland - Super League_Yverdon Sport.png",
+        "logo_url": "https://tmssl.akamaized.net/images/wappen/medium/2174.png",
+        "team_id": "2174"
+    },
     "Llaneros": {
         "league": "Colombia - Primera A",
         "logo_path": "team_logos/Colombia - Primera A_Llaneros.png",
@@ -664,5 +688,47 @@
         "logo_path": "team_logos/Qatar - Stars League_Al Gharafa.png",
         "logo_url": "https://tmssl.akamaized.net/images/wappen/medium/6297.png",
         "team_id": "6297"
+    },
+    "Celtic": {
+        "league": "Scotland - Premiership",
+        "logo_path": "team_logos/Scotland - Premiership_Celtic.png",
+        "logo_url": "https://tmssl.akamaized.net/images/wappen/head/371.png",
+        "team_id": "371"
+    },
+    "Dundee": {
+        "league": "Scotland - Premiership",
+        "logo_path": "team_logos/Scotland - Premiership_Dundee.png",
+        "logo_url": "https://tmssl.akamaized.net/images/wappen/head/2547.png",
+        "team_id": "2547"
+    },
+    "Bayer Leverkusen": {
+        "league": "Germany - Bundesliga",
+        "logo_path": "team_logos/Germany - Bundesliga_Bayer Leverkusen.png",
+        "logo_url": "https://tmssl.akamaized.net/images/wappen/head/15.png",
+        "team_id": "15"
+    },
+    "Köln": {
+        "league": "Germany - Bundesliga",
+        "logo_path": "team_logos/Germany - Bundesliga_Koln.png",
+        "logo_url": "https://tmssl.akamaized.net/images/wappen/head/3.png",
+        "team_id": "3"
+    },
+    "Coventry City": {
+        "league": "England - Championship",
+        "logo_path": "team_logos/England - Championship_Coventry City.png",
+        "logo_url": "https://tmssl.akamaized.net/images/wappen/head/990.png",
+        "team_id": "990"
+    },
+    "AC Milan": {
+        "league": "Italy - Serie A",
+        "logo_path": "team_logos/Italy - Serie A_AC Milan.png",
+        "logo_url": "https://tmssl.akamaized.net/images/wappen/head/5.png",
+        "team_id": "5"
+    },
+    "Roma": {
+        "league": "Italy - Serie A",
+        "logo_path": "team_logos/Italy - Serie A_Roma.png",
+        "logo_url": "https://tmssl.akamaized.net/images/wappen/head/12.png",
+        "team_id": "12"
     }
 }
