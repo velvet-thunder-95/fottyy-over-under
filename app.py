@@ -1852,6 +1852,21 @@ def display_kickoff_time(match_data):
                     </span>
                 </div>
             </div>
+        
+            <div style="display: flex; justify-content: space-between; margin-top: 1rem; padding: 0 1rem;">
+                <div style="display: flex; align-items: center;">
+                    <div style="width: 10px; height: 10px; background: #48bb78; border-radius: 2px; margin-right: 5px;"></div>
+                    <span style="font-size: 0.8rem;">Home Win</span>
+                </div>
+                <div style="display: flex; align-items: center;">
+                    <div style="width: 10px; height: 10px; background: #ed8936; border-radius: 2px; margin-right: 5px;"></div>
+                    <span style="font-size: 0.8rem;">Draw</span>
+                </div>
+                <div style="display: flex; align-items: center;">
+                    <div style="width: 10px; height: 10px; background: #3182ce; border-radius: 2px; margin-right: 5px;"></div>
+                    <span style="font-size: 0.8rem;">Away Win</span>
+                </div>
+            </div>
         """, unsafe_allow_html=True)
         
     except Exception as e:
@@ -2135,8 +2150,8 @@ def show_main_app():
             "Start Date",
             value=now.date(),
             min_value=now.date(),
-            max_value=now.date() + timedelta(days=14),
-            help="Select start date to view matches"
+            max_value=now.date() + timedelta(days=21),
+            help="Select start date to view matches (up to 3 weeks ahead)"
         )
     
     with col2:
@@ -2144,8 +2159,8 @@ def show_main_app():
             "End Date",
             value=now.date(),
             min_value=now.date(),
-            max_value=now.date() + timedelta(days=14),
-            help="Select end date to view matches"
+            max_value=now.date() + timedelta(days=21),
+            help="Select end date to view matches (up to 3 weeks ahead)"
         )
     
     if start_date and end_date:
