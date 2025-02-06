@@ -244,40 +244,31 @@ class PredictionHistory:
         params = []  # Initialize params list
         
         query = """
-            WITH streak_calc AS (
+            WITH RECURSIVE streak_calc AS (
                 SELECT 
                     p.id,
                     p.predicted_outcome = p.actual_outcome as is_correct,
                     p.status,
                     p.profit_loss,
                     p.bet_amount,
-                    LAG(p.predicted_outcome = p.actual_outcome, 1, false) OVER (ORDER BY p.id) as prev_correct,
-                    LAG(p.status, 1, 'Completed') OVER (ORDER BY p.id) as prev_status
+                    ROW_NUMBER() OVER (ORDER BY p.id) as rn
                 FROM predictions p
                 WHERE p.status = 'Completed'
                 ORDER BY p.id
             ),
             streak_groups AS (
                 SELECT 
-                    sc.id,
-                    sc.is_correct,
-                    sc.profit_loss,
-                    sc.bet_amount,
-                    CASE 
-                        WHEN sc.is_correct AND (NOT sc.prev_correct OR sc.prev_status != 'Completed') THEN 1 
-                        ELSE 0 
-                    END as streak_start
-                FROM streak_calc sc
+                    id,
+                    is_correct,
+                    rn,
+                    CASE WHEN is_correct THEN rn - ROW_NUMBER() OVER (ORDER BY id) ELSE NULL END as grp
+                FROM streak_calc
             ),
-            streak_numbers AS (
-                SELECT 
-                    sg.id,
-                    sg.is_correct,
-                    sg.profit_loss,
-                    sg.bet_amount,
-                    SUM(sg.streak_start) OVER (ORDER BY sg.id) as streak_group
-                FROM streak_groups sg
-                WHERE sg.is_correct
+            streak_lengths AS (
+                SELECT grp, COUNT(*) as streak_length
+                FROM streak_groups
+                WHERE grp IS NOT NULL
+                GROUP BY grp
             )
             SELECT 
                 COUNT(*) as total_predictions,
@@ -295,16 +286,9 @@ class PredictionHistory:
                 SUM(CASE WHEN p.status = 'Completed' AND p.confidence >= 70 AND p.predicted_outcome = p.actual_outcome THEN 1 ELSE 0 END) as high_confidence_wins,
                 SUM(CASE WHEN p.status = 'Completed' AND p.confidence >= 70 THEN 1 ELSE 0 END) as total_high_confidence,
                 COUNT(DISTINCT p.league) as total_leagues,
-                COALESCE((
-                    SELECT COUNT(*) 
-                    FROM streak_numbers s2 
-                    WHERE s2.streak_group = s1.streak_group 
-                    GROUP BY s2.streak_group 
-                    ORDER BY COUNT(*) DESC 
-                    LIMIT 1
-                ), 0) as best_streak
+                COALESCE(MAX(sl.streak_length), 0) as best_streak
             FROM predictions p
-            LEFT JOIN streak_numbers s1 ON s1.id = p.id
+            LEFT JOIN streak_lengths sl ON 1=1
             WHERE 1=1
         """
 
