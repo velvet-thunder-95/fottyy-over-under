@@ -241,6 +241,7 @@ class PredictionHistory:
     def calculate_statistics(self, confidence_levels=None, leagues=None):
         """Calculate prediction statistics with optional confidence level and league filters"""
         conn = sqlite3.connect(self.db_path)
+        params = []  # Initialize params list
         
         query = """
             SELECT 
@@ -250,19 +251,15 @@ class PredictionHistory:
                 SUM(CASE WHEN status = 'Pending' THEN 1 ELSE 0 END) as pending_predictions,
                 SUM(CASE WHEN profit_loss IS NOT NULL THEN profit_loss ELSE 0 END) as total_profit,
                 SUM(CASE WHEN status = 'Completed' AND bet_amount IS NOT NULL THEN bet_amount ELSE 0 END) as total_bet_amount,
-                -- New metrics
                 AVG(CASE WHEN status = 'Completed' AND profit_loss > 0 THEN profit_loss ELSE NULL END) as avg_win_amount,
                 AVG(CASE WHEN status = 'Completed' AND profit_loss < 0 THEN ABS(profit_loss) ELSE NULL END) as avg_loss_amount,
                 SUM(CASE WHEN status = 'Completed' AND profit_loss > 0 THEN 1 ELSE 0 END) as profitable_bets,
                 SUM(CASE WHEN status = 'Completed' AND profit_loss < 0 THEN 1 ELSE 0 END) as loss_bets,
                 MAX(CASE WHEN status = 'Completed' THEN profit_loss ELSE NULL END) as biggest_win,
                 MIN(CASE WHEN status = 'Completed' THEN profit_loss ELSE NULL END) as biggest_loss,
-                -- Confidence level metrics
                 SUM(CASE WHEN status = 'Completed' AND confidence >= 70 AND predicted_outcome = actual_outcome THEN 1 ELSE 0 END) as high_confidence_wins,
                 SUM(CASE WHEN status = 'Completed' AND confidence >= 70 THEN 1 ELSE 0 END) as total_high_confidence,
-                -- League performance
                 COUNT(DISTINCT league) as total_leagues,
-                -- Streak calculations
                 MAX(CASE WHEN status = 'Completed' AND predicted_outcome = actual_outcome THEN 
                     (SELECT COUNT(*) 
                      FROM predictions p2 
@@ -273,8 +270,25 @@ class PredictionHistory:
             FROM predictions
             WHERE 1=1
         """
-        
-        # ... (rest of the existing conditions remain the same)
+
+        # Handle multiple confidence levels
+        if confidence_levels and "All" not in confidence_levels:
+            confidence_conditions = []
+            for level in confidence_levels:
+                if level == "High":
+                    confidence_conditions.append("confidence >= 70")
+                elif level == "Medium":
+                    confidence_conditions.append("(confidence >= 50 AND confidence < 70)")
+                elif level == "Low":
+                    confidence_conditions.append("confidence < 50")
+            if confidence_conditions:
+                query += f" AND ({' OR '.join(confidence_conditions)})"
+
+        # Handle multiple leagues
+        if leagues and "All" not in leagues:
+            placeholders = ','.join('?' * len(leagues))
+            query += f" AND league IN ({placeholders})"
+            params.extend(leagues)
 
         try:
             df = pd.read_sql_query(query, conn, params=params)
