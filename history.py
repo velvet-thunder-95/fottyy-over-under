@@ -244,6 +244,35 @@ class PredictionHistory:
         params = []  # Initialize params list
         
         query = """
+            WITH streak_calc AS (
+                SELECT 
+                    id,
+                    predicted_outcome = actual_outcome as is_correct,
+                    status,
+                    LAG(predicted_outcome = actual_outcome, 1, false) OVER (ORDER BY id) as prev_correct,
+                    LAG(status, 1, 'Completed') OVER (ORDER BY id) as prev_status
+                FROM predictions
+                WHERE status = 'Completed'
+                ORDER BY id
+            ),
+            streak_groups AS (
+                SELECT 
+                    id,
+                    is_correct,
+                    CASE 
+                        WHEN is_correct AND (NOT prev_correct OR prev_status != 'Completed') THEN 1 
+                        ELSE 0 
+                    END as streak_start
+                FROM streak_calc
+            ),
+            streak_numbers AS (
+                SELECT 
+                    id,
+                    is_correct,
+                    SUM(streak_start) OVER (ORDER BY id) as streak_group
+                FROM streak_groups
+                WHERE is_correct
+            )
             SELECT 
                 COUNT(*) as total_predictions,
                 SUM(CASE WHEN status = 'Completed' THEN 1 ELSE 0 END) as completed_predictions,
@@ -260,14 +289,16 @@ class PredictionHistory:
                 SUM(CASE WHEN status = 'Completed' AND confidence >= 70 AND predicted_outcome = actual_outcome THEN 1 ELSE 0 END) as high_confidence_wins,
                 SUM(CASE WHEN status = 'Completed' AND confidence >= 70 THEN 1 ELSE 0 END) as total_high_confidence,
                 COUNT(DISTINCT league) as total_leagues,
-                MAX(CASE WHEN status = 'Completed' AND predicted_outcome = actual_outcome THEN 
-                    (SELECT COUNT(*) 
-                     FROM predictions p2 
-                     WHERE p2.id <= predictions.id 
-                     AND p2.predicted_outcome = p2.actual_outcome 
-                     AND p2.status = 'Completed') 
-                ELSE 0 END) as best_streak
-            FROM predictions
+                COALESCE((
+                    SELECT COUNT(*) 
+                    FROM streak_numbers s2 
+                    WHERE s2.streak_group = s1.streak_group 
+                    GROUP BY s2.streak_group 
+                    ORDER BY COUNT(*) DESC 
+                    LIMIT 1
+                ), 0) as best_streak
+            FROM predictions p
+            LEFT JOIN streak_numbers s1 ON 1=1
             WHERE 1=1
         """
 
@@ -294,65 +325,45 @@ class PredictionHistory:
             df = pd.read_sql_query(query, conn, params=params)
             row = df.iloc[0]
             
-            # Basic stats (existing)
-            total_predictions = row['total_predictions']
+            # Basic stats calculations
             completed_predictions = row['completed_predictions']
             correct_predictions = row['correct_predictions']
-            pending_predictions = row['pending_predictions']
             total_profit = row['total_profit'] if row['total_profit'] is not None else 0
             total_bet_amount = row['total_bet_amount'] if row['total_bet_amount'] is not None else 0
             
-            # Calculate basic rates
+            # Calculate rates
             success_rate = (correct_predictions / completed_predictions * 100) if completed_predictions > 0 else 0
             roi = (total_profit / total_bet_amount * 100) if total_bet_amount > 0 else 0
             
-            # New calculated metrics
-            avg_win = row['avg_win_amount'] if row['avg_win_amount'] is not None else 0
-            avg_loss = row['avg_loss_amount'] if row['avg_loss_amount'] is not None else 0
-            profitable_bets = row['profitable_bets']
-            loss_bets = row['loss_bets']
-            biggest_win = row['biggest_win'] if row['biggest_win'] is not None else 0
-            biggest_loss = row['biggest_loss'] if row['biggest_loss'] is not None else 0
-            
-            # Confidence metrics
-            high_confidence_success_rate = (row['high_confidence_wins'] / row['total_high_confidence'] * 100) if row['total_high_confidence'] > 0 else 0
-            
-            # Streak and consistency
-            best_streak = row['best_streak']
-            
-            # Additional calculated metrics
-            win_loss_ratio = profitable_bets / loss_bets if loss_bets > 0 else float('inf')
-            avg_bet_size = total_bet_amount / completed_predictions if completed_predictions > 0 else 0
-            
             return {
                 'basic_stats': {
-                    'total_predictions': completed_predictions + pending_predictions,
-                    'correct_predictions': correct_predictions,
-                    'success_rate': success_rate,
-                    'total_profit': total_profit,
-                    'roi': roi,
-                    'pending_predictions': pending_predictions
+                    'total_predictions': int(completed_predictions + row['pending_predictions']),
+                    'correct_predictions': int(correct_predictions),
+                    'success_rate': round(success_rate, 2),
+                    'total_profit': round(total_profit, 2),
+                    'roi': round(roi, 2),
+                    'pending_predictions': int(row['pending_predictions'])
                 },
                 'performance_metrics': {
-                    'avg_win': avg_win,
-                    'avg_loss': avg_loss,
-                    'win_loss_ratio': win_loss_ratio,
-                    'biggest_win': biggest_win,
-                    'biggest_loss': biggest_loss,
-                    'best_streak': best_streak
+                    'avg_win': round(row['avg_win_amount'] if row['avg_win_amount'] is not None else 0, 2),
+                    'avg_loss': round(row['avg_loss_amount'] if row['avg_loss_amount'] is not None else 0, 2),
+                    'win_loss_ratio': round(row['profitable_bets'] / row['loss_bets'] if row['loss_bets'] > 0 else float('inf'), 2),
+                    'biggest_win': round(row['biggest_win'] if row['biggest_win'] is not None else 0, 2),
+                    'biggest_loss': round(row['biggest_loss'] if row['biggest_loss'] is not None else 0, 2),
+                    'best_streak': int(row['best_streak'])
                 },
                 'betting_metrics': {
-                    'profitable_bets': profitable_bets,
-                    'loss_bets': loss_bets,
-                    'avg_bet_size': avg_bet_size,
-                    'total_bet_amount': total_bet_amount
+                    'profitable_bets': int(row['profitable_bets']),
+                    'loss_bets': int(row['loss_bets']),
+                    'avg_bet_size': round(total_bet_amount / completed_predictions if completed_predictions > 0 else 0, 2),
+                    'total_bet_amount': round(total_bet_amount, 2)
                 },
                 'confidence_metrics': {
-                    'high_confidence_success': high_confidence_success_rate,
-                    'total_high_confidence_bets': row['total_high_confidence']
+                    'high_confidence_success': round((row['high_confidence_wins'] / row['total_high_confidence'] * 100) if row['total_high_confidence'] > 0 else 0, 2),
+                    'total_high_confidence_bets': int(row['total_high_confidence'])
                 },
                 'coverage_metrics': {
-                    'total_leagues': row['total_leagues']
+                    'total_leagues': int(row['total_leagues'])
                 }
             }
             
@@ -962,26 +973,39 @@ def show_history_page():
             
             def format_metric_value(value, is_percentage, is_currency):
                 if isinstance(value, float):
-                    formatted_value = f"{value:.2f}"
+                    if abs(value) < 0.01:  # For very small numbers
+                        formatted_value = "0.00"
+                    else:
+                        formatted_value = f"{value:,.2f}"
                 else:
-                    formatted_value = str(value)
+                    formatted_value = f"{value:,}"
                     
                 if is_currency:
+                    if value < 0:
+                        return f"<span class='currency-symbol'>$</span>{formatted_value[1:]}"  # Remove the negative sign
                     return f"<span class='currency-symbol'>$</span>{formatted_value}"
                 elif is_percentage:
                     return f"{formatted_value}<span class='percentage-badge'>%</span>"
                 return formatted_value
-            
+
             def get_value_class(metric):
                 if not isinstance(metric["value"], (int, float)):
                     return "neutral"
                 
+                value = float(metric["value"])
+                
                 # For profit/loss related metrics
                 if any(term in metric["label"].lower() for term in ["profit", "roi", "win"]):
-                    return "positive" if metric["value"] > 0 else "negative" if metric["value"] < 0 else "neutral"
+                    return "positive" if value > 0 else "negative" if value < 0 else "neutral"
                 # For success rate metrics
                 elif "rate" in metric["label"].lower():
-                    return "positive" if metric["value"] >= 60 else "negative" if metric["value"] < 40 else "neutral"
+                    return "positive" if value >= 60 else "negative" if value < 40 else "neutral"
+                # For ratio metrics
+                elif "ratio" in metric["label"].lower():
+                    return "positive" if value > 1 else "negative" if value < 1 else "neutral"
+                # For loss metrics
+                elif "loss" in metric["label"].lower():
+                    return "negative" if value < 0 else "neutral"
                 return "neutral"
             
             def render_metrics_section(title, metrics):
