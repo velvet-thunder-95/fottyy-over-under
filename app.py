@@ -1170,8 +1170,17 @@ def get_market_values(home_team, away_team):
         # Get market values using the new method
         home_value, away_value = api.get_both_teams_market_value(home_team, away_team)
         
-        logger.info(f"Retrieved market values - Home: {home_value}, Away: {away_value}")
-        return home_value or 'N/A', away_value or 'N/A'
+        # Format values to millions with 1 decimal place
+        def format_value(value):
+            if value is None:
+                return 'N/A'
+            return f"€{value/1000000:.1f}M"
+        
+        formatted_home = format_value(home_value)
+        formatted_away = format_value(away_value)
+        
+        logger.info(f"Retrieved market values - Home: {formatted_home}, Away: {formatted_away}")
+        return formatted_home, formatted_away
     except Exception as e:
         logger.error(f"Error getting market values: {str(e)}")
         logger.exception("Full traceback:")
@@ -1852,6 +1861,21 @@ def display_kickoff_time(match_data):
                     </span>
                 </div>
             </div>
+        
+            <div style="display: flex; justify-content: space-between; margin-top: 1rem; padding: 0 1rem;">
+                <div style="display: flex; align-items: center;">
+                    <div style="width: 10px; height: 10px; background: #48bb78; border-radius: 2px; margin-right: 5px;"></div>
+                    <span style="font-size: 0.8rem;">Home Win</span>
+                </div>
+                <div style="display: flex; align-items: center;">
+                    <div style="width: 10px; height: 10px; background: #ed8936; border-radius: 2px; margin-right: 5px;"></div>
+                    <span style="font-size: 0.8rem;">Draw</span>
+                </div>
+                <div style="display: flex; align-items: center;">
+                    <div style="width: 10px; height: 10px; background: #3182ce; border-radius: 2px; margin-right: 5px;"></div>
+                    <span style="font-size: 0.8rem;">Away Win</span>
+                </div>
+            </div>
         """, unsafe_allow_html=True)
         
     except Exception as e:
@@ -1870,7 +1894,7 @@ def calculate_over25_probability(home_xg, away_xg):
         try:
             home_xg = float(home_xg) if home_xg not in (None, 0) else 0.5
             away_xg = float(away_xg) if away_xg not in (None, 0) else 0.5
-        except (TypeError, ValueError) as e:
+        except (ValueError, TypeError) as e:
             print(f"Error converting xG values: {str(e)}")
             home_xg = 0.5
             away_xg = 0.5
@@ -1909,7 +1933,7 @@ def calculate_btts_probability(home_xg, away_xg):
         try:
             home_xg = float(home_xg) if home_xg not in (None, 0) else 0.5
             away_xg = float(away_xg) if away_xg not in (None, 0) else 0.5
-        except (TypeError, ValueError) as e:
+        except (ValueError, TypeError) as e:
             print(f"Error converting xG values: {str(e)}")
             home_xg = 0.5
             away_xg = 0.5
