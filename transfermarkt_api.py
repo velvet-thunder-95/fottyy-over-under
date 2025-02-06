@@ -189,10 +189,10 @@ class TransfermarktAPI:
             "panaitolikos": "panetolikos gfs",
             
             # Additional Teams
-            "rigas fs": "riga fs",
-            "rīgas fs": "riga fs",
-            "rigas futbola skola": "riga fs",
-            "rīgas futbola skola": "riga fs",
+            "rigas fs": "riga fc",
+            "rīgas fs": "riga fc",
+            "rigas futbola skola": "riga fc",
+            "rīgas futbola skola": "riga fc",
             "qarabag": "qarabag agdam",
             "qarabağ": "qarabag agdam",
             "bodo/glimt": "bodo/glimt",
@@ -201,11 +201,11 @@ class TransfermarktAPI:
             "fk bodo/glimt": "bodo/glimt",
             "fk bodø/glimt": "bodo/glimt",
             "fk bodo - glimt": "bodo/glimt",
-            "ludogorets": "ludogorets",
-            "ludogorets razgrad": "ludogorets",
-            "ludogorets razgrad fc": "ludogorets",
-            "pfc ludogorets": "ludogorets",
-            "pfc ludogorets razgrad": "ludogorets",
+            "ludogorets": "ludogorets razgrad",
+            "ludogorets razgrad": "ludogorets razgrad",
+            "ludogorets razgrad fc": "ludogorets razgrad",
+            "pfc ludogorets": "ludogorets razgrad",
+            "pfc ludogorets razgrad": "ludogorets razgrad",
             "elfsborg": "if elfsborg",
             "if elfsborg": "if elfsborg",
             "slavia praha": "sk slavia praha",
@@ -375,8 +375,8 @@ class TransfermarktAPI:
             
             # Add more mappings here
             "bodo/glimt": {"id": "2619", "name": "FK Bodø/Glimt"},
-            "ludogorets": {"id": "31614", "name": "Ludogorets Razgrad"},
-            "riga fs": {"id": "35159", "name": "Riga FC"},
+            "ludogorets razgrad": {"id": "31614", "name": "Ludogorets Razgrad"},
+            "riga fc": {"id": "35159", "name": "Riga FC"},
             "istra 1961": {"id": "4051", "name": "NK Istra 1961"},
             "gorica": {"id": "2947", "name": "HNK Gorica"},
             "bb bodrumspor": {"id": "24134", "name": "Bandırmaboluspor"},
@@ -423,32 +423,32 @@ class TransfermarktAPI:
             "ipswich town": {"id": "677", "name": "Ipswich Town"},
             
             # German Teams with Updated IDs
-            "jahn regensburg": {"id": "2644", "name": "SSV Jahn Regensburg"},
-            "ssv jahn regensburg": {"id": "2644", "name": "SSV Jahn Regensburg"},
-            "sandhausen": {"id": "2851", "name": "SV Sandhausen"},
-            "sv sandhausen": {"id": "2851", "name": "SV Sandhausen"},
-            "werder": {"id": "86", "name": "Werder Bremen"},
-            "werder bremen": {"id": "86", "name": "Werder Bremen"},
-            "sv werder bremen": {"id": "86", "name": "Werder Bremen"},
-            "stuttgart": {"id": "79", "name": "VfB Stuttgart"},
-            "vfb stuttgart": {"id": "79", "name": "VfB Stuttgart"},
-            "stuttgart ii": {"id": "2947", "name": "VfB Stuttgart II"},
-            "vfb stuttgart ii": {"id": "2947", "name": "VfB Stuttgart II"},
-            "union berlin": {"id": "89", "name": "1. FC Union Berlin"},
-            "1. fc union berlin": {"id": "89", "name": "1. FC Union Berlin"},
-            "magdeburg": {"id": "380", "name": "1. FC Magdeburg"},
-            "1. fc magdeburg": {"id": "380", "name": "1. FC Magdeburg"},
-            "ulm": {"id": "1001", "name": "SSV Ulm 1846"},
-            "ssv ulm": {"id": "1001", "name": "SSV Ulm 1846"},
-            "ssv ulm 1846": {"id": "1001", "name": "SSV Ulm 1846"},
-            "saarbrucken": {"id": "57", "name": "1. FC Saarbrücken"},
-            "1. fc saarbrucken": {"id": "57", "name": "1. FC Saarbrücken"},
-            "waldhof": {"id": "76", "name": "SV Waldhof Mannheim"},
-            "waldhof mannheim": {"id": "76", "name": "SV Waldhof Mannheim"},
-            "sv waldhof mannheim": {"id": "76", "name": "SV Waldhof Mannheim"},
-            "wehen": {"id": "123", "name": "SV Wehen Wiesbaden"},
-            "wehen wiesbaden": {"id": "123", "name": "SV Wehen Wiesbaden"},
-            "sv wehen wiesbaden": {"id": "123", "name": "SV Wehen Wiesbaden"},
+            "jahn regensburg": "ssv jahn regensburg",
+            "ssv jahn regensburg": "ssv jahn regensburg",
+            "sandhausen": "sv sandhausen",
+            "sv sandhausen": "sv sandhausen",
+            "werder": "werder bremen",
+            "werder bremen": "werder bremen",
+            "sv werder bremen": "werder bremen",
+            "stuttgart": "vfb stuttgart",
+            "vfb stuttgart": "vfb stuttgart",
+            "stuttgart ii": "vfb stuttgart ii",
+            "vfb stuttgart ii": "vfb stuttgart ii",
+            "union berlin": "1. fc union berlin",
+            "1. fc union berlin": "1. fc union berlin",
+            "magdeburg": "1. fc magdeburg",
+            "1. fc magdeburg": "1. fc magdeburg",
+            "ulm": "ssv ulm 1846",
+            "ssv ulm": "ssv ulm 1846",
+            "ssv ulm 1846": "ssv ulm 1846",
+            "saarbrucken": "1. fc saarbrücken",
+            "1. fc saarbrucken": "1. fc saarbrücken",
+            "waldhof": "sv waldhof mannheim",
+            "waldhof mannheim": "sv waldhof mannheim",
+            "sv waldhof mannheim": "sv waldhof mannheim",
+            "wehen": "sv wehen wiesbaden",
+            "wehen wiesbaden": "sv wehen wiesbaden",
+            "sv wehen wiesbaden": "sv wehen wiesbaden",
             
             # French Teams with Updated IDs
             "troyes": {"id": "3296", "name": "ES Troyes AC"},
@@ -501,115 +501,6 @@ class TransfermarktAPI:
         if name in self.abbreviations:
             name = self.abbreviations[name]
             logger.debug(f"Found abbreviation match: {name}")
-        
-        # Remove common prefixes/suffixes
-        prefixes = ["fc ", "ac ", "afc ", "ss ", "ssc ", "as ", "rc ", "rcd ", "real ", "atletico ", "athletic ", "cd ", "sc ", "sv ", "vfb ", "bv ", "tsv ", "fk "]
-        suffixes = [" fc", " ac", " cf", " afc", " sc", " bsc", " fk", " sk", " bv", " sv", " united", " city", " town"]
-        
-        original_name = name
-        for prefix in prefixes:
-            if name.startswith(prefix):
-                name = name[len(prefix):]
-                logger.debug(f"Removed prefix '{prefix}' from {original_name}")
-                break
-                
-        original_name = name
-        for suffix in suffixes:
-            if name.endswith(suffix):
-                name = name[:-len(suffix)]
-                logger.debug(f"Removed suffix '{suffix}' from {original_name}")
-                break
-                
-        # Handle special characters and standardize names
-        special_chars = {
-            "ü": "u", "é": "e", "á": "a", "ñ": "n", "ö": "o", "ó": "o",
-            "ć": "c", "č": "c", "ş": "s", "ș": "s", "ž": "z", "ı": "i",
-            "ä": "a", "à": "a", "â": "a", "ã": "a", "ě": "e", "è": "e",
-            "ê": "e", "ë": "e", "í": "i", "ì": "i", "î": "i", "ï": "i",
-            "ń": "n", "ň": "n", "ò": "o", "ô": "o", "õ": "o", "ř": "r",
-            "ś": "s", "š": "s", "ť": "t", "ù": "u", "û": "u", "ů": "u",
-            "ý": "y", "ź": "z", "ż": "z", "ğ": "g", "ī": "i", "ū": "u",
-            "ķ": "k", "ļ": "l", "ņ": "n", "ģ": "g"
-        }
-        
-        for char, replacement in special_chars.items():
-            if char in name:
-                name = name.replace(char, replacement)
-                logger.debug(f"Replaced special character '{char}' with '{replacement}'")
-        
-        # Standard name replacements
-        replacements = {
-            "munich": "munchen",
-            "belgrade": "belgrad",
-            "glasgow": "glasgow",
-            "lisbon": "lissabon",
-            "bruges": "brugge",
-            "warsaw": "warschau",
-            "prague": "prag",
-            "kiev": "kiew",
-            "donetsk": "donezk",
-            "athens": "athen",
-            "rome": "rom",
-            "turin": "turin",
-            "milan": "mailand",
-            "florence": "florenz",
-            "vienna": "wien",
-            "moscow": "moskau",
-        }
-        
-        for old, new in replacements.items():
-            name = name.replace(old, new)
-        
-        # Remove parentheses and their contents
-        name = re.sub(r'\([^)]*\)', '', name)
-        
-        # Remove multiple spaces and standardize
-        name = re.sub(r'\s+', ' ', name)
-        
-        logger.debug(f"Final cleaned name: {name}")
-        return name.strip()
-        
-    def get_search_key(self, team_name):
-        """Generate a consistent search key for a team name"""
-        return self.clean_team_name(team_name)
-        
-    def _clean_special_chars(self, name):
-        """Clean special characters from team names"""
-        # Map of special characters to their replacements
-        char_map = {
-            'ā': 'a', 'ă': 'a', 'ą': 'a', 'ć': 'c', 'č': 'c',
-            'ę': 'e', 'ě': 'e', 'ė': 'e', 'ğ': 'g', 'ı': 'i',
-            'ī': 'i', 'ł': 'l', 'ń': 'n', 'ň': 'n', 'ō': 'o',
-            'ő': 'o', 'ř': 'r', 'ś': 's', 'ş': 's', 'š': 's',
-            'ť': 't', 'ū': 'u', 'ů': 'u', 'ű': 'u', 'ý': 'y',
-            'ź': 'z', 'ż': 'z', 'ž': 'z', 'æ': 'ae', 'ø': 'o',
-            'ß': 'ss', 'ğ': 'g', 'ș': 's', 'ț': 't', 'ğ': 'g',
-            'ı': 'i', 'İ': 'i', 'ё': 'e', 'є': 'e', 'ї': 'i',
-            'ґ': 'g', 'ң': 'n', 'ү': 'u', 'ұ': 'u', 'һ': 'h',
-            'ә': 'a', 'ө': 'o', 'Ү': 'u', 'Ұ': 'u', 'Һ': 'h',
-            'Ә': 'a', 'Ө': 'o'
-        }
-        
-        # Convert to lowercase and replace special characters
-        cleaned = name.lower()
-        for special, normal in char_map.items():
-            cleaned = cleaned.replace(special, normal)
-        
-        return cleaned
-
-    def _is_youth_team(self, team_name):
-        """Check if a team name indicates it's a youth team"""
-        youth_indicators = ['u17', 'u18', 'u19', 'u20', 'u21', 'u23', 
-                          'youth', 'jugend', 'junior', 'juvenil']
-        name_lower = team_name.lower()
-        return any(indicator in name_lower for indicator in youth_indicators)
-
-    def search_team(self, team_name, domain="de"):
-        """Search for a team by name with improved matching"""
-        if not team_name:
-            return None
-            
-        logger.info(f"Searching for team: {team_name}")
         
         # Try to find in abbreviations first (case-insensitive)
         team_lower = team_name.lower().strip()
