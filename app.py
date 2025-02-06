@@ -2313,6 +2313,9 @@ def main():
     # Initialize session state
     init_session_state()
     
+    # Initialize history manager globally
+    history_manager = PredictionHistory()
+    
     # Get current page from query parameters
     page = st.query_params.get("page", "main")
     
@@ -2324,8 +2327,7 @@ def main():
     if page == "login":
         show_login_page()
     elif page == "history":
-        history_manager = PredictionHistory()
-        history_manager.show_history_page()
+        history_manager.show_history_page()  # Use the global instance
     else:
         show_main_app()
 

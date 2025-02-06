@@ -8,11 +8,16 @@ from football_api import get_match_by_teams, get_match_result
 from session_state import init_session_state, check_login_state
 from match_analyzer import MatchAnalyzer
 import logging
+import os
 
 class PredictionHistory:
     def __init__(self):
-        """Initialize the database connection and create tables if they don't exist."""
-        self.db_path = 'predictions.db'
+        """Initialize prediction history with database path"""
+        self.db_path = os.path.join(os.path.dirname(__file__), 'predictions.db')
+        self.ensure_db_exists()
+
+    def ensure_db_exists(self):
+        """Ensure the database exists and create tables if they don't exist."""
         connection = sqlite3.connect(self.db_path)
         cursor = connection.cursor()
         
@@ -493,7 +498,162 @@ class PredictionHistory:
         
         conn.close()
 
+    def show_history_page(self):
+        """Display the prediction history page with statistics"""
+        st.markdown("""
+        <style>
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .metric-card {
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .metric-label {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .metric-value.positive { color: #28a745; }
+        .metric-value.negative { color: #dc3545; }
+        .metric-value.neutral { color: #495057; }
+        .percentage-badge {
+            font-size: 0.8em;
+            margin-left: 2px;
+            opacity: 0.8;
+        }
+        .currency-symbol {
+            font-size: 0.8em;
+            margin-right: 2px;
+            opacity: 0.8;
+        }
+        .section-title {
+            font-size: 1.2rem;
+            color: #333;
+            margin: 1.5rem 0 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #eee;
+        }
+        </style>
+        """, unsafe_allow_html=True)
 
+        # Get statistics
+        stats = self.calculate_statistics()
+
+        def render_metric_card(label, value, is_percentage=False, is_currency=False, force_class=None):
+            if isinstance(value, float):
+                formatted_value = f"{value:,.2f}"
+            else:
+                formatted_value = f"{value:,}"
+            
+            if is_currency:
+                if value < 0:
+                    formatted_value = formatted_value[1:]  # Remove the negative sign
+                formatted_value = f"<span class='currency-symbol'>$</span>{formatted_value}"
+            elif is_percentage:
+                formatted_value = f"{formatted_value}<span class='percentage-badge'>%</span>"
+
+            # Determine value class
+            if force_class:
+                value_class = force_class
+            elif isinstance(value, (int, float)):
+                if "profit" in label.lower() or "roi" in label.lower() or "win" in label.lower():
+                    value_class = "positive" if value > 0 else "negative" if value < 0 else "neutral"
+                elif "rate" in label.lower():
+                    value_class = "positive" if value >= 60 else "negative" if value < 40 else "neutral"
+                elif "ratio" in label.lower():
+                    value_class = "positive" if value > 1 else "negative" if value < 1 else "neutral"
+                elif "loss" in label.lower():
+                    value_class = "negative" if value < 0 else "neutral"
+                else:
+                    value_class = "neutral"
+            else:
+                value_class = "neutral"
+
+            return f"""
+            <div class="metric-card">
+                <div class="metric-label">{label}</div>
+                <div class="metric-value {value_class}">
+                    {formatted_value}
+                </div>
+            </div>
+            """
+
+        def render_section(title, metrics):
+            metrics_html = "".join([
+                render_metric_card(metric["label"], metric["value"], 
+                                 metric.get("is_percentage", False),
+                                 metric.get("is_currency", False),
+                                 metric.get("force_class", None))
+                for metric in metrics
+            ])
+            return f"""
+            <div class="section-title">{title}</div>
+            <div class="metric-grid">
+                {metrics_html}
+            </div>
+            """
+
+        # Overview Section
+        overview_metrics = [
+            {"label": "Total Predictions", "value": stats['basic_stats']['total_predictions']},
+            {"label": "Correct Predictions", "value": stats['basic_stats']['correct_predictions']},
+            {"label": "Success Rate", "value": stats['basic_stats']['success_rate'], "is_percentage": True},
+            {"label": "Total Profit", "value": stats['basic_stats']['total_profit'], "is_currency": True},
+            {"label": "ROI", "value": stats['basic_stats']['roi'], "is_percentage": True},
+            {"label": "Pending Predictions", "value": stats['basic_stats']['pending_predictions']}
+        ]
+
+        # Performance Analysis Section
+        performance_metrics = [
+            {"label": "Average Win", "value": stats['performance_metrics']['avg_win'], "is_currency": True},
+            {"label": "Average Loss", "value": stats['performance_metrics']['avg_loss'], "is_currency": True},
+            {"label": "Win/Loss Ratio", "value": stats['performance_metrics']['win_loss_ratio']},
+            {"label": "Biggest Win", "value": stats['performance_metrics']['biggest_win'], "is_currency": True},
+            {"label": "Biggest Loss", "value": stats['performance_metrics']['biggest_loss'], "is_currency": True},
+            {"label": "Best Streak", "value": stats['performance_metrics']['best_streak']}
+        ]
+
+        # Betting Analysis Section
+        betting_metrics = [
+            {"label": "Profitable Bets", "value": stats['betting_metrics']['profitable_bets']},
+            {"label": "Loss Bets", "value": stats['betting_metrics']['loss_bets']},
+            {"label": "Average Bet Size", "value": stats['betting_metrics']['avg_bet_size'], "is_currency": True},
+            {"label": "Total Bet Amount", "value": stats['betting_metrics']['total_bet_amount'], "is_currency": True}
+        ]
+
+        # Confidence & Coverage Section
+        confidence_metrics = [
+            {"label": "High Confidence Success", "value": stats['confidence_metrics']['high_confidence_success'], "is_percentage": True},
+            {"label": "High Confidence Bets", "value": stats['confidence_metrics']['total_high_confidence_bets']},
+            {"label": "Total Leagues", "value": stats['coverage_metrics']['total_leagues']}
+        ]
+
+        # Add page title
+        st.title("Prediction History & Statistics")
+
+        # Render all sections
+        st.markdown(render_section("Overview", overview_metrics), unsafe_allow_html=True)
+        st.markdown(render_section("Performance Analysis", performance_metrics), unsafe_allow_html=True)
+        st.markdown(render_section("Betting Analysis", betting_metrics), unsafe_allow_html=True)
+        st.markdown(render_section("Confidence & Coverage", confidence_metrics), unsafe_allow_html=True)
 
 def style_dataframe(df):
     """Style the predictions dataframe with colors and formatting"""
