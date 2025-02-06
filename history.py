@@ -840,7 +840,7 @@ def show_history_page():
                 {"label": "Correct Predictions", "value": stats[1], "is_percentage": False, "is_currency": False},
                 {"label": "Success Rate", "value": stats[2], "is_percentage": True, "is_currency": False},
                 {"label": "Total Profit", "value": stats[3], "is_currency": True, "is_percentage": False},
-                {"label": "ROI", "value": stats[4], "is_percentage": True, "is_currency": False},
+                {"label": "ROI", "value": round(stats[4], 2), "is_percentage": True, "is_currency": False},
                 {"label": "Pending Predictions", "value": pending_count, "is_percentage": False, "is_currency": False}
             ]
             
@@ -848,7 +848,7 @@ def show_history_page():
                 if metric.get("is_currency"):
                     formatted_value = f"£{metric['value']:.2f}"
                 elif metric.get("is_percentage"):
-                    formatted_value = f"{metric['value']:.1f}%"
+                    formatted_value = f"{metric['value']:.2f}%" if metric['label'] == "ROI" else f"{metric['value']:.1f}%"
                 else:
                     formatted_value = str(metric['value'])
                 
