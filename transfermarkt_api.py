@@ -36,6 +36,8 @@ class TransfermarktAPI:
             "chelsea": "fc chelsea",
             "liverpool": "fc liverpool",
             "manchester united": "manchester united",
+            "man utd": "manchester united",
+            "man united": "manchester united",
             "manchester city": "manchester city",
             "newcastle": "newcastle united",
             "tottenham": "tottenham hotspur",
@@ -68,6 +70,9 @@ class TransfermarktAPI:
             "bayern": "fc bayern münchen",
             "bayern munich": "fc bayern münchen",
             "bayern munchen": "fc bayern münchen",
+            "bayern münchen": "fc bayern münchen",
+            "werder": "sv werder bremen",
+            "werder bremen": "sv werder bremen",
             "dortmund": "borussia dortmund",
             "bvb": "borussia dortmund",
             "leverkusen": "bayer 04 leverkusen",
@@ -97,6 +102,7 @@ class TransfermarktAPI:
             "fc torino": "fc torino",
             "cremonese": "us cremonese",
             "salernitana": "us salernitana 1919",
+            "brescia": "brescia calcio",
             "bari": "ssc bari",
             "bari 1908": "ssc bari",
             
@@ -118,6 +124,13 @@ class TransfermarktAPI:
             "stade brestois": "stade brestois 29",
             "bastia": "sc bastia",
             "sc bastia": "sporting club bastia",
+            "grenoble": "grenoble foot 38",
+            "grenoble foot": "grenoble foot 38",
+            "grenoble foot 38": "grenoble foot 38",
+            "red star": "red star fc",
+            "laval": "stade lavallois",
+            "stade laval": "stade lavallois",
+            "annecy": "fc annecy",
             
             # Portuguese Teams
             "benfica": "sl benfica",
@@ -145,10 +158,13 @@ class TransfermarktAPI:
             "brugge": "fc brügge",
             "anderlecht": "rsc anderlecht",
             "gent": "kaa gent",
+            "kaa gent": "kaa gent",
             "genk": "krc genk",
             "standard": "standard lüttich",
             "sint-truiden": "vv sint-truiden",
             "sint truiden": "vv sint-truiden",
+            "mechelen": "kv mechelen",
+            "kv mechelen": "kv mechelen",
             
             # Scottish Teams
             "celtic": "celtic glasgow",
@@ -161,7 +177,9 @@ class TransfermarktAPI:
             "rb salzburg": "red bull salzburg",
             "rapid wien": "rapid vienna",
             "sturm graz": "sk sturm graz",
-            "austria wien": "austria vienna",
+            "sturm": "sk sturm graz",
+            "austria wien": "fk austria wien",
+            "austria vienna": "fk austria wien",
             
             # Swiss Teams
             "basel": "fc basel",
@@ -496,6 +514,9 @@ class TransfermarktAPI:
         if not team_name:
             return ""
             
+        if isinstance(team_name, dict):
+            return team_name
+            
         # Convert to lowercase for consistent processing
         name = team_name.lower().strip()
         
@@ -515,7 +536,6 @@ class TransfermarktAPI:
             team_name = self.abbreviations[team_lower]
             logger.debug(f"Using abbreviated name: {team_name}")
         
-        # Try fuzzy match with abbreviations if direct match fails
         if isinstance(team_name, str):
             # Remove special characters and extra spaces
             team_name = re.sub(r'[^\w\s-]', '', team_name)
