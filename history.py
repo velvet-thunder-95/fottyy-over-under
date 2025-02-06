@@ -248,8 +248,8 @@ class PredictionHistory:
                 SUM(CASE WHEN status = 'Completed' THEN 1 ELSE 0 END) as completed_predictions,
                 SUM(CASE WHEN predicted_outcome = actual_outcome AND status = 'Completed' THEN 1 ELSE 0 END) as correct_predictions,
                 SUM(CASE WHEN status = 'Pending' THEN 1 ELSE 0 END) as pending_predictions,
-                SUM(CASE WHEN profit_loss IS NOT NULL THEN profit_loss ELSE 0 END) as total_profit,
-                SUM(CASE WHEN status = 'Completed' AND bet_amount IS NOT NULL THEN bet_amount ELSE 0 END) as total_bet_amount
+                ROUND(SUM(CASE WHEN profit_loss IS NOT NULL THEN profit_loss ELSE 0 END), 2) as total_profit,
+                ROUND(SUM(CASE WHEN status = 'Completed' THEN 1 ELSE 0 END), 2) as total_bet_amount
             FROM predictions
             WHERE 1=1
         """
@@ -836,21 +836,24 @@ def show_history_page():
             
             # Display each metric
             metrics = [
-                {"label": "Total Predictions", "value": stats[0], "is_percentage": False, "is_currency": False},
-                {"label": "Correct Predictions", "value": stats[1], "is_percentage": False, "is_currency": False},
-                {"label": "Success Rate", "value": stats[2], "is_percentage": True, "is_currency": False},
-                {"label": "Total Profit", "value": stats[3], "is_currency": True, "is_percentage": False},
-                {"label": "ROI", "value": round(stats[4], 2), "is_percentage": True, "is_currency": False},
-                {"label": "Pending Predictions", "value": pending_count, "is_percentage": False, "is_currency": False}
+                {"label": "Total Predictions", "value": float(stats[0]), "is_percentage": False, "is_currency": False},
+                {"label": "Correct Predictions", "value": float(stats[1]), "is_percentage": False, "is_currency": False},
+                {"label": "Success Rate", "value": float(stats[2]), "is_percentage": True, "is_currency": False},
+                {"label": "Total Profit", "value": float(stats[3]), "is_currency": True, "is_percentage": False},
+                {"label": "ROI", "value": float(stats[4]), "is_percentage": True, "is_currency": False},
+                {"label": "Pending Predictions", "value": float(pending_count), "is_percentage": False, "is_currency": False}
             ]
             
             for metric in metrics:
                 if metric.get("is_currency"):
                     formatted_value = f"£{metric['value']:.2f}"
                 elif metric.get("is_percentage"):
-                    formatted_value = f"{metric['value']:.2f}%" if metric['label'] == "ROI" else f"{metric['value']:.1f}%"
+                    if metric['label'] == "ROI":
+                        formatted_value = f"{metric['value']:.2f}%"
+                    else:
+                        formatted_value = f"{metric['value']:.1f}%"
                 else:
-                    formatted_value = str(metric['value'])
+                    formatted_value = f"{metric['value']:.1f}"
                 
                 value_class = ""
                 if metric.get("is_currency") or metric.get("is_percentage"):
