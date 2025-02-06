@@ -246,55 +246,55 @@ class PredictionHistory:
         query = """
             WITH streak_calc AS (
                 SELECT 
-                    id,
-                    predicted_outcome = actual_outcome as is_correct,
-                    status,
-                    profit_loss,
-                    bet_amount,
-                    LAG(predicted_outcome = actual_outcome, 1, false) OVER (ORDER BY id) as prev_correct,
-                    LAG(status, 1, 'Completed') OVER (ORDER BY id) as prev_status
-                FROM predictions
-                WHERE status = 'Completed'
-                ORDER BY id
+                    p.id,
+                    p.predicted_outcome = p.actual_outcome as is_correct,
+                    p.status,
+                    p.profit_loss,
+                    p.bet_amount,
+                    LAG(p.predicted_outcome = p.actual_outcome, 1, false) OVER (ORDER BY p.id) as prev_correct,
+                    LAG(p.status, 1, 'Completed') OVER (ORDER BY p.id) as prev_status
+                FROM predictions p
+                WHERE p.status = 'Completed'
+                ORDER BY p.id
             ),
             streak_groups AS (
                 SELECT 
-                    id,
-                    is_correct,
-                    profit_loss,
-                    bet_amount,
+                    sc.id,
+                    sc.is_correct,
+                    sc.profit_loss,
+                    sc.bet_amount,
                     CASE 
-                        WHEN is_correct AND (NOT prev_correct OR prev_status != 'Completed') THEN 1 
+                        WHEN sc.is_correct AND (NOT sc.prev_correct OR sc.prev_status != 'Completed') THEN 1 
                         ELSE 0 
                     END as streak_start
-                FROM streak_calc
+                FROM streak_calc sc
             ),
             streak_numbers AS (
                 SELECT 
-                    id,
-                    is_correct,
-                    profit_loss,
-                    bet_amount,
-                    SUM(streak_start) OVER (ORDER BY id) as streak_group
-                FROM streak_groups
-                WHERE is_correct
+                    sg.id,
+                    sg.is_correct,
+                    sg.profit_loss,
+                    sg.bet_amount,
+                    SUM(sg.streak_start) OVER (ORDER BY sg.id) as streak_group
+                FROM streak_groups sg
+                WHERE sg.is_correct
             )
             SELECT 
                 COUNT(*) as total_predictions,
-                SUM(CASE WHEN status = 'Completed' THEN 1 ELSE 0 END) as completed_predictions,
-                SUM(CASE WHEN predicted_outcome = actual_outcome AND status = 'Completed' THEN 1 ELSE 0 END) as correct_predictions,
-                SUM(CASE WHEN status = 'Pending' THEN 1 ELSE 0 END) as pending_predictions,
-                COALESCE(SUM(CASE WHEN status = 'Completed' THEN profit_loss ELSE 0 END), 0) as total_profit,
-                COALESCE(SUM(CASE WHEN status = 'Completed' THEN bet_amount ELSE 0 END), 0) as total_bet_amount,
-                COALESCE(AVG(CASE WHEN status = 'Completed' AND profit_loss > 0 THEN profit_loss END), 0) as avg_win_amount,
-                COALESCE(AVG(CASE WHEN status = 'Completed' AND profit_loss < 0 THEN ABS(profit_loss) END), 0) as avg_loss_amount,
-                COUNT(CASE WHEN status = 'Completed' AND profit_loss > 0 THEN 1 END) as profitable_bets,
-                COUNT(CASE WHEN status = 'Completed' AND profit_loss < 0 THEN 1 END) as loss_bets,
-                COALESCE(MAX(CASE WHEN status = 'Completed' AND profit_loss > 0 THEN profit_loss END), 0) as biggest_win,
-                COALESCE(MIN(CASE WHEN status = 'Completed' AND profit_loss < 0 THEN profit_loss END), 0) as biggest_loss,
-                SUM(CASE WHEN status = 'Completed' AND confidence >= 70 AND predicted_outcome = actual_outcome THEN 1 ELSE 0 END) as high_confidence_wins,
-                SUM(CASE WHEN status = 'Completed' AND confidence >= 70 THEN 1 ELSE 0 END) as total_high_confidence,
-                COUNT(DISTINCT league) as total_leagues,
+                SUM(CASE WHEN p.status = 'Completed' THEN 1 ELSE 0 END) as completed_predictions,
+                SUM(CASE WHEN p.predicted_outcome = p.actual_outcome AND p.status = 'Completed' THEN 1 ELSE 0 END) as correct_predictions,
+                SUM(CASE WHEN p.status = 'Pending' THEN 1 ELSE 0 END) as pending_predictions,
+                COALESCE(SUM(CASE WHEN p.status = 'Completed' THEN p.profit_loss ELSE 0 END), 0) as total_profit,
+                COALESCE(SUM(CASE WHEN p.status = 'Completed' THEN p.bet_amount ELSE 0 END), 0) as total_bet_amount,
+                COALESCE(AVG(CASE WHEN p.status = 'Completed' AND p.profit_loss > 0 THEN p.profit_loss END), 0) as avg_win_amount,
+                COALESCE(AVG(CASE WHEN p.status = 'Completed' AND p.profit_loss < 0 THEN ABS(p.profit_loss) END), 0) as avg_loss_amount,
+                COUNT(CASE WHEN p.status = 'Completed' AND p.profit_loss > 0 THEN 1 END) as profitable_bets,
+                COUNT(CASE WHEN p.status = 'Completed' AND p.profit_loss < 0 THEN 1 END) as loss_bets,
+                COALESCE(MAX(CASE WHEN p.status = 'Completed' AND p.profit_loss > 0 THEN p.profit_loss END), 0) as biggest_win,
+                COALESCE(MIN(CASE WHEN p.status = 'Completed' AND p.profit_loss < 0 THEN p.profit_loss END), 0) as biggest_loss,
+                SUM(CASE WHEN p.status = 'Completed' AND p.confidence >= 70 AND p.predicted_outcome = p.actual_outcome THEN 1 ELSE 0 END) as high_confidence_wins,
+                SUM(CASE WHEN p.status = 'Completed' AND p.confidence >= 70 THEN 1 ELSE 0 END) as total_high_confidence,
+                COUNT(DISTINCT p.league) as total_leagues,
                 COALESCE((
                     SELECT COUNT(*) 
                     FROM streak_numbers s2 
@@ -304,7 +304,7 @@ class PredictionHistory:
                     LIMIT 1
                 ), 0) as best_streak
             FROM predictions p
-            LEFT JOIN streak_numbers s1 ON 1=1
+            LEFT JOIN streak_numbers s1 ON s1.id = p.id
             WHERE 1=1
         """
 
@@ -313,18 +313,18 @@ class PredictionHistory:
             confidence_conditions = []
             for level in confidence_levels:
                 if level == "High":
-                    confidence_conditions.append("confidence >= 70")
+                    confidence_conditions.append("p.confidence >= 70")
                 elif level == "Medium":
-                    confidence_conditions.append("(confidence >= 50 AND confidence < 70)")
+                    confidence_conditions.append("(p.confidence >= 50 AND p.confidence < 70)")
                 elif level == "Low":
-                    confidence_conditions.append("confidence < 50")
+                    confidence_conditions.append("p.confidence < 50")
             if confidence_conditions:
                 query += f" AND ({' OR '.join(confidence_conditions)})"
 
         # Handle multiple leagues
         if leagues and "All" not in leagues:
             placeholders = ','.join('?' * len(leagues))
-            query += f" AND league IN ({placeholders})"
+            query += f" AND p.league IN ({placeholders})"
             params.extend(leagues)
 
         try:
