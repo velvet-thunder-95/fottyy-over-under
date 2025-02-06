@@ -249,6 +249,8 @@ class PredictionHistory:
                     id,
                     predicted_outcome = actual_outcome as is_correct,
                     status,
+                    profit_loss,
+                    bet_amount,
                     LAG(predicted_outcome = actual_outcome, 1, false) OVER (ORDER BY id) as prev_correct,
                     LAG(status, 1, 'Completed') OVER (ORDER BY id) as prev_status
                 FROM predictions
@@ -259,6 +261,8 @@ class PredictionHistory:
                 SELECT 
                     id,
                     is_correct,
+                    profit_loss,
+                    bet_amount,
                     CASE 
                         WHEN is_correct AND (NOT prev_correct OR prev_status != 'Completed') THEN 1 
                         ELSE 0 
@@ -269,6 +273,8 @@ class PredictionHistory:
                 SELECT 
                     id,
                     is_correct,
+                    profit_loss,
+                    bet_amount,
                     SUM(streak_start) OVER (ORDER BY id) as streak_group
                 FROM streak_groups
                 WHERE is_correct
@@ -278,14 +284,14 @@ class PredictionHistory:
                 SUM(CASE WHEN status = 'Completed' THEN 1 ELSE 0 END) as completed_predictions,
                 SUM(CASE WHEN predicted_outcome = actual_outcome AND status = 'Completed' THEN 1 ELSE 0 END) as correct_predictions,
                 SUM(CASE WHEN status = 'Pending' THEN 1 ELSE 0 END) as pending_predictions,
-                SUM(CASE WHEN profit_loss IS NOT NULL THEN profit_loss ELSE 0 END) as total_profit,
-                SUM(CASE WHEN status = 'Completed' AND bet_amount IS NOT NULL THEN bet_amount ELSE 0 END) as total_bet_amount,
-                AVG(CASE WHEN status = 'Completed' AND profit_loss > 0 THEN profit_loss ELSE NULL END) as avg_win_amount,
-                AVG(CASE WHEN status = 'Completed' AND profit_loss < 0 THEN ABS(profit_loss) ELSE NULL END) as avg_loss_amount,
-                SUM(CASE WHEN status = 'Completed' AND profit_loss > 0 THEN 1 ELSE 0 END) as profitable_bets,
-                SUM(CASE WHEN status = 'Completed' AND profit_loss < 0 THEN 1 ELSE 0 END) as loss_bets,
-                MAX(CASE WHEN status = 'Completed' THEN profit_loss ELSE NULL END) as biggest_win,
-                MIN(CASE WHEN status = 'Completed' THEN profit_loss ELSE NULL END) as biggest_loss,
+                COALESCE(SUM(CASE WHEN status = 'Completed' THEN profit_loss ELSE 0 END), 0) as total_profit,
+                COALESCE(SUM(CASE WHEN status = 'Completed' THEN bet_amount ELSE 0 END), 0) as total_bet_amount,
+                COALESCE(AVG(CASE WHEN status = 'Completed' AND profit_loss > 0 THEN profit_loss END), 0) as avg_win_amount,
+                COALESCE(AVG(CASE WHEN status = 'Completed' AND profit_loss < 0 THEN ABS(profit_loss) END), 0) as avg_loss_amount,
+                COUNT(CASE WHEN status = 'Completed' AND profit_loss > 0 THEN 1 END) as profitable_bets,
+                COUNT(CASE WHEN status = 'Completed' AND profit_loss < 0 THEN 1 END) as loss_bets,
+                COALESCE(MAX(CASE WHEN status = 'Completed' AND profit_loss > 0 THEN profit_loss END), 0) as biggest_win,
+                COALESCE(MIN(CASE WHEN status = 'Completed' AND profit_loss < 0 THEN profit_loss END), 0) as biggest_loss,
                 SUM(CASE WHEN status = 'Completed' AND confidence >= 70 AND predicted_outcome = actual_outcome THEN 1 ELSE 0 END) as high_confidence_wins,
                 SUM(CASE WHEN status = 'Completed' AND confidence >= 70 THEN 1 ELSE 0 END) as total_high_confidence,
                 COUNT(DISTINCT league) as total_leagues,
@@ -326,30 +332,32 @@ class PredictionHistory:
             row = df.iloc[0]
             
             # Basic stats calculations
-            completed_predictions = row['completed_predictions']
-            correct_predictions = row['correct_predictions']
-            total_profit = row['total_profit'] if row['total_profit'] is not None else 0
-            total_bet_amount = row['total_bet_amount'] if row['total_bet_amount'] is not None else 0
+            completed_predictions = int(row['completed_predictions'])
+            correct_predictions = int(row['correct_predictions'])
+            total_profit = float(row['total_profit'])
+            total_bet_amount = float(row['total_bet_amount'])
+            pending_predictions = int(row['pending_predictions'])
             
             # Calculate rates
             success_rate = (correct_predictions / completed_predictions * 100) if completed_predictions > 0 else 0
             roi = (total_profit / total_bet_amount * 100) if total_bet_amount > 0 else 0
             
+            # Ensure proper type conversion and rounding
             return {
                 'basic_stats': {
-                    'total_predictions': int(completed_predictions + row['pending_predictions']),
-                    'correct_predictions': int(correct_predictions),
+                    'total_predictions': completed_predictions + pending_predictions,
+                    'correct_predictions': correct_predictions,
                     'success_rate': round(success_rate, 2),
                     'total_profit': round(total_profit, 2),
                     'roi': round(roi, 2),
-                    'pending_predictions': int(row['pending_predictions'])
+                    'pending_predictions': pending_predictions
                 },
                 'performance_metrics': {
-                    'avg_win': round(row['avg_win_amount'] if row['avg_win_amount'] is not None else 0, 2),
-                    'avg_loss': round(row['avg_loss_amount'] if row['avg_loss_amount'] is not None else 0, 2),
-                    'win_loss_ratio': round(row['profitable_bets'] / row['loss_bets'] if row['loss_bets'] > 0 else float('inf'), 2),
-                    'biggest_win': round(row['biggest_win'] if row['biggest_win'] is not None else 0, 2),
-                    'biggest_loss': round(row['biggest_loss'] if row['biggest_loss'] is not None else 0, 2),
+                    'avg_win': round(float(row['avg_win_amount']), 2),
+                    'avg_loss': round(float(row['avg_loss_amount']), 2),
+                    'win_loss_ratio': round(int(row['profitable_bets']) / int(row['loss_bets']) if int(row['loss_bets']) > 0 else float('inf'), 2),
+                    'biggest_win': round(float(row['biggest_win']), 2),
+                    'biggest_loss': round(float(row['biggest_loss']), 2),
                     'best_streak': int(row['best_streak'])
                 },
                 'betting_metrics': {
@@ -359,7 +367,7 @@ class PredictionHistory:
                     'total_bet_amount': round(total_bet_amount, 2)
                 },
                 'confidence_metrics': {
-                    'high_confidence_success': round((row['high_confidence_wins'] / row['total_high_confidence'] * 100) if row['total_high_confidence'] > 0 else 0, 2),
+                    'high_confidence_success': round((int(row['high_confidence_wins']) / int(row['total_high_confidence']) * 100) if int(row['total_high_confidence']) > 0 else 0, 2),
                     'total_high_confidence_bets': int(row['total_high_confidence'])
                 },
                 'coverage_metrics': {
