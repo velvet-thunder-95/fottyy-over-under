@@ -8,16 +8,11 @@ from football_api import get_match_by_teams, get_match_result
 from session_state import init_session_state, check_login_state
 from match_analyzer import MatchAnalyzer
 import logging
-import os
 
 class PredictionHistory:
     def __init__(self):
-        """Initialize prediction history with database path"""
-        self.db_path = os.path.join(os.path.dirname(__file__), 'predictions.db')
-        self.ensure_db_exists()
-
-    def ensure_db_exists(self):
-        """Ensure the database exists and create tables if they don't exist."""
+        """Initialize the database connection and create tables if they don't exist."""
+        self.db_path = 'predictions.db'
         connection = sqlite3.connect(self.db_path)
         cursor = connection.cursor()
         
@@ -246,127 +241,65 @@ class PredictionHistory:
     def calculate_statistics(self, confidence_levels=None, leagues=None):
         """Calculate prediction statistics with optional confidence level and league filters"""
         conn = sqlite3.connect(self.db_path)
-        params = []  # Initialize params list
         
         query = """
-            WITH RECURSIVE streak_calc AS (
-                SELECT 
-                    p.id,
-                    p.predicted_outcome = p.actual_outcome as is_correct,
-                    p.status,
-                    p.profit_loss,
-                    p.bet_amount,
-                    ROW_NUMBER() OVER (ORDER BY p.id) as rn
-                FROM predictions p
-                WHERE p.status = 'Completed'
-                ORDER BY p.id
-            ),
-            streak_groups AS (
-                SELECT 
-                    id,
-                    is_correct,
-                    rn,
-                    CASE WHEN is_correct THEN rn - ROW_NUMBER() OVER (ORDER BY id) ELSE NULL END as grp
-                FROM streak_calc
-            ),
-            streak_lengths AS (
-                SELECT grp, COUNT(*) as streak_length
-                FROM streak_groups
-                WHERE grp IS NOT NULL
-                GROUP BY grp
-            )
             SELECT 
                 COUNT(*) as total_predictions,
-                SUM(CASE WHEN p.status = 'Completed' THEN 1 ELSE 0 END) as completed_predictions,
-                SUM(CASE WHEN p.predicted_outcome = p.actual_outcome AND p.status = 'Completed' THEN 1 ELSE 0 END) as correct_predictions,
-                SUM(CASE WHEN p.status = 'Pending' THEN 1 ELSE 0 END) as pending_predictions,
-                COALESCE(SUM(CASE WHEN p.status = 'Completed' THEN p.profit_loss ELSE 0 END), 0) as total_profit,
-                COALESCE(SUM(CASE WHEN p.status = 'Completed' THEN p.bet_amount ELSE 0 END), 0) as total_bet_amount,
-                COALESCE(AVG(CASE WHEN p.status = 'Completed' AND p.profit_loss > 0 THEN p.profit_loss END), 0) as avg_win_amount,
-                COALESCE(AVG(CASE WHEN p.status = 'Completed' AND p.profit_loss < 0 THEN ABS(p.profit_loss) END), 0) as avg_loss_amount,
-                COUNT(CASE WHEN p.status = 'Completed' AND p.profit_loss > 0 THEN 1 END) as profitable_bets,
-                COUNT(CASE WHEN p.status = 'Completed' AND p.profit_loss < 0 THEN 1 END) as loss_bets,
-                COALESCE(MAX(CASE WHEN p.status = 'Completed' AND p.profit_loss > 0 THEN p.profit_loss END), 0) as biggest_win,
-                COALESCE(MIN(CASE WHEN p.status = 'Completed' AND p.profit_loss < 0 THEN p.profit_loss END), 0) as biggest_loss,
-                SUM(CASE WHEN p.status = 'Completed' AND p.confidence >= 70 AND p.predicted_outcome = p.actual_outcome THEN 1 ELSE 0 END) as high_confidence_wins,
-                SUM(CASE WHEN p.status = 'Completed' AND p.confidence >= 70 THEN 1 ELSE 0 END) as total_high_confidence,
-                COUNT(DISTINCT p.league) as total_leagues,
-                COALESCE(MAX(sl.streak_length), 0) as best_streak
-            FROM predictions p
-            LEFT JOIN streak_lengths sl ON 1=1
+                SUM(CASE WHEN status = 'Completed' THEN 1 ELSE 0 END) as completed_predictions,
+                SUM(CASE WHEN predicted_outcome = actual_outcome AND status = 'Completed' THEN 1 ELSE 0 END) as correct_predictions,
+                SUM(CASE WHEN status = 'Pending' THEN 1 ELSE 0 END) as pending_predictions,
+                SUM(CASE WHEN profit_loss IS NOT NULL THEN profit_loss ELSE 0 END) as total_profit,
+                SUM(CASE WHEN status = 'Completed' AND bet_amount IS NOT NULL THEN bet_amount ELSE 0 END) as total_bet_amount
+            FROM predictions
             WHERE 1=1
         """
+        params = []
 
         # Handle multiple confidence levels
         if confidence_levels and "All" not in confidence_levels:
             confidence_conditions = []
             for level in confidence_levels:
                 if level == "High":
-                    confidence_conditions.append("p.confidence >= 70")
+                    confidence_conditions.append("confidence >= 70")
                 elif level == "Medium":
-                    confidence_conditions.append("(p.confidence >= 50 AND p.confidence < 70)")
+                    confidence_conditions.append("(confidence >= 50 AND confidence < 70)")
                 elif level == "Low":
-                    confidence_conditions.append("p.confidence < 50")
+                    confidence_conditions.append("confidence < 50")
             if confidence_conditions:
                 query += f" AND ({' OR '.join(confidence_conditions)})"
 
         # Handle multiple leagues
         if leagues and "All" not in leagues:
             placeholders = ','.join('?' * len(leagues))
-            query += f" AND p.league IN ({placeholders})"
+            query += f" AND league IN ({placeholders})"
             params.extend(leagues)
 
         try:
             df = pd.read_sql_query(query, conn, params=params)
             row = df.iloc[0]
             
-            # Basic stats calculations
-            completed_predictions = int(row['completed_predictions'])
-            correct_predictions = int(row['correct_predictions'])
-            total_profit = float(row['total_profit'])
-            total_bet_amount = float(row['total_bet_amount'])
-            pending_predictions = int(row['pending_predictions'])
+            total_predictions = row['total_predictions']
+            completed_predictions = row['completed_predictions']
+            correct_predictions = row['correct_predictions']
+            pending_predictions = row['pending_predictions']
+            total_profit = row['total_profit'] if row['total_profit'] is not None else 0
+            total_bet_amount = row['total_bet_amount'] if row['total_bet_amount'] is not None else 0
             
-            # Calculate rates
+            # Calculate success rate and ROI
             success_rate = (correct_predictions / completed_predictions * 100) if completed_predictions > 0 else 0
             roi = (total_profit / total_bet_amount * 100) if total_bet_amount > 0 else 0
             
-            # Ensure proper type conversion and rounding
-            return {
-                'basic_stats': {
-                    'total_predictions': completed_predictions + pending_predictions,
-                    'correct_predictions': correct_predictions,
-                    'success_rate': round(success_rate, 2),
-                    'total_profit': round(total_profit, 2),
-                    'roi': round(roi, 2),
-                    'pending_predictions': pending_predictions
-                },
-                'performance_metrics': {
-                    'avg_win': round(float(row['avg_win_amount']), 2),
-                    'avg_loss': round(float(row['avg_loss_amount']), 2),
-                    'win_loss_ratio': round(int(row['profitable_bets']) / int(row['loss_bets']) if int(row['loss_bets']) > 0 else float('inf'), 2),
-                    'biggest_win': round(float(row['biggest_win']), 2),
-                    'biggest_loss': round(float(row['biggest_loss']), 2),
-                    'best_streak': int(row['best_streak'])
-                },
-                'betting_metrics': {
-                    'profitable_bets': int(row['profitable_bets']),
-                    'loss_bets': int(row['loss_bets']),
-                    'avg_bet_size': round(total_bet_amount / completed_predictions if completed_predictions > 0 else 0, 2),
-                    'total_bet_amount': round(total_bet_amount, 2)
-                },
-                'confidence_metrics': {
-                    'high_confidence_success': round((int(row['high_confidence_wins']) / int(row['total_high_confidence']) * 100) if int(row['total_high_confidence']) > 0 else 0, 2),
-                    'total_high_confidence_bets': int(row['total_high_confidence'])
-                },
-                'coverage_metrics': {
-                    'total_leagues': int(row['total_leagues'])
-                }
-            }
+            return (
+                completed_predictions + pending_predictions,  # total predictions
+                correct_predictions,
+                success_rate,
+                total_profit,
+                roi
+            ), pending_predictions
             
         except Exception as e:
             logging.error(f"Error calculating statistics: {str(e)}")
-            return None
+            return (0, 0, 0, 0, 0), 0
         finally:
             conn.close()
 
@@ -498,162 +431,7 @@ class PredictionHistory:
         
         conn.close()
 
-    def show_history_page(self):
-        """Display the prediction history page with statistics"""
-        st.markdown("""
-        <style>
-        .metric-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-        .metric-card {
-            background: white;
-            padding: 1rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            transition: transform 0.2s;
-        }
-        .metric-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-        }
-        .metric-label {
-            color: #666;
-            font-size: 0.9rem;
-            margin-bottom: 0.5rem;
-        }
-        .metric-value {
-            font-size: 1.5rem;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .metric-value.positive { color: #28a745; }
-        .metric-value.negative { color: #dc3545; }
-        .metric-value.neutral { color: #495057; }
-        .percentage-badge {
-            font-size: 0.8em;
-            margin-left: 2px;
-            opacity: 0.8;
-        }
-        .currency-symbol {
-            font-size: 0.8em;
-            margin-right: 2px;
-            opacity: 0.8;
-        }
-        .section-title {
-            font-size: 1.2rem;
-            color: #333;
-            margin: 1.5rem 0 1rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 2px solid #eee;
-        }
-        </style>
-        """, unsafe_allow_html=True)
 
-        # Get statistics
-        stats = self.calculate_statistics()
-
-        def render_metric_card(label, value, is_percentage=False, is_currency=False, force_class=None):
-            if isinstance(value, float):
-                formatted_value = f"{value:,.2f}"
-            else:
-                formatted_value = f"{value:,}"
-            
-            if is_currency:
-                if value < 0:
-                    formatted_value = formatted_value[1:]  # Remove the negative sign
-                formatted_value = f"<span class='currency-symbol'>$</span>{formatted_value}"
-            elif is_percentage:
-                formatted_value = f"{formatted_value}<span class='percentage-badge'>%</span>"
-
-            # Determine value class
-            if force_class:
-                value_class = force_class
-            elif isinstance(value, (int, float)):
-                if "profit" in label.lower() or "roi" in label.lower() or "win" in label.lower():
-                    value_class = "positive" if value > 0 else "negative" if value < 0 else "neutral"
-                elif "rate" in label.lower():
-                    value_class = "positive" if value >= 60 else "negative" if value < 40 else "neutral"
-                elif "ratio" in label.lower():
-                    value_class = "positive" if value > 1 else "negative" if value < 1 else "neutral"
-                elif "loss" in label.lower():
-                    value_class = "negative" if value < 0 else "neutral"
-                else:
-                    value_class = "neutral"
-            else:
-                value_class = "neutral"
-
-            return f"""
-            <div class="metric-card">
-                <div class="metric-label">{label}</div>
-                <div class="metric-value {value_class}">
-                    {formatted_value}
-                </div>
-            </div>
-            """
-
-        def render_section(title, metrics):
-            metrics_html = "".join([
-                render_metric_card(metric["label"], metric["value"], 
-                                 metric.get("is_percentage", False),
-                                 metric.get("is_currency", False),
-                                 metric.get("force_class", None))
-                for metric in metrics
-            ])
-            return f"""
-            <div class="section-title">{title}</div>
-            <div class="metric-grid">
-                {metrics_html}
-            </div>
-            """
-
-        # Overview Section
-        overview_metrics = [
-            {"label": "Total Predictions", "value": stats['basic_stats']['total_predictions']},
-            {"label": "Correct Predictions", "value": stats['basic_stats']['correct_predictions']},
-            {"label": "Success Rate", "value": stats['basic_stats']['success_rate'], "is_percentage": True},
-            {"label": "Total Profit", "value": stats['basic_stats']['total_profit'], "is_currency": True},
-            {"label": "ROI", "value": stats['basic_stats']['roi'], "is_percentage": True},
-            {"label": "Pending Predictions", "value": stats['basic_stats']['pending_predictions']}
-        ]
-
-        # Performance Analysis Section
-        performance_metrics = [
-            {"label": "Average Win", "value": stats['performance_metrics']['avg_win'], "is_currency": True},
-            {"label": "Average Loss", "value": stats['performance_metrics']['avg_loss'], "is_currency": True},
-            {"label": "Win/Loss Ratio", "value": stats['performance_metrics']['win_loss_ratio']},
-            {"label": "Biggest Win", "value": stats['performance_metrics']['biggest_win'], "is_currency": True},
-            {"label": "Biggest Loss", "value": stats['performance_metrics']['biggest_loss'], "is_currency": True},
-            {"label": "Best Streak", "value": stats['performance_metrics']['best_streak']}
-        ]
-
-        # Betting Analysis Section
-        betting_metrics = [
-            {"label": "Profitable Bets", "value": stats['betting_metrics']['profitable_bets']},
-            {"label": "Loss Bets", "value": stats['betting_metrics']['loss_bets']},
-            {"label": "Average Bet Size", "value": stats['betting_metrics']['avg_bet_size'], "is_currency": True},
-            {"label": "Total Bet Amount", "value": stats['betting_metrics']['total_bet_amount'], "is_currency": True}
-        ]
-
-        # Confidence & Coverage Section
-        confidence_metrics = [
-            {"label": "High Confidence Success", "value": stats['confidence_metrics']['high_confidence_success'], "is_percentage": True},
-            {"label": "High Confidence Bets", "value": stats['confidence_metrics']['total_high_confidence_bets']},
-            {"label": "Total Leagues", "value": stats['coverage_metrics']['total_leagues']}
-        ]
-
-        # Add page title
-        st.title("Prediction History & Statistics")
-
-        # Render all sections
-        st.markdown(render_section("Overview", overview_metrics), unsafe_allow_html=True)
-        st.markdown(render_section("Performance Analysis", performance_metrics), unsafe_allow_html=True)
-        st.markdown(render_section("Betting Analysis", betting_metrics), unsafe_allow_html=True)
-        st.markdown(render_section("Confidence & Coverage", confidence_metrics), unsafe_allow_html=True)
 
 def style_dataframe(df):
     """Style the predictions dataframe with colors and formatting"""
@@ -775,88 +553,21 @@ def show_history_page():
     """Display prediction history page"""
     st.markdown("""
         <style>
-        .stats-container {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
+        .stDataFrame {
+            font-size: 14px;
+            width: 100%;
         }
-        
-        .stats-section {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 15px;
+        .stDataFrame [data-testid="StyledDataFrameDataCell"] {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            padding: 12px 15px !important;
+            color: #333333 !important;
         }
-        
-        .stats-section-title {
-            color: #2c5282;
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 10px;
-            padding-bottom: 5px;
-            border-bottom: 2px solid #e2e8f0;
-        }
-        
-        .metric-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 10px;
-        }
-        
-        .metric-card {
-            background: white;
-            padding: 12px;
-            border-radius: 6px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-            transition: transform 0.2s;
-        }
-        
-        .metric-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .metric-label {
-            color: #4a5568;
-            font-size: 0.85rem;
-            font-weight: 500;
-            margin-bottom: 4px;
-        }
-        
-        .metric-value {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: #2d3748;
-        }
-        
-        .metric-value.positive {
-            color: #38a169;
-        }
-        
-        .metric-value.negative {
-            color: #e53e3e;
-        }
-        
-        .metric-value.neutral {
-            color: #3182ce;
-        }
-        
-        .percentage-badge {
-            background: #ebf8ff;
-            color: #2b6cb0;
-            padding: 2px 6px;
-            border-radius: 12px;
-            font-size: 0.8rem;
-            margin-left: 4px;
-        }
-        
-        .currency-symbol {
-            font-size: 0.9rem;
-            opacity: 0.8;
-            margin-right: 2px;
+        .stDataFrame [data-testid="StyledDataFrameHeaderCell"] {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            padding: 12px 15px !important;
+            background-color: #f8f9fa !important;
+            color: #333333 !important;
+            font-weight: 600 !important;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -1115,110 +826,49 @@ def show_history_page():
             # Calculate statistics
             current_confidence = None if "All" in confidence_levels else confidence_levels
             current_leagues = None if "All" in selected_leagues else selected_leagues
-            stats = history.calculate_statistics(
+            stats, pending_count = history.calculate_statistics(
                 confidence_levels=current_confidence,
                 leagues=current_leagues
             )
             
             # Create metrics container
-            st.markdown('<div class="stats-container">', unsafe_allow_html=True)
+            st.markdown('<div class="metrics-container">', unsafe_allow_html=True)
             
-            def format_metric_value(value, is_percentage, is_currency):
-                if isinstance(value, float):
-                    if abs(value) < 0.01:  # For very small numbers
-                        formatted_value = "0.00"
-                    else:
-                        formatted_value = f"{value:,.2f}"
+            # Display each metric
+            metrics = [
+                {"label": "Total Predictions", "value": stats[0], "is_percentage": False, "is_currency": False},
+                {"label": "Correct Predictions", "value": stats[1], "is_percentage": False, "is_currency": False},
+                {"label": "Success Rate", "value": stats[2], "is_percentage": True, "is_currency": False},
+                {"label": "Total Profit", "value": stats[3], "is_currency": True, "is_percentage": False},
+                {"label": "ROI", "value": stats[4], "is_percentage": True, "is_currency": False},
+                {"label": "Pending Predictions", "value": pending_count, "is_percentage": False, "is_currency": False}
+            ]
+            
+            for metric in metrics:
+                if metric.get("is_currency"):
+                    formatted_value = f"£{metric['value']:.2f}"
+                elif metric.get("is_percentage"):
+                    formatted_value = f"{metric['value']:.1f}%"
                 else:
-                    formatted_value = f"{value:,}"
-                    
-                if is_currency:
-                    if value < 0:
-                        return f"<span class='currency-symbol'>$</span>{formatted_value[1:]}"  # Remove the negative sign
-                    return f"<span class='currency-symbol'>$</span>{formatted_value}"
-                elif is_percentage:
-                    return f"{formatted_value}<span class='percentage-badge'>%</span>"
-                return formatted_value
-
-            def get_value_class(metric):
-                if not isinstance(metric["value"], (int, float)):
-                    return "neutral"
+                    formatted_value = str(metric['value'])
                 
-                value = float(metric["value"])
+                value_class = ""
+                if metric.get("is_currency") or metric.get("is_percentage"):
+                    try:
+                        value = float(metric['value'])
+                        value_class = " positive-value" if value > 0 else " negative-value" if value < 0 else ""
+                    except (ValueError, TypeError):
+                        value_class = ""
                 
-                # For profit/loss related metrics
-                if any(term in metric["label"].lower() for term in ["profit", "roi", "win"]):
-                    return "positive" if value > 0 else "negative" if value < 0 else "neutral"
-                # For success rate metrics
-                elif "rate" in metric["label"].lower():
-                    return "positive" if value >= 60 else "negative" if value < 40 else "neutral"
-                # For ratio metrics
-                elif "ratio" in metric["label"].lower():
-                    return "positive" if value > 1 else "negative" if value < 1 else "neutral"
-                # For loss metrics
-                elif "loss" in metric["label"].lower():
-                    return "negative" if value < 0 else "neutral"
-                return "neutral"
-            
-            def render_metrics_section(title, metrics):
                 st.markdown(f"""
-                    <div class="stats-section">
-                        <div class="stats-section-title">{title}</div>
-                        <div class="metric-grid">
-                            {"".join(f'''
-                                <div class="metric-card">
-                                    <div class="metric-label">{metric["label"]}</div>
-                                    <div class="metric-value {get_value_class(metric)}">
-                                        {format_metric_value(metric["value"], metric["is_percentage"], metric["is_currency"])}
-                                    </div>
-                                </div>
-                            ''' for metric in metrics)}
-                        </div>
+                    <div class="metric-box">
+                        <div class="metric-label">{metric['label']}</div>
+                        <div class="metric-value{value_class}">{formatted_value}</div>
                     </div>
                 """, unsafe_allow_html=True)
             
-            if stats:
-                # Basic Stats Section
-                basic_metrics = [
-                    {"label": "Total Predictions", "value": stats['basic_stats']['total_predictions'], "is_percentage": False, "is_currency": False},
-                    {"label": "Correct Predictions", "value": stats['basic_stats']['correct_predictions'], "is_percentage": False, "is_currency": False},
-                    {"label": "Success Rate", "value": stats['basic_stats']['success_rate'], "is_percentage": True, "is_currency": False},
-                    {"label": "Total Profit", "value": stats['basic_stats']['total_profit'], "is_currency": True, "is_percentage": False},
-                    {"label": "ROI", "value": stats['basic_stats']['roi'], "is_percentage": True, "is_currency": False},
-                    {"label": "Pending Predictions", "value": stats['basic_stats']['pending_predictions'], "is_percentage": False, "is_currency": False}
-                ]
-                render_metrics_section("Overview", basic_metrics)
-                
-                # Performance Metrics Section
-                performance_metrics = [
-                    {"label": "Average Win", "value": stats['performance_metrics']['avg_win'], "is_percentage": False, "is_currency": True},
-                    {"label": "Average Loss", "value": stats['performance_metrics']['avg_loss'], "is_percentage": False, "is_currency": True},
-                    {"label": "Win/Loss Ratio", "value": stats['performance_metrics']['win_loss_ratio'], "is_percentage": False, "is_currency": False},
-                    {"label": "Biggest Win", "value": stats['performance_metrics']['biggest_win'], "is_percentage": False, "is_currency": True},
-                    {"label": "Biggest Loss", "value": stats['performance_metrics']['biggest_loss'], "is_percentage": False, "is_currency": True},
-                    {"label": "Best Streak", "value": stats['performance_metrics']['best_streak'], "is_percentage": False, "is_currency": False}
-                ]
-                render_metrics_section("Performance Analysis", performance_metrics)
-                
-                # Betting Metrics Section
-                betting_metrics = [
-                    {"label": "Profitable Bets", "value": stats['betting_metrics']['profitable_bets'], "is_percentage": False, "is_currency": False},
-                    {"label": "Loss Bets", "value": stats['betting_metrics']['loss_bets'], "is_percentage": False, "is_currency": False},
-                    {"label": "Average Bet Size", "value": stats['betting_metrics']['avg_bet_size'], "is_percentage": False, "is_currency": True},
-                    {"label": "Total Bet Amount", "value": stats['betting_metrics']['total_bet_amount'], "is_percentage": False, "is_currency": True}
-                ]
-                render_metrics_section("Betting Analysis", betting_metrics)
-                
-                # Confidence Metrics Section
-                confidence_metrics = [
-                    {"label": "High Confidence Success", "value": stats['confidence_metrics']['high_confidence_success'], "is_percentage": True, "is_currency": False},
-                    {"label": "High Confidence Bets", "value": stats['confidence_metrics']['total_high_confidence_bets'], "is_percentage": False, "is_currency": False},
-                    {"label": "Total Leagues", "value": stats['coverage_metrics']['total_leagues'], "is_percentage": False, "is_currency": False}
-                ]
-                render_metrics_section("Confidence & Coverage", confidence_metrics)
-                
-                st.markdown('</div>', unsafe_allow_html=True)
-                
+            st.markdown('</div>', unsafe_allow_html=True)
+            
             # Display predictions table
             if not predictions.empty:
                 st.markdown("""
