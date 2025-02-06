@@ -248,8 +248,8 @@ class PredictionHistory:
                 SUM(CASE WHEN status = 'Completed' THEN 1 ELSE 0 END) as completed_predictions,
                 SUM(CASE WHEN predicted_outcome = actual_outcome AND status = 'Completed' THEN 1 ELSE 0 END) as correct_predictions,
                 SUM(CASE WHEN status = 'Pending' THEN 1 ELSE 0 END) as pending_predictions,
-                ROUND(SUM(CASE WHEN profit_loss IS NOT NULL THEN profit_loss ELSE 0 END), 2) as total_profit,
-                ROUND(SUM(CASE WHEN status = 'Completed' THEN 1 ELSE 0 END), 2) as total_bet_amount
+                ROUND(SUM(CASE WHEN status = 'Completed' AND profit_loss IS NOT NULL THEN profit_loss ELSE 0 END), 2) as total_profit,
+                SUM(CASE WHEN status = 'Completed' THEN bet_amount ELSE 0 END) as total_bet_amount
             FROM predictions
             WHERE 1=1
         """
@@ -344,18 +344,14 @@ class PredictionHistory:
                     
                 # Calculate profit/loss using $1 bet amount
                 if all([home_odds, draw_odds, away_odds]):  # Only if we have odds
-                    odds = {
-                        'home_odds': float(home_odds),
-                        'draw_odds': float(draw_odds),
-                        'away_odds': float(away_odds)
-                    }
-                    
-                    # Get the odds for the predicted outcome
-                    bet_odds = odds.get(f"{predicted_outcome.lower()}_odds")
-                    
                     if predicted_outcome == actual_outcome:
-                        # Won: Get the profit (odds - 1)
-                        profit_loss = round(bet_odds - 1.0, 2)
+                        # Won: Get the profit based on the correct odds
+                        if actual_outcome == 'HOME':
+                            profit_loss = round(float(home_odds) - 1.0, 2)
+                        elif actual_outcome == 'AWAY':
+                            profit_loss = round(float(away_odds) - 1.0, 2)
+                        else:  # DRAW
+                            profit_loss = round(float(draw_odds) - 1.0, 2)
                     else:
                         # Lost: Lose the $1 bet
                         profit_loss = -1.0
@@ -372,9 +368,10 @@ class PredictionHistory:
                     home_score = ?,
                     away_score = ?,
                     actual_outcome = ?,
-                    profit_loss = ?
+                    profit_loss = ?,
+                    bet_amount = CASE WHEN ? = 'Completed' THEN 1.0 ELSE NULL END
                 WHERE match_id = ?
-            ''', (status, home_score, away_score, actual_outcome, profit_loss, match_id))
+            ''', (status, home_score, away_score, actual_outcome, profit_loss, status, match_id))
             
             conn.commit()
             print(f"Updated match {match_id} with status {status}, scores {home_score}-{away_score}, outcome {actual_outcome}, profit/loss {profit_loss}")
