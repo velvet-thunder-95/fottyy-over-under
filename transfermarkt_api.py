@@ -374,10 +374,6 @@ class TransfermarktAPI:
             "police club": "al-shorta sc",
             
             # Add more mappings here
-        }
-        
-        # Special direct mappings for problematic teams
-        self.direct_mappings = {
             "bodo/glimt": {"id": "2619", "name": "FK Bodø/Glimt"},
             "ludogorets": {"id": "31614", "name": "Ludogorets Razgrad"},
             "riga fs": {"id": "35159", "name": "Riga FC"},
@@ -409,6 +405,81 @@ class TransfermarktAPI:
             "oxford united": {"id": "1072", "name": "Oxford United"},
             "grasshopper club zürich": {"id": "405", "name": "Grasshopper Club Zürich"},
             "al-shorta sc": {"id": "24162", "name": "Al-Shorta SC"},
+            
+            # Saudi Teams
+            "al quadisiya": {"id": "24134", "name": "Al-Qadisiyah"},
+            "al-quadisiya": {"id": "24134", "name": "Al-Qadisiyah"},
+            "al qadisiyah": {"id": "24134", "name": "Al-Qadisiyah"},
+            "al raed": {"id": "18549", "name": "Al-Raed"},
+            "al-raed": {"id": "18549", "name": "Al-Raed"},
+            "al shabab": {"id": "7801", "name": "Al-Shabab"},
+            "al-shabab": {"id": "7801", "name": "Al-Shabab"},
+            
+            # English Teams
+            "brighton": {"id": "1237", "name": "Brighton & Hove Albion"},
+            "brighton & hove": {"id": "1237", "name": "Brighton & Hove Albion"},
+            "brighton & hove albion": {"id": "1237", "name": "Brighton & Hove Albion"},
+            "ipswich": {"id": "677", "name": "Ipswich Town"},
+            "ipswich town": {"id": "677", "name": "Ipswich Town"},
+            
+            # German Teams
+            "jahn regensburg": {"id": "78", "name": "SSV Jahn Regensburg"},
+            "ssv jahn regensburg": {"id": "78", "name": "SSV Jahn Regensburg"},
+            "sandhausen": {"id": "1107", "name": "SV Sandhausen"},
+            "sv sandhausen": {"id": "1107", "name": "SV Sandhausen"},
+            "werder": {"id": "86", "name": "SV Werder Bremen"},
+            "werder bremen": {"id": "86", "name": "SV Werder Bremen"},
+            "sv werder bremen": {"id": "86", "name": "SV Werder Bremen"},
+            "stuttgart": {"id": "79", "name": "VfB Stuttgart"},
+            "vfb stuttgart": {"id": "79", "name": "VfB Stuttgart"},
+            "stuttgart ii": {"id": "2947", "name": "VfB Stuttgart II"},
+            "vfb stuttgart ii": {"id": "2947", "name": "VfB Stuttgart II"},
+            "union berlin": {"id": "89", "name": "1. FC Union Berlin"},
+            "1. fc union berlin": {"id": "89", "name": "1. FC Union Berlin"},
+            "magdeburg": {"id": "380", "name": "1. FC Magdeburg"},
+            "1. fc magdeburg": {"id": "380", "name": "1. FC Magdeburg"},
+            "ulm": {"id": "1001", "name": "SSV Ulm 1846"},
+            "ssv ulm": {"id": "1001", "name": "SSV Ulm 1846"},
+            "ssv ulm 1846": {"id": "1001", "name": "SSV Ulm 1846"},
+            "saarbrucken": {"id": "57", "name": "1. FC Saarbrücken"},
+            "1. fc saarbrucken": {"id": "57", "name": "1. FC Saarbrücken"},
+            "waldhof": {"id": "76", "name": "SV Waldhof Mannheim"},
+            "waldhof mannheim": {"id": "76", "name": "SV Waldhof Mannheim"},
+            "sv waldhof mannheim": {"id": "76", "name": "SV Waldhof Mannheim"},
+            "wehen": {"id": "123", "name": "SV Wehen Wiesbaden"},
+            "wehen wiesbaden": {"id": "123", "name": "SV Wehen Wiesbaden"},
+            "sv wehen wiesbaden": {"id": "123", "name": "SV Wehen Wiesbaden"},
+            
+            # French Teams
+            "troyes": {"id": "1095", "name": "ES Troyes AC"},
+            "es troyes": {"id": "1095", "name": "ES Troyes AC"},
+            "es troyes ac": {"id": "1095", "name": "ES Troyes AC"},
+            "laval": {"id": "1096", "name": "Stade Lavallois"},
+            "stade laval": {"id": "1096", "name": "Stade Lavallois"},
+            "stade lavallois": {"id": "1096", "name": "Stade Lavallois"},
+            
+            # Austrian Teams
+            "austria wien": {"id": "605", "name": "FK Austria Wien"},
+            "austria vienna": {"id": "605", "name": "FK Austria Wien"},
+            "fk austria wien": {"id": "605", "name": "FK Austria Wien"},
+            "rheindorf altach": {"id": "1011", "name": "SCR Altach"},
+            "scr altach": {"id": "1011", "name": "SCR Altach"},
+            
+            # Italian Teams
+            "torino": {"id": "416", "name": "FC Torino"},
+            "fc torino": {"id": "416", "name": "FC Torino"},
+            "fiorentina": {"id": "430", "name": "AC Fiorentina"},
+            "ac fiorentina": {"id": "430", "name": "AC Fiorentina"},
+            
+            # Spanish Teams
+            "mirandes": {"id": "7072", "name": "CD Mirandés"},
+            "cd mirandes": {"id": "7072", "name": "CD Mirandés"},
+            "eibar": {"id": "1108", "name": "SD Eibar"},
+            "sd eibar": {"id": "1108", "name": "SD Eibar"},
+            
+            # Colombian Teams
+            "santa fe": {"id": "6004", "name": "Independiente Santa Fe"},
+            "independiente santa fe": {"id": "6004", "name": "Independiente Santa Fe"}
         }
         
         # Set fuzzy matching thresholds
