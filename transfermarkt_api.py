@@ -210,11 +210,14 @@ class TransfermarktAPI:
             "olympiacos": "olympiakos piräus",
             "panathinaikos": "panathinaikos athen",
             "aek": "aek athen",
+            "atromitos": {"id": "2182", "name": "Atromitos Athen"},
+            "atromitos athens": {"id": "2182", "name": "Atromitos Athen"},
             "levadiakos": {"id": "2186", "name": "APO Levadiakos"},
             "levadiakos fc": {"id": "2186", "name": "APO Levadiakos"},
             "lamia": {"id": "7955", "name": "PAS Lamia 1964"},
             "pae lamia": {"id": "7955", "name": "PAS Lamia 1964"},
-            "kallithea": "gps kallithea",
+            "kallithea": {"id": "5847", "name": "Kallithea FC"},
+            "gps kallithea": {"id": "5847", "name": "Kallithea FC"},
             "panaitolikos": "panetolikos gfs",
             
             # Additional Teams
@@ -381,6 +384,9 @@ class TransfermarktAPI:
             "gazisehir gaziantep": "gaziantep fk",
             "gazişehir gaziantep": "gaziantep fk",
             "gaziantep": "gaziantep fk",
+            "bb bodrumspor": {"id": "24134", "name": "Bandırmaboluspor"},
+            "bodrumspor": {"id": "24134", "name": "Bandırmaboluspor"},
+            "bandirmaboluspor": {"id": "24134", "name": "Bandırmaboluspor"},
             
             # Spanish Teams
             "racing ferrol": "racing club de ferrol",
@@ -508,7 +514,35 @@ class TransfermarktAPI:
 
             # Colombian Teams with Updated IDs
             "santa fe": "Independiente Santa Fe",
-            "independiente santa fe": "Independiente Santa Fe"
+            "independiente santa fe": "Independiente Santa Fe",
+            
+            # French Teams
+            "psg": "paris saint-germain",
+            "paris": "paris saint-germain",
+            "marseille": "olympique marseille",
+            "om": "olympique marseille",
+            "lyon": "olympique lyon",
+            "ol": "olympique lyon",
+            "lille": "losc lille",
+            "monaco": "as monaco",
+            "nice": "ogc nice",
+            "ogc nice": "ogc nice",
+            "ogc nizza": "ogc nice",
+            "rennes": "stade rennes",
+            "lens": "rc lens",
+            "brest": "stade brestois 29",
+            "stade brestois": "stade brestois 29",
+            "bastia": "sc bastia",
+            "sc bastia": "sporting club bastia",
+            "grenoble": "grenoble foot 38",
+            "grenoble foot": "grenoble foot 38",
+            "grenoble foot 38": "grenoble foot 38",
+            "red star": "red star fc",
+            "laval": "stade lavallois",
+            "stade laval": "stade lavallois",
+            "annecy": "fc annecy",
+            "dunkerque": {"id": "3725", "name": "USL Dunkerque"},
+            "usl dunkerque": {"id": "3725", "name": "USL Dunkerque"},
         }
         
         # Set fuzzy matching thresholds
@@ -898,15 +932,22 @@ class TransfermarktAPI:
             if not team_id:
                 logger.warning(f"No team ID found in search result for {team_name}")
                 return None
+            
+            # Log the team ID being used
+            logger.info(f"Using team ID {team_id} for {team_name}")
                 
             # Get squad data to calculate total market value
             squad = self.get_team_squad(team_id, domain)
             if not squad:
-                logger.warning(f"No squad data found for team ID {team_id}")
+                logger.warning(f"No squad data found for team ID {team_id} ({team_name})")
                 return None
                 
             # Calculate total market value from squad
             total_value = sum(player.get('marketValue', {}).get('value', 0) for player in squad)
+            
+            if total_value == 0:
+                logger.warning(f"Total market value is 0 for {team_name} (ID: {team_id}). This might indicate missing data.")
+                return None
             
             logger.info(f"Total market value for {team_name}: {total_value}")
             return total_value
