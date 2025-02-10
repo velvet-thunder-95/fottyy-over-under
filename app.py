@@ -1855,25 +1855,9 @@ def display_kickoff_time(match_data):
         st.markdown(f"""
             <div style="width: 100%; max-width: 800px; margin: 5px auto; background-color: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; text-align: center;">
                 <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
-                    <span style="color: #4a5568; font-size: 1.1rem;">🕒</span>
                     <span style="color: #2d3748; font-weight: 500; font-size: 1.1rem;">
                         {formatted_time} (German Time)
                     </span>
-                </div>
-            </div>
-        
-            <div style="display: flex; justify-content: space-between; margin-top: 1rem; padding: 0 1rem;">
-                <div style="display: flex; align-items: center;">
-                    <div style="width: 10px; height: 10px; background: #48bb78; border-radius: 2px; margin-right: 5px;"></div>
-                    <span style="font-size: 0.8rem;">Home Win</span>
-                </div>
-                <div style="display: flex; align-items: center;">
-                    <div style="width: 10px; height: 10px; background: #ed8936; border-radius: 2px; margin-right: 5px;"></div>
-                    <span style="font-size: 0.8rem;">Draw</span>
-                </div>
-                <div style="display: flex; align-items: center;">
-                    <div style="width: 10px; height: 10px; background: #3182ce; border-radius: 2px; margin-right: 5px;"></div>
-                    <span style="font-size: 0.8rem;">Away Win</span>
                 </div>
             </div>
         """, unsafe_allow_html=True)

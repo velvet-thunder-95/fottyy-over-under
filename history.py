@@ -773,6 +773,15 @@ def show_history_page():
             value=datetime.now().date(),
             help="Filter predictions until this date"
         )
+
+        # Validate dates
+        if start_date > end_date:
+            st.sidebar.error("Error: End date must be after start date")
+            start_date, end_date = end_date, start_date  # Swap dates to ensure valid range
+
+        # Format dates for database query
+        start_date_str = start_date.strftime("%Y-%m-%d")
+        end_date_str = (end_date + timedelta(days=1)).strftime("%Y-%m-%d")  # Add 1 day to include end date
         
         # Get unique leagues from predictions
         all_predictions = history.get_predictions()
@@ -802,8 +811,8 @@ def show_history_page():
         
         # Get filtered predictions
         predictions = history.get_predictions(
-            start_date=start_date.strftime('%Y-%m-%d'),
-            end_date=end_date.strftime('%Y-%m-%d'),
+            start_date=start_date_str,
+            end_date=end_date_str,
             confidence_levels=None if "All" in confidence_levels else confidence_levels,
             leagues=None if "All" in selected_leagues else selected_leagues
         )
@@ -814,8 +823,8 @@ def show_history_page():
             
             # Refresh predictions after update
             predictions = history.get_predictions(
-                start_date=start_date.strftime('%Y-%m-%d'),
-                end_date=end_date.strftime('%Y-%m-%d'),
+                start_date=start_date_str,
+                end_date=end_date_str,
                 confidence_levels=None if "All" in confidence_levels else confidence_levels,
                 leagues=None if "All" in selected_leagues else selected_leagues
             )

@@ -82,6 +82,9 @@ class TransfermarktAPI:
             "greuther furth": "spvgg greuther fürth",
             "kaiserslautern": "1. fc kaiserslautern",
             "unterhaching": "spvgg unterhaching",
+            "eintracht": "eintracht frankfurt",
+            "eintracht frankfurt": {"id": "24", "name": "Eintracht Frankfurt"},
+            "frankfurt": "eintracht frankfurt",
             
             # Italian Teams
             "milan": "ac milan",
@@ -207,7 +210,10 @@ class TransfermarktAPI:
             "olympiacos": "olympiakos piräus",
             "panathinaikos": "panathinaikos athen",
             "aek": "aek athen",
-            "levadiakos": "levadiakos fc",
+            "levadiakos": {"id": "2186", "name": "APO Levadiakos"},
+            "levadiakos fc": {"id": "2186", "name": "APO Levadiakos"},
+            "lamia": {"id": "7955", "name": "PAS Lamia 1964"},
+            "pae lamia": {"id": "7955", "name": "PAS Lamia 1964"},
             "kallithea": "gps kallithea",
             "panaitolikos": "panetolikos gfs",
             
@@ -705,36 +711,63 @@ class TransfermarktAPI:
         
         self.request_times.append(current_time)
 
-    def _make_api_request(self, url, params):
-        """Make an API request with rate limiting and retries"""
-        max_retries = 3
-        retry_delay = 1.0
-        
-        for attempt in range(max_retries):
+    def _make_api_request(self, url, params=None, max_retries=3, initial_delay=1.0):
+        """Make an API request with rate limiting and exponential backoff retry"""
+        current_retry = 0
+        delay = initial_delay
+
+        while current_retry <= max_retries:
             try:
-                self._rate_limit()  # Apply rate limiting
-                response = requests.get(url, headers=self.headers, params=params)
-                
-                if response.status_code == 429:  # Too Many Requests
-                    if attempt < max_retries - 1:  # Don't sleep on last attempt
-                        sleep_time = retry_delay * (2 ** attempt)  # Exponential backoff
-                        logger.warning(f"Rate limit hit, waiting {sleep_time} seconds...")
+                # Rate limiting
+                current_time = time.time()
+                if self.request_times:
+                    # Remove old request times
+                    self.request_times = [t for t in self.request_times if current_time - t < 1.0]
+                    
+                    # If we've made too many requests recently, wait
+                    if len(self.request_times) >= self.max_requests_per_second:
+                        sleep_time = max(0, 1.0 - (current_time - self.request_times[0]))
                         time.sleep(sleep_time)
+                
+                # Make the request
+                response = requests.get(url, headers=self.headers, params=params)
+                self.request_times.append(time.time())
+                
+                # Handle different status codes
+                if response.status_code == 200:
+                    return response.json().get('data', {})
+                elif response.status_code == 503:
+                    # Service Unavailable - retry with exponential backoff
+                    if current_retry < max_retries:
+                        logger.warning(f"Service Unavailable (503), retrying in {delay} seconds...")
+                        time.sleep(delay)
+                        delay *= 2  # Exponential backoff
+                        current_retry += 1
                         continue
-                
-                response.raise_for_status()
-                return response.json()  # Return JSON data instead of response object
-                
-            except requests.exceptions.RequestException as e:
-                if attempt < max_retries - 1:
-                    sleep_time = retry_delay * (2 ** attempt)
-                    logger.warning(f"Request failed, retrying in {sleep_time} seconds... Error: {str(e)}")
-                    time.sleep(sleep_time)
+                elif response.status_code == 429:
+                    # Rate limit exceeded - wait longer
+                    wait_time = float(response.headers.get('Retry-After', delay))
+                    logger.warning(f"Rate limit exceeded, waiting {wait_time} seconds...")
+                    time.sleep(wait_time)
+                    current_retry += 1
+                    continue
                 else:
-                    logger.error(f"Request failed after {max_retries} attempts: {str(e)}")
-                    raise
-        
-    @lru_cache(maxsize=128)
+                    response.raise_for_status()
+                    
+            except requests.exceptions.RequestException as e:
+                if current_retry < max_retries:
+                    logger.warning(f"Request failed, retrying in {delay} seconds... Error: {str(e)}")
+                    time.sleep(delay)
+                    delay *= 2  # Exponential backoff
+                    current_retry += 1
+                    continue
+                else:
+                    logger.error(f"Max retries ({max_retries}) exceeded. Last error: {str(e)}")
+                    return None
+                    
+        logger.error(f"Failed to get successful response after {max_retries} retries")
+        return None
+
     def get_team_squad(self, team_id, domain="de"):
         """Get all players in a team's squad with caching"""
         if not team_id:

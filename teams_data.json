@@ -329,15 +329,15 @@
         "logo_url": "https://tmssl.akamaized.net/images/wappen/medium/941.png",
         "team_id": "941"
     },
-    "Viktoria Plze\u0148": {
+    "Viktoria Plzeň": {
         "league": "Czech Republic - Fortuna Liga",
-        "logo_path": "team_logos/Czech Republic - Fortuna Liga_Viktoria Plze\u0148.png",
+        "logo_path": "team_logos/Czech Republic - Fortuna Liga_Viktoria Plzeň.png",
         "logo_url": "https://tmssl.akamaized.net/images/wappen/medium/941.png",
         "team_id": "941"
     },
-    "\u015al\u0105sk Wroc\u0142aw": {
+    "Śląsk Wrocław": {
         "league": "Poland - Ekstraklasa",
-        "logo_path": "team_logos/Poland - Ekstraklasa_\u015al\u0105sk Wroc\u0142aw.png",
+        "logo_path": "team_logos/Poland - Ekstraklasa_Śląsk Wrocław.png",
         "logo_url": "https://tmssl.akamaized.net/images/wappen/medium/1096.png",
         "team_id": "1096"
     },
@@ -347,9 +347,9 @@
         "logo_url": "https://tmssl.akamaized.net/images/wappen/medium/1095.png",
         "team_id": "1095"
     },
-    "Jagiellonia Bia\u0142ystok": {
+    "Jagiellonia Białystok": {
         "league": "Poland - Ekstraklasa",
-        "logo_path": "team_logos/Poland - Ekstraklasa_Jagiellonia Bia\u0142ystok.png",
+        "logo_path": "team_logos/Poland - Ekstraklasa_Jagiellonia Białystok.png",
         "logo_url": "https://tmssl.akamaized.net/images/wappen/medium/1096.png",
         "team_id": "1096"
     },
@@ -359,15 +359,15 @@
         "logo_url": "https://tmssl.akamaized.net/images/wappen/medium/255.png",
         "team_id": "255"
     },
-    "Lech Pozna\u0144": {
+    "Lech Poznań": {
         "league": "Poland - Ekstraklasa",
-        "logo_path": "team_logos/Poland - Ekstraklasa_Lech Pozna\u0144.png",
+        "logo_path": "team_logos/Poland - Ekstraklasa_Lech Poznań.png",
         "logo_url": "https://tmssl.akamaized.net/images/wappen/medium/244.png",
         "team_id": "244"
     },
-    "Rak\u00f3w Cz\u0119stochowa": {
+    "Raków Częstochowa": {
         "league": "Poland - Ekstraklasa",
-        "logo_path": "team_logos/Poland - Ekstraklasa_Rak\u00f3w Cz\u0119stochowa.png",
+        "logo_path": "team_logos/Poland - Ekstraklasa_Raków Częstochowa.png",
         "logo_url": "https://tmssl.akamaized.net/images/wappen/medium/5348.png",
         "team_id": "5348"
     },
@@ -485,7 +485,7 @@
         "logo_url": "https://tmssl.akamaized.net/images/wappen/medium/24434.png",
         "team_id": "24434"
     },
-    "Gazi\u015fehir Gaziantep": {
+    "Gazişehir Gaziantep": {
         "league": "Turkey - Super Lig",
         "logo_path": "team_logos/Turkey - Super Lig_Gaziantep FK.png",
         "logo_url": "https://tmssl.akamaized.net/images/wappen/medium/24434.png",
@@ -707,7 +707,7 @@
         "logo_url": "https://tmssl.akamaized.net/images/wappen/head/15.png",
         "team_id": "15"
     },
-    "K\u00f6ln": {
+    "Köln": {
         "league": "Germany - Bundesliga",
         "logo_path": "team_logos/Germany - Bundesliga_Koln.png",
         "logo_url": "https://tmssl.akamaized.net/images/wappen/head/3.png",
@@ -737,9 +737,9 @@
         "logo_url": "https://tmssl.akamaized.net/images/wappen/head/277.png",
         "team_id": "277"
     },
-    "Le\u00f3n": {
+    "León": {
         "league": "Mexico - Liga MX",
-        "logo_path": "team_logos/Mexico - Liga MX_Le\u00f3n.png",
+        "logo_path": "team_logos/Mexico - Liga MX_León.png",
         "logo_url": "https://tmssl.akamaized.net/images/wappen/head/2873.png",
         "team_id": "2873"
     },
@@ -812,31 +812,31 @@
     "Burton Albion": {
         "league": "England - League One",
         "logo_path": "team_logos/England - League One_Burton Albion.png",
-        "logo_url": "https://tmssl.akamaized.net/images/wappen/head/1146.png",
-        "team_id": "1146"
+        "logo_url": null,
+        "team_id": "1147"
     },
     "Blackpool": {
-        "league": "England - Championship",
-        "logo_path": "team_logos/England - Championship_Blackpool.png",
-        "logo_url": "https://tmssl.akamaized.net/images/wappen/head/1181.png",
+        "league": "England - League One",
+        "logo_path": "team_logos/England - League One_Blackpool.png",
+        "logo_url": null,
         "team_id": "1181"
     },
     "Huddersfield Town": {
         "league": "England - Championship",
-        "logo_path": "team_logos/England - Championship_Huddersfield Town.png",
-        "logo_url": "https://tmssl.akamaized.net/images/wappen/head/1110.png",
+        "logo_path": "team_logos/England - Championship_Huddersfield.png",
+        "logo_url": null,
         "team_id": "1110"
     },
     "Reading": {
-        "league": "England - Championship",
-        "logo_path": "team_logos/England - Championship_Reading.png",
-        "logo_url": "https://tmssl.akamaized.net/images/wappen/head/1032.png",
+        "league": "England - League One",
+        "logo_path": "team_logos/England - League One_Reading.png",
+        "logo_url": null,
         "team_id": "1032"
     },
     "Kaiserslautern": {
         "league": "Germany - 2. Bundesliga",
         "logo_path": "team_logos/Germany - 2. Bundesliga_Kaiserslautern.png",
-        "logo_url": "https://tmssl.akamaized.net/images/wappen/head/2.png",
+        "logo_url": null,
         "team_id": "2"
     },
     "Saarbrucken": {
@@ -872,13 +872,13 @@
     "Rapid Wien": {
         "league": "Austria - Bundesliga",
         "logo_path": "team_logos/Austria - Bundesliga_Rapid Wien.png",
-        "logo_url": null,
+        "logo_url": "https://tmssl.akamaized.net/images/wappen/head/170.png",
         "team_id": "170"
     },
     "Wolfsberger AC": {
         "league": "Austria - Bundesliga",
         "logo_path": "team_logos/Austria - Bundesliga_Wolfsberger AC.png",
-        "logo_url": null,
+        "logo_url": "https://tmssl.akamaized.net/images/wappen/head/2778.png",
         "team_id": "2778"
     },
     "Basel": {
@@ -899,9 +899,9 @@
         "logo_url": "https://tmssl.akamaized.net/images/wappen/head/2893.png",
         "team_id": "2893"
     },
-    "Z\u00fcrich": {
+    "Zürich": {
         "league": "Switzerland - Super League",
-        "logo_path": "team_logos/Switzerland - Super League_Z\u00fcrich.png",
+        "logo_path": "team_logos/Switzerland - Super League_Zürich.png",
         "logo_url": "https://tmssl.akamaized.net/images/wappen/head/2895.png",
         "team_id": "2895"
     },
@@ -911,15 +911,15 @@
         "logo_url": "https://tmssl.akamaized.net/images/wappen/head/2288.png",
         "team_id": "2288"
     },
-    "Pogo\u0144 Szczecin": {
+    "Pogoń Szczecin": {
         "league": "Poland - Ekstraklasa",
-        "logo_path": "team_logos/Poland - Ekstraklasa_Pogo\u0144 Szczecin.png",
+        "logo_path": "team_logos/Poland - Ekstraklasa_Pogoń Szczecin.png",
         "logo_url": "https://tmssl.akamaized.net/images/wappen/head/2291.png",
         "team_id": "2291"
     },
-    "G\u00f3rnik Zabrze": {
+    "Górnik Zabrze": {
         "league": "Poland - Ekstraklasa",
-        "logo_path": "team_logos/Poland - Ekstraklasa_G\u00f3rnik Zabrze.png",
+        "logo_path": "team_logos/Poland - Ekstraklasa_Górnik Zabrze.png",
         "logo_url": "https://tmssl.akamaized.net/images/wappen/head/2289.png",
         "team_id": "2289"
     },
@@ -929,27 +929,27 @@
         "logo_url": "https://tmssl.akamaized.net/images/wappen/head/419.png",
         "team_id": "419"
     },
-    "\u0160ibenik": {
+    "Šibenik": {
         "league": "Croatia - HNL",
-        "logo_path": "team_logos/Croatia - HNL_\u0160ibenik.png",
+        "logo_path": "team_logos/Croatia - HNL_Šibenik.png",
         "logo_url": "https://tmssl.akamaized.net/images/wappen/head/2347.png",
         "team_id": "2347"
     },
     "Samsunspor": {
-        "league": "Turkey - S\u00fcper Lig",
-        "logo_path": "team_logos/Turkey - S\u00fcper Lig_Samsunspor.png",
+        "league": "Turkey - Süper Lig",
+        "logo_path": "team_logos/Turkey - Süper Lig_Samsunspor.png",
         "logo_url": "https://tmssl.akamaized.net/images/wappen/head/2381.png",
         "team_id": "2381"
     },
     "Hatayspor": {
-        "league": "Turkey - S\u00fcper Lig",
-        "logo_path": "team_logos/Turkey - S\u00fcper Lig_Hatayspor.png",
+        "league": "Turkey - Süper Lig",
+        "logo_path": "team_logos/Turkey - Süper Lig_Hatayspor.png",
         "logo_url": "https://tmssl.akamaized.net/images/wappen/head/20812.png",
         "team_id": "20812"
     },
-    "Greuther F\u00fcrth": {
+    "Greuther Fürth": {
         "league": "Germany - 2. Bundesliga",
-        "logo_path": "team_logos/Germany - 2. Bundesliga_Greuther F\u00fcrth.png",
+        "logo_path": "team_logos/Germany - 2. Bundesliga_Greuther Fürth.png",
         "logo_url": "https://tmssl.akamaized.net/images/wappen/head/60.png",
         "team_id": "60"
     },
@@ -959,9 +959,9 @@
         "logo_url": "https://tmssl.akamaized.net/images/wappen/head/2335.png",
         "team_id": "2335"
     },
-    "Preu\u00dfen M\u00fcnster": {
+    "Preußen Münster": {
         "league": "Germany - 2. Bundesliga",
-        "logo_path": "team_logos/Germany - 2. Bundesliga_Preu\u00dfen M\u00fcnster.png",
+        "logo_path": "team_logos/Germany - 2. Bundesliga_Preußen Münster.png",
         "logo_url": "https://tmssl.akamaized.net/images/wappen/head/175.png",
         "team_id": "175"
     },
@@ -1031,9 +1031,9 @@
         "logo_url": "https://tmssl.akamaized.net/images/wappen/head/10252.png",
         "team_id": "10252"
     },
-    "Albacete Balompi\u00e9": {
+    "Albacete Balompié": {
         "league": "Spain - LaLiga2",
-        "logo_path": "team_logos/Spain - LaLiga2_Albacete Balompi\u00e9.png",
+        "logo_path": "team_logos/Spain - LaLiga2_Albacete Balompié.png",
         "logo_url": "https://tmssl.akamaized.net/images/wappen/head/1532.png",
         "team_id": "1532"
     },
@@ -1055,9 +1055,9 @@
         "logo_url": "https://tmssl.akamaized.net/images/wappen/head/605.png",
         "team_id": "605"
     },
-    "Bayern M\u00fcnchen": {
+    "Bayern München": {
         "league": "Germany - Bundesliga",
-        "logo_path": "team_logos/Germany - Bundesliga_Bayern M\u00fcnchen.png",
+        "logo_path": "team_logos/Germany - Bundesliga_Bayern München.png",
         "logo_url": "https://tmssl.akamaized.net/images/wappen/head/27.png",
         "team_id": "27"
     },
@@ -1127,9 +1127,9 @@
         "logo_url": "https://tmssl.akamaized.net/images/wappen/head/336.png",
         "team_id": "336"
     },
-    "Rionegro \u00c1guilas": {
+    "Rionegro Águilas": {
         "league": "Colombia - Primera A",
-        "logo_path": "team_logos/Colombia - Primera A_Rionegro \u00c1guilas.png",
+        "logo_path": "team_logos/Colombia - Primera A_Rionegro Águilas.png",
         "logo_url": "https://tmssl.akamaized.net/images/wappen/head/24507.png",
         "team_id": "24507"
     },
@@ -1237,9 +1237,9 @@
     },
     "SD Eibar": {
         "league": "Spain - LaLiga2",
-        "logo_path": "team_logos/Spain - LaLiga2_SD Eibar.png",
-        "logo_url": "https://tmssl.akamaized.net/images/wappen/head/1244.png",
-        "team_id": "1244"
+        "logo_path": "team_logos/Spain - LaLiga2_Eibar.png",
+        "logo_url": null,
+        "team_id": "1533"
     },
     "Malaga CF": {
         "league": "Spain - LaLiga2",
@@ -1256,48 +1256,48 @@
     "Club Brugge": {
         "league": "Belgium - Pro League",
         "logo_path": "team_logos/Belgium - Pro League_Club Brugge.png",
-        "logo_url": null,
-        "team_id": null
+        "logo_url": "https://tmssl.akamaized.net/images/wappen/head/2282.png",
+        "team_id": "2282"
     },
     "OH Leuven": {
         "league": "Belgium - Pro League",
         "logo_path": "team_logos/Belgium - Pro League_OH Leuven.png",
-        "logo_url": null,
-        "team_id": null
+        "logo_url": "https://tmssl.akamaized.net/images/wappen/head/2727.png",
+        "team_id": "2727"
     },
     "Sint-Truiden": {
         "league": "Belgium - Pro League",
         "logo_path": "team_logos/Belgium - Pro League_Sint-Truiden.png",
-        "logo_url": null,
-        "team_id": null
+        "logo_url": "https://tmssl.akamaized.net/images/wappen/head/1337.png",
+        "team_id": "1337"
     },
     "Cercle Brugge": {
         "league": "Belgium - Pro League",
         "logo_path": "team_logos/Belgium - Pro League_Cercle Brugge.png",
-        "logo_url": null,
-        "team_id": null
+        "logo_url": "https://tmssl.akamaized.net/images/wappen/head/2282.png",
+        "team_id": "2282"
     },
-    "Be\u015fikta\u015f": {
-        "league": "Turkey - S\u00fcper Lig",
-        "logo_path": "team_logos/Turkey - S\u00fcper Lig_Besiktas.png",
+    "Beşiktaş": {
+        "league": "Turkey - Süper Lig",
+        "logo_path": "team_logos/Turkey - Süper Lig_Besiktas.png",
         "logo_url": null,
         "team_id": null
     },
     "Kayserispor": {
-        "league": "Turkey - S\u00fcper Lig",
-        "logo_path": "team_logos/Turkey - S\u00fcper Lig_Kayserispor.png",
+        "league": "Turkey - Süper Lig",
+        "logo_path": "team_logos/Turkey - Süper Lig_Kayserispor.png",
         "logo_url": null,
         "team_id": null
     },
     "Konyaspor": {
-        "league": "Turkey - S\u00fcper Lig",
-        "logo_path": "team_logos/Turkey - S\u00fcper Lig_Konyaspor.png",
+        "league": "Turkey - Süper Lig",
+        "logo_path": "team_logos/Turkey - Süper Lig_Konyaspor.png",
         "logo_url": null,
         "team_id": null
     },
     "Sivasspor": {
-        "league": "Turkey - S\u00fcper Lig",
-        "logo_path": "team_logos/Turkey - S\u00fcper Lig_Sivasspor.png",
+        "league": "Turkey - Süper Lig",
+        "logo_path": "team_logos/Turkey - Süper Lig_Sivasspor.png",
         "logo_url": null,
         "team_id": null
     },
@@ -1331,16 +1331,10 @@
         "logo_url": null,
         "team_id": "44"
     },
-    "Kaiserslautern": {
-        "league": "Germany - 2. Bundesliga",
-        "logo_path": "team_logos/Germany - 2. Bundesliga_Kaiserslautern.png",
-        "logo_url": null,
-        "team_id": "2"
-    },
     "KRC Genk": {
         "league": "Belgium - Pro League",
-        "logo_path": "team_logos/Belgium - Pro League_Genk.png",
-        "logo_url": null,
+        "logo_path": "team_logos/Belgium - Pro League_KRC Genk.png",
+        "logo_url": "https://tmssl.akamaized.net/images/wappen/head/1184.png",
         "team_id": "1184"
     },
     "Paris": {
@@ -1352,56 +1346,26 @@
     "Lorient": {
         "league": "France - Ligue 1",
         "logo_path": "team_logos/France - Ligue 1_Lorient.png",
-        "logo_url": null,
+        "logo_url": "https://tmssl.akamaized.net/images/wappen/head/1158.png",
         "team_id": "1158"
     },
     "Metz": {
         "league": "France - Ligue 1",
         "logo_path": "team_logos/France - Ligue 1_Metz.png",
-        "logo_url": null,
+        "logo_url": "https://tmssl.akamaized.net/images/wappen/head/347.png",
         "team_id": "347"
     },
     "Clermont": {
         "league": "France - Ligue 1",
         "logo_path": "team_logos/France - Ligue 1_Clermont.png",
-        "logo_url": null,
-        "team_id": "1421"
+        "logo_url": "https://tmssl.akamaized.net/images/wappen/head/3524.png",
+        "team_id": "3524"
     },
     "Granada CF": {
-        "league": "Spain - La Liga",
-        "logo_path": "team_logos/Spain - La Liga_Granada.png",
-        "logo_url": null,
+        "league": "Spain - LaLiga",
+        "logo_path": "team_logos/Spain - LaLiga_Granada CF.png",
+        "logo_url": "https://tmssl.akamaized.net/images/wappen/head/16795.png",
         "team_id": "16795"
-    },
-    "SD Eibar": {
-        "league": "Spain - LaLiga2",
-        "logo_path": "team_logos/Spain - LaLiga2_Eibar.png",
-        "logo_url": null,
-        "team_id": "1533"
-    },
-    "Huddersfield Town": {
-        "league": "England - Championship",
-        "logo_path": "team_logos/England - Championship_Huddersfield.png",
-        "logo_url": null,
-        "team_id": "1110"
-    },
-    "Reading": {
-        "league": "England - League One",
-        "logo_path": "team_logos/England - League One_Reading.png",
-        "logo_url": null,
-        "team_id": "1032"
-    },
-    "Blackpool": {
-        "league": "England - League One",
-        "logo_path": "team_logos/England - League One_Blackpool.png",
-        "logo_url": null,
-        "team_id": "1181"
-    },
-    "Burton Albion": {
-        "league": "England - League One",
-        "logo_path": "team_logos/England - League One_Burton Albion.png",
-        "logo_url": null,
-        "team_id": "1147"
     },
     "Al Kholood": {
         "league": "Saudi Arabia - Pro League",
@@ -1409,29 +1373,11 @@
         "logo_url": "https://tmssl.akamaized.net/images/wappen/head/50534.png",
         "team_id": "50534"
     },
-    "Al Akhdoud": {
-        "league": "Saudi Arabia - Pro League",
-        "logo_path": "team_logos/Saudi Arabia - Pro League_Al Akhdoud.png",
-        "logo_url": "https://tmssl.akamaized.net/images/wappen/head/50533.png",
-        "team_id": "50533"
-    },
-    "Al Ittifaq": {
-        "league": "Saudi Arabia - Pro League",
-        "logo_path": "team_logos/Saudi Arabia - Pro League_Al Ittifaq.png",
-        "logo_url": "https://tmssl.akamaized.net/images/wappen/head/18544.png",
-        "team_id": "18544"
-    },
     "Paris Saint-Germain": {
         "league": "France - Ligue 1",
         "logo_path": "team_logos/France - Ligue 1_Paris Saint-Germain.png",
         "logo_url": "https://tmssl.akamaized.net/images/wappen/head/583.png",
         "team_id": "583"
-    },
-    "Lorient": {
-        "league": "France - Ligue 1",
-        "logo_path": "team_logos/France - Ligue 1_Lorient.png",
-        "logo_url": "https://tmssl.akamaized.net/images/wappen/head/1158.png",
-        "team_id": "1158"
     },
     "Amiens SC": {
         "league": "France - Ligue 2",
@@ -1451,29 +1397,11 @@
         "logo_url": "https://tmssl.akamaized.net/images/wappen/head/855.png",
         "team_id": "855"
     },
-    "Metz": {
-        "league": "France - Ligue 1",
-        "logo_path": "team_logos/France - Ligue 1_Metz.png",
-        "logo_url": "https://tmssl.akamaized.net/images/wappen/head/347.png",
-        "team_id": "347"
-    },
-    "Clermont": {
-        "league": "France - Ligue 1",
-        "logo_path": "team_logos/France - Ligue 1_Clermont.png",
-        "logo_url": "https://tmssl.akamaized.net/images/wappen/head/3524.png",
-        "team_id": "3524"
-    },
     "CD Castellon": {
         "league": "Spain - LaLiga2",
         "logo_path": "team_logos/Spain - LaLiga2_CD Castellon.png",
         "logo_url": "https://tmssl.akamaized.net/images/wappen/head/940.png",
         "team_id": "940"
-    },
-    "Granada CF": {
-        "league": "Spain - LaLiga",
-        "logo_path": "team_logos/Spain - LaLiga_Granada CF.png",
-        "logo_url": "https://tmssl.akamaized.net/images/wappen/head/16795.png",
-        "team_id": "16795"
     },
     "Mirandes": {
         "league": "Spain - LaLiga2",
@@ -1493,35 +1421,11 @@
         "logo_url": "https://tmssl.akamaized.net/images/wappen/head/18.png",
         "team_id": "18"
     },
-    "Sassuolo": {
-        "league": "Italy - Serie A",
-        "logo_path": "team_logos/Italy - Serie A_Sassuolo.png",
-        "logo_url": "https://tmssl.akamaized.net/images/wappen/head/6574.png",
-        "team_id": "6574"
-    },
     "Pisa": {
         "league": "Italy - Serie B",
         "logo_path": "team_logos/Italy - Serie B_Pisa.png",
         "logo_url": "https://tmssl.akamaized.net/images/wappen/head/869.png",
         "team_id": "869"
-    },
-    "Cittadella": {
-        "league": "Italy - Serie B",
-        "logo_path": "team_logos/Italy - Serie B_Cittadella.png",
-        "logo_url": "https://tmssl.akamaized.net/images/wappen/head/6787.png",
-        "team_id": "6787"
-    },
-    "Sampdoria": {
-        "league": "Italy - Serie B",
-        "logo_path": "team_logos/Italy - Serie B_Sampdoria.png",
-        "logo_url": "https://tmssl.akamaized.net/images/wappen/head/1038.png",
-        "team_id": "1038"
-    },
-    "Modena": {
-        "league": "Italy - Serie B",
-        "logo_path": "team_logos/Italy - Serie B_Modena.png",
-        "logo_url": "https://tmssl.akamaized.net/images/wappen/head/149.png",
-        "team_id": "149"
     },
     "Cosenza": {
         "league": "Italy - Serie B",
@@ -1541,18 +1445,6 @@
         "logo_url": "https://tmssl.akamaized.net/images/wappen/head/1265.png",
         "team_id": "1265"
     },
-    "Rapid Wien": {
-        "league": "Austria - Bundesliga",
-        "logo_path": "team_logos/Austria - Bundesliga_Rapid Wien.png",
-        "logo_url": "https://tmssl.akamaized.net/images/wappen/head/170.png",
-        "team_id": "170"
-    },
-    "Wolfsberger AC": {
-        "league": "Austria - Bundesliga",
-        "logo_path": "team_logos/Austria - Bundesliga_Wolfsberger AC.png",
-        "logo_url": "https://tmssl.akamaized.net/images/wappen/head/2778.png",
-        "team_id": "2778"
-    },
     "Rheindorf Altach": {
         "league": "Austria - Bundesliga",
         "logo_path": "team_logos/Austria - Bundesliga_Rheindorf Altach.png",
@@ -1565,40 +1457,112 @@
         "logo_url": "https://tmssl.akamaized.net/images/wappen/head/481.png",
         "team_id": "481"
     },
-    "Club Brugge": {
-        "league": "Belgium - Pro League",
-        "logo_path": "team_logos/Belgium - Pro League_Club Brugge.png",
-        "logo_url": "https://tmssl.akamaized.net/images/wappen/head/2282.png",
-        "team_id": "2282"
-    },
-    "OH Leuven": {
-        "league": "Belgium - Pro League",
-        "logo_path": "team_logos/Belgium - Pro League_OH Leuven.png",
-        "logo_url": "https://tmssl.akamaized.net/images/wappen/head/2727.png",
-        "team_id": "2727"
-    },
-    "Sint-Truiden": {
-        "league": "Belgium - Pro League",
-        "logo_path": "team_logos/Belgium - Pro League_Sint-Truiden.png",
-        "logo_url": "https://tmssl.akamaized.net/images/wappen/head/1337.png",
-        "team_id": "1337"
-    },
-    "KRC Genk": {
-        "league": "Belgium - Pro League",
-        "logo_path": "team_logos/Belgium - Pro League_KRC Genk.png",
-        "logo_url": "https://tmssl.akamaized.net/images/wappen/head/1184.png",
-        "team_id": "1184"
-    },
-    "Cercle Brugge": {
-        "league": "Belgium - Pro League",
-        "logo_path": "team_logos/Belgium - Pro League_Cercle Brugge.png",
-        "logo_url": "https://tmssl.akamaized.net/images/wappen/head/2282.png",
-        "team_id": "2282"
-    },
     "Besiktas": {
         "league": "Turkey - Super Lig",
         "logo_path": "team_logos/Turkey - Super Lig_Besiktas.png",
         "logo_url": "https://tmssl.akamaized.net/images/wappen/head/114.png",
         "team_id": "114"
+    },
+    "Manchester City": {
+        "league": "Unknown League",
+        "logo_path": "/Users/shivamrishinarayansingh/fottyy/team_logos/Unknown League_Manchester City.png",
+        "logo_url": null,
+        "team_id": null
+    },
+    "Everton": {
+        "league": "Unknown League",
+        "logo_path": "/Users/shivamrishinarayansingh/fottyy/team_logos/Unknown League_Everton.png",
+        "logo_url": null,
+        "team_id": null
+    },
+    "AFC Bournemouth": {
+        "league": "Unknown League",
+        "logo_path": "/Users/shivamrishinarayansingh/fottyy/team_logos/Unknown League_AFC Bournemouth.png",
+        "logo_url": null,
+        "team_id": null
+    },
+    "Stoke City": {
+        "league": "Unknown League",
+        "logo_path": "/Users/shivamrishinarayansingh/fottyy/team_logos/Unknown League_Stoke City.png",
+        "logo_url": null,
+        "team_id": null
+    },
+    "Cardiff City": {
+        "league": "Unknown League",
+        "logo_path": "/Users/shivamrishinarayansingh/fottyy/team_logos/Unknown League_Cardiff City.png",
+        "logo_url": null,
+        "team_id": null
+    },
+    "Fulham": {
+        "league": "Unknown League",
+        "logo_path": "/Users/shivamrishinarayansingh/fottyy/team_logos/Unknown League_Fulham.png",
+        "logo_url": null,
+        "team_id": null
+    },
+    "Birmingham City": {
+        "league": "Unknown League",
+        "logo_path": "/Users/shivamrishinarayansingh/fottyy/team_logos/Unknown League_Birmingham City.png",
+        "logo_url": null,
+        "team_id": null
+    },
+    "Newcastle United": {
+        "league": "Unknown League",
+        "logo_path": "/Users/shivamrishinarayansingh/fottyy/team_logos/Unknown League_Newcastle United.png",
+        "logo_url": null,
+        "team_id": null
+    },
+    "Brighton & Hove Albion": {
+        "league": "Unknown League",
+        "logo_path": "/Users/shivamrishinarayansingh/fottyy/team_logos/Unknown League_Brighton & Hove Albion.png",
+        "logo_url": null,
+        "team_id": null
+    },
+    "Norwich City": {
+        "league": "Unknown League",
+        "logo_path": "/Users/shivamrishinarayansingh/fottyy/team_logos/Unknown League_Norwich City.png",
+        "logo_url": null,
+        "team_id": null
+    },
+    "Derby County": {
+        "league": "Unknown League",
+        "logo_path": "/Users/shivamrishinarayansingh/fottyy/team_logos/Unknown League_Derby County.png",
+        "logo_url": null,
+        "team_id": null
+    },
+    "Sheffield United": {
+        "league": "Unknown League",
+        "logo_path": "/Users/shivamrishinarayansingh/fottyy/team_logos/Unknown League_Sheffield United.png",
+        "logo_url": null,
+        "team_id": null
+    },
+    "Real Betis": {
+        "league": "Unknown League",
+        "logo_path": "/Users/shivamrishinarayansingh/fottyy/team_logos/Unknown League_Real Betis.png",
+        "logo_url": null,
+        "team_id": null
+    },
+    "Athletic Club Bilbao": {
+        "league": "Unknown League",
+        "logo_path": "/Users/shivamrishinarayansingh/fottyy/team_logos/Unknown League_Athletic Club Bilbao.png",
+        "logo_url": null,
+        "team_id": null
+    },
+    "Villarreal": {
+        "league": "Unknown League",
+        "logo_path": "/Users/shivamrishinarayansingh/fottyy/team_logos/Unknown League_Villarreal.png",
+        "logo_url": null,
+        "team_id": null
+    },
+    "PSV": {
+        "league": "Unknown League",
+        "logo_path": "/Users/shivamrishinarayansingh/fottyy/team_logos/Unknown League_PSV.png",
+        "logo_url": null,
+        "team_id": null
+    },
+    "Feyenoord": {
+        "league": "Unknown League",
+        "logo_path": "/Users/shivamrishinarayansingh/fottyy/team_logos/Unknown League_Feyenoord.png",
+        "logo_url": null,
+        "team_id": null
     }
 }
