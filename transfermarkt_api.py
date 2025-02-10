@@ -543,6 +543,15 @@ class TransfermarktAPI:
             "annecy": "fc annecy",
             "dunkerque": {"id": "3725", "name": "USL Dunkerque"},
             "usl dunkerque": {"id": "3725", "name": "USL Dunkerque"},
+            
+            # Asian Teams
+            "vissel kobe": {"id": "3958", "name": "Vissel Kobe"},
+            "shanghai sipg": {"id": "7037", "name": "Shanghai Port FC"},
+            "central coast mariners": {"id": "3419", "name": "Central Coast Mariners"},
+            "johor darul ta'zim": {"id": "20012", "name": "Johor Darul Ta'zim FC"},
+            "johor darul tazim": {"id": "20012", "name": "Johor Darul Ta'zim FC"},
+            
+            # Existing mappings continue...
         }
         
         # Set fuzzy matching thresholds
@@ -753,23 +762,14 @@ class TransfermarktAPI:
         while current_retry <= max_retries:
             try:
                 # Rate limiting
-                current_time = time.time()
-                if self.request_times:
-                    # Remove old request times
-                    self.request_times = [t for t in self.request_times if current_time - t < 1.0]
-                    
-                    # If we've made too many requests recently, wait
-                    if len(self.request_times) >= self.max_requests_per_second:
-                        sleep_time = max(0, 1.0 - (current_time - self.request_times[0]))
-                        time.sleep(sleep_time)
+                self._rate_limit()
                 
                 # Make the request
                 response = requests.get(url, headers=self.headers, params=params)
-                self.request_times.append(time.time())
                 
                 # Handle different status codes
                 if response.status_code == 200:
-                    return response.json().get('data', {})
+                    return response.json()  # Return full response
                 elif response.status_code == 503:
                     # Service Unavailable - retry with exponential backoff
                     if current_retry < max_retries:
@@ -798,9 +798,73 @@ class TransfermarktAPI:
                 else:
                     logger.error(f"Max retries ({max_retries}) exceeded. Last error: {str(e)}")
                     return None
-                    
+        
         logger.error(f"Failed to get successful response after {max_retries} retries")
         return None
+
+    def search_team(self, team_name, domain="de"):
+        """Search for a team and return its details"""
+        logger.info(f"Searching for team: {team_name}")
+        
+        try:
+            # Check cache first
+            cache_key = f"{team_name.lower()}_{domain}"
+            if cache_key in self.search_cache:
+                return self.search_cache[cache_key]
+            
+            # Check if team name is in direct mappings
+            if team_name.lower() in self.abbreviations:
+                mapped_name = self.abbreviations[team_name.lower()]
+                if isinstance(mapped_name, dict):
+                    self.search_cache[cache_key] = mapped_name
+                    return mapped_name
+                team_name = mapped_name
+            
+            # Search API
+            url = f"{self.base_url}/search"
+            params = {"query": team_name, "domain": domain}
+            
+            data = self._make_api_request(url, params)
+            if not data:
+                logger.warning(f"No results found for team: {team_name}")
+                return None
+            
+            # Look for exact match first in clubs array
+            clubs = data.get("clubs", [])
+            if not clubs:
+                logger.warning(f"No clubs found for team: {team_name}")
+                return None
+            
+            # Try exact match first
+            for club in clubs:
+                if self._is_exact_match(club["name"], team_name):
+                    result = {"id": str(club["id"]), "name": club["name"]}
+                    self.search_cache[cache_key] = result
+                    return result
+            
+            # If no exact match, try fuzzy matching
+            best_match = self._find_best_fuzzy_match(clubs, team_name)
+            if best_match:
+                result = {"id": str(best_match["id"]), "name": best_match["name"]}
+                self.search_cache[cache_key] = result
+                return result
+            
+            logger.warning(f"No matching team found for: {team_name}")
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error searching for team {team_name}: {str(e)}")
+            return None
+
+    def get_search_key(self, team_name):
+        """Generate a standardized search key for a team name"""
+        if not team_name:
+            return ""
+        # Remove special characters and convert to lowercase
+        key = re.sub(r'[^a-zA-Z0-9\s]', '', team_name.lower())
+        # Replace multiple spaces with single space and strip
+        key = ' '.join(key.split())
+        return key
 
     def get_team_squad(self, team_id, domain="de"):
         """Get all players in a team's squad with caching"""
@@ -830,91 +894,6 @@ class TransfermarktAPI:
         except Exception as e:
             logger.error(f"Error fetching team squad: {str(e)}")
             return []
-
-    def get_search_key(self, team_name):
-        """Generate a standardized search key for a team name"""
-        if not team_name:
-            return ""
-        # Remove special characters and convert to lowercase
-        key = re.sub(r'[^a-zA-Z0-9\s]', '', team_name.lower())
-        # Replace multiple spaces with single space and strip
-        key = ' '.join(key.split())
-        return key
-
-    def search_team(self, team_name, domain="de"):
-        """Search for a team and return its ID"""
-        logger.info(f"Searching for team: {team_name}")
-        
-        try:
-            # Clean and standardize the team name
-            team_name = self.clean_team_name(team_name, domain)
-            if isinstance(team_name, dict):
-                # If team_name is a dict (from abbreviations), return it directly
-                return team_name
-                
-            search_key = self.get_search_key(team_name)
-            
-            # Check cache first
-            cache_key = f"{search_key}:{domain}"
-            if cache_key in self.search_cache:
-                logger.info(f"Found {team_name} in cache")
-                return self.search_cache[cache_key]
-            
-            # Check if we have a direct mapping for this team
-            if team_name.lower() in self.abbreviations:
-                mapped_name = self.abbreviations[team_name.lower()]
-                # If mapped_name is a string, we need to search for it
-                if isinstance(mapped_name, str):
-                    team_name = mapped_name
-                    search_key = self.get_search_key(team_name)
-                else:
-                    # If mapped_name is a dict with id and name, cache and return it
-                    self.search_cache[cache_key] = mapped_name
-                    return mapped_name
-            
-            # Generate search variations
-            search_variations = self._generate_search_variations(team_name, domain)
-            
-            # Try each variation
-            for variation in search_variations:
-                url = f"{self.base_url}/search"
-                params = {"query": variation, "domain": domain}
-                
-                try:
-                    data = self._make_api_request(url, params)
-                    if not data:
-                        continue
-                    
-                    # Look for exact match first in clubs array
-                    clubs = data.get("clubs", [])
-                    if not clubs:
-                        # Try teams array if clubs is empty
-                        clubs = data.get("teams", [])
-                    
-                    if clubs:
-                        # Try exact match first
-                        for club in clubs:
-                            if club.get("name", "").lower() == variation.lower():
-                                result = {"id": str(club["id"]), "name": club["name"]}
-                                self.search_cache[cache_key] = result
-                                return result
-                        
-                        # If no exact match, return first result
-                        club = clubs[0]
-                        result = {"id": str(club["id"]), "name": club["name"]}
-                        self.search_cache[cache_key] = result
-                        return result
-                
-                except Exception as e:
-                    logger.error(f"Error searching for variation {variation}: {str(e)}")
-                    continue
-            
-            logger.warning(f"No results found for team: {team_name}")
-            return None
-            
-        except Exception as e:
-            logger.error(f"Error searching for team {team_name}: {str(e)}")
-            return None
 
     def get_team_market_value(self, team_name, domain="de"):
         """Get market value for a team"""
