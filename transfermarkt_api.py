@@ -217,70 +217,22 @@ class TransfermarktAPI:
             "olympiacos": "olympiakos piräus",
             "panathinaikos": "panathinaikos athen",
             "aek": "aek athen",
-            "atromitos": {"id": "2182", "name": "Atromitos Athen"},
-            "atromitos athens": {"id": "2182", "name": "Atromitos Athen"},
-            "levadiakos": {"id": "2186", "name": "APO Levadiakos"},
-            "levadiakos fc": {"id": "2186", "name": "APO Levadiakos"},
-            "lamia": {"id": "7955", "name": "PAS Lamia 1964"},
-            "pae lamia": {"id": "7955", "name": "PAS Lamia 1964"},
-            "kallithea": {"id": "5847", "name": "Kallithea FC"},
-            "gps kallithea": {"id": "5847", "name": "Kallithea FC"},
+            "atromitos": "atromitos athen",
+            "atromitos athens": "atromitos athen",
+            "levadiakos": "apo levadiakos",
+            "levadiakos fc": "apo levadiakos",
+            "lamia": "pas lamia 1964",
+            "pae lamia": "pas lamia 1964",
+            "kallithea": "kallithea fc",
+            "gps kallithea": "kallithea fc",
             "panaitolikos": "panetolikos gfs",
-            
-            # Additional Teams
-            "rigas fs": "riga fc",
-            "rīgas fs": "riga fc",
-            "rigas futbola skola": "riga fc",
-            "rīgas futbola skola": "riga fc",
-            "qarabag": "qarabag agdam",
-            "qarabağ": "qarabag agdam",
-            "bodo/glimt": "bodo/glimt",
-            "bodø/glimt": "bodo/glimt",
-            "bodo glimt": "bodo/glimt",
-            "fk bodo/glimt": "bodo/glimt",
-            "fk bodø/glimt": "bodo/glimt",
-            "fk bodo - glimt": "bodo/glimt",
-            "ludogorets": "ludogorets razgrad",
-            "ludogorets razgrad": "ludogorets razgrad",
-            "ludogorets razgrad fc": "ludogorets razgrad",
-            "pfc ludogorets": "ludogorets razgrad",
-            "pfc ludogorets razgrad": "ludogorets razgrad",
-            "elfsborg": "if elfsborg",
-            "if elfsborg": "if elfsborg",
-            "slavia praha": "sk slavia praha",
-            "slavia prague": "sk slavia praha",
-            "dynamo kyiv": "dynamo kiev",
-            "dynamo kiev": "dynamo kiev",
-            "dynamo kiew": "dynamo kiev",
-            
-            # Serbian Teams
-            "red star": "roter stern belgrad",
-            "red star belgrade": "roter stern belgrad",
-            "crvena zvezda": "roter stern belgrad",
-            "partizan": "partizan belgrad",
-            
-            # Ukrainian Teams
-            "shakhtar": "schachtar donezk",
-            "shakhtar donetsk": "schachtar donezk",
-            
-            # Czech Teams
-            "slavia praha": "sk slavia praha",
-            "slavia prague": "sk slavia praha",
-            "sparta praha": "sparta prag",
-            "sparta prague": "sparta prag",
-            "viktoria plzen": "fc viktoria pilsen",
-            "viktoria plzeň": "fc viktoria pilsen",
-            "plzen": "fc viktoria pilsen",
-            "slovacko": "1. fc slovacko",
-            "slovácko": "1. fc slovacko",
-            "jablonec": "fk jablonec",
-            "mladá boleslav": "fk mlada boleslav",
-            "mlada boleslav": "fk mlada boleslav",
             
             # Polish Teams
             "legia": "legia warschau",
             "legia warsaw": "legia warschau",
             "lech poznan": "lech posen",
+            "puszcza niepolomice": "puszcza niepołomice",
+            "zaglebie lubin": "zagłębie lubin",
             
             # Croatian Teams
             "dinamo zagreb": "gnk dinamo zagreb",
@@ -597,6 +549,12 @@ class TransfermarktAPI:
         clean2 = self._clean_special_chars(name2)
         return clean1 == clean2
 
+    def _fuzzy_match_ratio(self, name1, name2):
+        """Calculate fuzzy match ratio between two team names"""
+        if not name1 or not name2:
+            return 0
+        return get_close_matches(name1, [name2], n=1, cutoff=self.fuzzy_match_threshold)
+
     def search_team(self, team_name, domain="de"):
         """Search for a team and return its details"""
         logger.info(f"Searching for team: {team_name}")
@@ -631,12 +589,35 @@ class TransfermarktAPI:
             # Try exact match first
             for club in clubs:
                 if self._is_exact_match(club["name"], team_name):
-                    result = {"name": club["name"]}
+                    result = {
+                        "name": club["name"],
+                        "id": club["id"],
+                        "market_value": club.get("marketValue", "N/A")
+                    }
                     self.search_cache[cache_key] = result
                     return result
             
-            # If no exact match found, return None
-            logger.warning(f"No exact match found for: {team_name}")
+            # If no exact match, try fuzzy matching
+            best_match = None
+            highest_ratio = 0
+            
+            for club in clubs:
+                ratio = self._fuzzy_match_ratio(club["name"], team_name)
+                if ratio and ratio[0] > highest_ratio and ratio[0] > self.fuzzy_match_threshold:
+                    highest_ratio = ratio[0]
+                    best_match = club
+            
+            if best_match:
+                result = {
+                    "name": best_match["name"],
+                    "id": best_match["id"],
+                    "market_value": best_match.get("marketValue", "N/A")
+                }
+                self.search_cache[cache_key] = result
+                return result
+            
+            # If no match found, return None
+            logger.warning(f"No match found for: {team_name}")
             return None
             
         except Exception as e:
@@ -651,8 +632,26 @@ class TransfermarktAPI:
         if not team_info:
             return None
             
-        # If we found the team, return a default market value (since we're not using actual market values)
-        return {"name": team_info["name"], "market_value": "10.00m €"}
+        try:
+            # Get detailed club info including market value
+            url = f"{self.base_url}/clubs/{team_info['id']}"
+            data = self._make_api_request(url)
+            
+            if data and "marketValue" in data:
+                return {
+                    "name": team_info["name"],
+                    "market_value": data["marketValue"]
+                }
+            else:
+                # Fallback to market value from search if available
+                return {
+                    "name": team_info["name"],
+                    "market_value": team_info.get("market_value", "N/A")
+                }
+                
+        except Exception as e:
+            logger.error(f"Error getting market value for {team_name}: {str(e)}")
+            return None
 
     def get_both_teams_market_value(self, home_team, away_team, domain="de"):
         """Get market values for both teams"""
