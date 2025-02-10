@@ -1105,10 +1105,25 @@ def display_market_values(home_team, away_team):
         home_value, away_value = get_market_values(home_team, away_team)
         
         # Format values for display
-        home_display = home_value if home_value != 'N/A' else 'Not Available'
-        away_display = away_value if away_value != 'N/A' else 'Not Available'
+        def format_value(value):
+            if value is None:
+                return 'N/A'
+            if isinstance(value, dict):
+                market_value = value.get('market_value', 'N/A')
+                if market_value == 'N/A':
+                    return market_value
+                # Remove the '€' and 'm' from '10.00m €' format and convert to float
+                try:
+                    num_value = float(market_value.replace('m €', '').strip())
+                    return f"€{num_value:.1f}M"
+                except (ValueError, AttributeError):
+                    return market_value
+            return 'N/A'
         
-        logger.info(f"Displaying market values - Home: {home_display}, Away: {away_display}")
+        formatted_home_value = format_value(home_value)
+        formatted_away_value = format_value(away_value)
+        
+        logger.info(f"Displaying market values - Home: {formatted_home_value}, Away: {formatted_away_value}")
         
         st.markdown(f"""
             <div style="
@@ -1140,7 +1155,7 @@ def display_market_values(home_team, away_team):
                             color: #0f172a;
                             font-weight: 600;
                             font-size: 1.1rem;">
-                            {home_display}
+                            {formatted_home_value}
                         </span>
                     </div>
                     <div>
@@ -1149,7 +1164,7 @@ def display_market_values(home_team, away_team):
                             color: #0f172a;
                             font-weight: 600;
                             font-size: 1.1rem;">
-                            {away_display}
+                            {formatted_away_value}
                         </span>
                     </div>
                 </div>
@@ -1174,7 +1189,17 @@ def get_market_values(home_team, away_team):
         def format_value(value):
             if value is None:
                 return 'N/A'
-            return f"€{value/1000000:.1f}M"
+            if isinstance(value, dict):
+                market_value = value.get('market_value', 'N/A')
+                if market_value == 'N/A':
+                    return market_value
+                # Remove the '€' and 'm' from '10.00m €' format and convert to float
+                try:
+                    num_value = float(market_value.replace('m €', '').strip())
+                    return f"€{num_value:.1f}M"
+                except (ValueError, AttributeError):
+                    return market_value
+            return 'N/A'
         
         formatted_home = format_value(home_value)
         formatted_away = format_value(away_value)
