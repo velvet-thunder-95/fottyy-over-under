@@ -1106,14 +1106,20 @@ def display_market_values(home_team, away_team):
         
         # Format values for display
         def format_value(value):
-            if value is None:
+            if value is None or value == 0:
                 return 'N/A'
+            # Handle integer values (in euros)
+            if isinstance(value, (int, float)):
+                return f"€{value/1000000:.1f}M"
+            # Handle dict format for backward compatibility
             if isinstance(value, dict):
                 market_value = value.get('market_value', 'N/A')
                 if market_value == 'N/A':
                     return market_value
-                # Remove the '€' and 'm' from '10.00m €' format and convert to float
                 try:
+                    if isinstance(market_value, (int, float)):
+                        return f"€{market_value/1000000:.1f}M"
+                    # Legacy string format handling
                     num_value = float(market_value.replace('m €', '').strip())
                     return f"€{num_value:.1f}M"
                 except (ValueError, AttributeError):
@@ -1187,18 +1193,11 @@ def get_market_values(home_team, away_team):
         
         # Format values to millions with 1 decimal place
         def format_value(value):
-            if value is None:
+            if value is None or value == 0:
                 return 'N/A'
-            if isinstance(value, dict):
-                market_value = value.get('market_value', 'N/A')
-                if market_value == 'N/A':
-                    return market_value
-                # Remove the '€' and 'm' from '10.00m €' format and convert to float
-                try:
-                    num_value = float(market_value.replace('m €', '').strip())
-                    return f"€{num_value:.1f}M"
-                except (ValueError, AttributeError):
-                    return market_value
+            # Handle integer values (in euros)
+            if isinstance(value, (int, float)):
+                return f"€{value/1000000:.1f}M"
             return 'N/A'
         
         formatted_home = format_value(home_value)
@@ -1235,10 +1234,11 @@ def display_match_odds(match_data):
     
     # Calculate implied probabilities and EV for match outcomes
     if all([home_odds, draw_odds, away_odds]):
-        total_implied = (1/home_odds + 1/draw_odds + 1/away_odds)
-        home_implied = (1/home_odds) / total_implied * 100
-        draw_implied = (1/draw_odds) / total_implied * 100
-        away_implied = (1/away_odds) / total_implied * 100
+        # Convert odds to probabilities
+        total_prob = (1/home_odds + 1/draw_odds + 1/away_odds)
+        home_implied = (1/home_odds) / total_prob * 100
+        draw_implied = (1/draw_odds) / total_prob * 100
+        away_implied = (1/away_odds) / total_prob * 100
         
         # Debug prints
         print(f"Home - Pred: {home_pred*100:.2f}%, Odds: {home_odds:.2f}")
@@ -1903,7 +1903,7 @@ def calculate_over25_probability(home_xg, away_xg):
         try:
             home_xg = float(home_xg) if home_xg not in (None, 0) else 0.5
             away_xg = float(away_xg) if away_xg not in (None, 0) else 0.5
-        except (ValueError, TypeError) as e:
+        except (ValueError, TypeError):
             print(f"Error converting xG values: {str(e)}")
             home_xg = 0.5
             away_xg = 0.5
@@ -1942,7 +1942,7 @@ def calculate_btts_probability(home_xg, away_xg):
         try:
             home_xg = float(home_xg) if home_xg not in (None, 0) else 0.5
             away_xg = float(away_xg) if away_xg not in (None, 0) else 0.5
-        except (ValueError, TypeError) as e:
+        except (ValueError, TypeError):
             print(f"Error converting xG values: {str(e)}")
             home_xg = 0.5
             away_xg = 0.5
