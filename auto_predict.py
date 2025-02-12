@@ -12,17 +12,28 @@ def auto_predict():
     USERNAME = "matchday_wizard"  # Hardcoded username
     PASSWORD = "GoalMaster"  # Hardcoded password
     
+    # Configure session with longer timeout
+    session = requests.Session()
+    session.timeout = 30
+    
     try:
-        # Start a session to maintain cookies
-        session = requests.Session()
-        
-        # Step 1: Login
+        # Step 1: First visit the page to get session cookie
+        logger.info("Getting initial session...")
+        response = session.get(BASE_URL)
+        if not response.ok:
+            logger.error("Failed to get initial session")
+            return False
+
+        # Step 2: Login
         logger.info("Attempting to login...")
-        login_data = {
+        params = {
+            "page": "login"
+        }
+        data = {
             "username": USERNAME,
             "password": PASSWORD
         }
-        response = session.post(f"{BASE_URL}/login", json=login_data)
+        response = session.post(f"{BASE_URL}", params=params, data=data)
         if not response.ok:
             logger.error("Login failed")
             return False
