@@ -8,7 +8,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def auto_predict():
-    BASE_URL = "https://fottyy.streamlit.app"
+    BASE_URL = "https://fottyygit.streamlit.app"
     USERNAME = "matchday_wizard"  # Hardcoded username
     PASSWORD = "GoalMaster"  # Hardcoded password
     
