@@ -2327,7 +2327,38 @@ def convert_to_cet(kickoff):
     except:
         return kickoff  # Return original string if conversion fails
 
+def auto_predict_matches():
+    """Automatically predict matches without UI interaction"""
+    try:
+        matches = get_matches_for_date(datetime.now())
+        for match in matches:
+            process_match_prediction(match)
+        return True
+    except Exception as e:
+        logger.error(f"Error in auto prediction: {str(e)}")
+        return False
+
 def main():
+    # Auto-predict endpoint for GitHub Actions
+    params = st.experimental_get_query_params()
+    if 'auto_predict' in params and params['auto_predict'][0] == 'true':
+        success = auto_predict_matches()
+        st.json({
+            'status': 'success' if success else 'error',
+            'timestamp': datetime.now().isoformat(),
+            'message': 'Auto-prediction completed' if success else 'Auto-prediction failed'
+        })
+        return
+
+    # Health check endpoint
+    if 'health-check' in st.experimental_get_query_params():
+        st.json({
+            'status': 'healthy',
+            'timestamp': datetime.now().isoformat(),
+            'app': 'fottyy'
+        })
+        return
+
     # Initialize session state
     init_session_state()
     
