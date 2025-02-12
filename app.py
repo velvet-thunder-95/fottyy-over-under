@@ -2351,7 +2351,7 @@ def main():
         return
 
     # Health check endpoint
-    if 'health-check' in st.experimental_get_query_params():
+    if 'health-check' in st.query_params:
         st.json({
             'status': 'healthy',
             'timestamp': datetime.now().isoformat(),
