@@ -29,5 +29,16 @@ jobs:
       - name: Health check
         if: always()  # Run even if auto-prediction fails
         run: |
-          curl -sL "https://fottyy.streamlit.app/?health-check=true" > /dev/null
+          for i in {1..3}; do
+            echo "Attempt $i: Checking app health..."
+            curl -v -L "https://fottyy.streamlit.app/?health-check=true" && break || {
+              if [ $i -lt 3 ]; then
+                echo "Retrying in 10 seconds..."
+                sleep 10
+              else
+                echo "Health check failed after 3 attempts"
+                exit 1
+              fi
+            }
+          done
         continue-on-error: true
