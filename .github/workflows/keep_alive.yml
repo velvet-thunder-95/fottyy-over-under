@@ -1,0 +1,15 @@
+name: Keep Streamlit App Alive
+
+on:
+  schedule:
+    - cron: '0 */10 * * *'  # Runs every 10 hours
+  workflow_dispatch:  # Allows manual triggering
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Streamlit App
+        run: |
+          curl -sL "https://fottyy.streamlit.app/?health-check=true" > /dev/null
+        continue-on-error: true  # Continue even if the app is temporarily down
