@@ -2340,7 +2340,7 @@ def auto_predict_matches():
 
 def main():
     # Auto-predict endpoint for GitHub Actions
-    params = st.experimental_get_query_params()
+    params = dict(st.query_params)
     if 'auto_predict' in params and params['auto_predict'][0] == 'true':
         success = auto_predict_matches()
         st.json({
