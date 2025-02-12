@@ -42,6 +42,13 @@ src_dir = os.path.join(project_root, 'src')
 sys.path.insert(0, src_dir)
 
 
+# Set page title and favicon
+st.set_page_config(
+    page_title="Fottyy - Football Prediction",
+    page_icon="assets/favicon.png",
+    layout="wide"
+)
+
 # Custom CSS
 st.markdown("""
 <style>
