@@ -1,7 +1,7 @@
 import requests
 import json
 from datetime import datetime
-import sqlite3
+from supabase_db import SupabaseDB
 import logging
 
 class MatchAnalyzer:
@@ -58,23 +58,13 @@ class MatchAnalyzer:
 
     def get_match_league(self, match_id):
         """Get league information for a match from the database"""
-        connection = sqlite3.connect('predictions.db')
-        cursor = connection.cursor()
+        db = SupabaseDB()
+        result = db.supabase.table('predictions').select('league').eq('match_id', match_id).limit(1).execute()
         
-        cursor.execute("""
-            SELECT league 
-            FROM predictions 
-            WHERE match_id = ?
-            LIMIT 1
-        """, (match_id,))
-        
-        result = cursor.fetchone()
-        connection.close()
-        
-        if not result:
+        if not result.data:
             return None
             
-        league_name = result[0]
+        league_name = result.data[0]['league']
         # Map league name to ID using the LEAGUE_IDS dictionary from football_api.py
         league_id = None
         
@@ -93,51 +83,18 @@ class MatchAnalyzer:
 
     def fetch_match_data(self, match_id):
         """Fetch match data from the predictions database"""
-        connection = sqlite3.connect('predictions.db')
-        cursor = connection.cursor()
-        cursor.execute("""
-            SELECT date, league, home_team, away_team, 
-                   predicted_outcome, actual_outcome,
-                   home_odds, draw_odds, away_odds,
-                   match_date, status
-            FROM predictions 
-            WHERE match_id = ?
-            LIMIT 1
-        """, (match_id,))
+        db = SupabaseDB()
+        result = db.supabase.table('predictions').select('date,league,home_team,away_team,predicted_outcome,actual_outcome,home_odds,draw_odds,away_odds,status').eq('match_id', match_id).limit(1).execute()
         
-        result = cursor.fetchone()
-        connection.close()
-        
-        if result:
-            return {
-                'date': result[0],
-                'league': result[1],
-                'home_team': result[2],
-                'away_team': result[3],
-                'predicted_outcome': result[4],
-                'actual_outcome': result[5],
-                'home_odds': result[6],
-                'draw_odds': result[7],
-                'away_odds': result[8],
-                'match_date': result[9],
-                'status': result[10]
-            }
+        if result.data:
+            return result.data[0]
         return None
 
     def fetch_all_match_ids(self):
         """Fetch all match IDs from the predictions database"""
-        connection = sqlite3.connect('predictions.db')
-        cursor = connection.cursor()
-        # Only get predictions with valid match_ids
-        cursor.execute("""
-            SELECT match_id, date
-            FROM predictions 
-            WHERE match_id IS NOT NULL
-            ORDER BY date DESC, id DESC
-        """)
-        matches = cursor.fetchall()
-        connection.close()
-        return [match[0] for match in matches]
+        db = SupabaseDB()
+        result = db.supabase.table('predictions').select('match_id').not_('match_id', 'is', None).order('date.desc').execute()
+        return [match['match_id'] for match in result.data]
     
     def analyze_match_result(self, match_id):
         """
@@ -159,20 +116,20 @@ class MatchAnalyzer:
                 'complete': 'Completed',
                 'finished': 'Completed',
                 'incomplete': 'Pending',
-                'scheduled': 'Pending',
+                'scheduled': 'SCHEDULED',  # Keep scheduled status
                 'postponed': 'Postponed',
                 'cancelled': 'Cancelled'
             }
             status = status_mapping.get(match_status, 'unknown')
 
-            # For future matches, set status to Pending
+            # For future matches, set status to SCHEDULED
             if status == 'unknown':
                 match_time = match_details.get('match_time')
                 if match_time:
                     match_datetime = datetime.strptime(match_time, '%Y-%m-%d %H:%M:%S')
                     current_time = datetime.now()
                     if match_datetime > current_time:
-                        status = 'Pending'
+                        status = 'SCHEDULED'
 
             # Determine the actual outcome based on scores
             actual_outcome = None

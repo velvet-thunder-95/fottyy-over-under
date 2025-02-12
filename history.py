@@ -3,154 +3,50 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
-import sqlite3
 from football_api import get_match_by_teams, get_match_result
 from session_state import init_session_state, check_login_state
 from match_analyzer import MatchAnalyzer
+from supabase_db import SupabaseDB
 import logging
 
 class PredictionHistory:
     def __init__(self):
-        """Initialize the database connection and create tables if they don't exist."""
-        self.db_path = 'predictions.db'
-        connection = sqlite3.connect(self.db_path)
-        cursor = connection.cursor()
-        
-        # Create predictions table if it doesn't exist
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS predictions (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                date TEXT,
-                league TEXT,
-                home_team TEXT,
-                away_team TEXT,
-                predicted_outcome TEXT,
-                actual_outcome TEXT,
-                home_odds REAL,
-                draw_odds REAL,
-                away_odds REAL,
-                confidence REAL,
-                bet_amount REAL,
-                profit_loss REAL,
-                prediction_type TEXT,
-                status TEXT,
-                match_date TEXT,
-                match_id TEXT,
-                home_score INTEGER,
-                away_score INTEGER
-            )
-        ''')
-        
-        # Add new columns if they don't exist
-        try:
-            cursor.execute('ALTER TABLE predictions ADD COLUMN home_score INTEGER')
-        except sqlite3.OperationalError:
-            pass  # Column already exists
-            
-        try:
-            cursor.execute('ALTER TABLE predictions ADD COLUMN away_score INTEGER')
-        except sqlite3.OperationalError:
-            pass  # Column already exists
-            
-        connection.commit()
-        connection.close()
+        """Initialize the Supabase database connection."""
+        self.db = SupabaseDB()
 
     def init_database(self):
-        """Initialize the SQLite database"""
-        conn = sqlite3.connect(self.db_path)
-        c = conn.cursor()
-        
-        # Create predictions table with all necessary fields
-        c.execute('''
-            CREATE TABLE IF NOT EXISTS predictions (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                date TEXT,
-                league TEXT,
-                home_team TEXT,
-                away_team TEXT,
-                predicted_outcome TEXT,
-                actual_outcome TEXT,
-                home_odds REAL,
-                draw_odds REAL,
-                away_odds REAL,
-                confidence REAL,
-                bet_amount REAL,
-                profit_loss REAL,
-                prediction_type TEXT,
-                status TEXT,
-                match_date TEXT,
-                match_id TEXT,
-                home_score INTEGER,
-                away_score INTEGER
-            )
-        ''')
-        
-        # Convert existing confidence values to REAL if needed
-        try:
-            c.execute('SELECT confidence FROM predictions LIMIT 1')
-            sample = c.fetchone()
-            if sample and isinstance(sample[0], bytes):
-                # Create a temporary table
-                c.execute('''
-                    CREATE TABLE temp_predictions AS 
-                    SELECT id, date, league, home_team, away_team, 
-                           predicted_outcome, actual_outcome, home_odds, 
-                           draw_odds, away_odds,
-                           CAST((SELECT CAST(confidence AS REAL)) AS REAL) as confidence,
-                           bet_amount, profit_loss, prediction_type, 
-                           status, match_date, match_id, NULL as home_score, NULL as away_score
-                    FROM predictions
-                ''')
-                
-                # Drop the original table
-                c.execute('DROP TABLE predictions')
-                
-                # Rename temp table to original
-                c.execute('ALTER TABLE temp_predictions RENAME TO predictions')
-        except:
-            pass
-        
-        conn.commit()
-        conn.close()
+        """Initialize the Supabase database"""
+        # No need to create tables as they are managed in Supabase dashboard
+        self.db.init_database()
 
     def add_prediction(self, prediction_data):
         """Add a new prediction to the database"""
         try:
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-            
             # Ensure confidence is a float
             confidence = float(prediction_data.get('confidence', 0.0))
             match_id = str(prediction_data.get('match_id', ''))
             
-            # Insert prediction
-            cursor.execute("""
-                INSERT INTO predictions (
-                    date, league, home_team, away_team,
-                    predicted_outcome, actual_outcome,
-                    home_odds, draw_odds, away_odds,
-                    confidence, bet_amount, profit_loss,
-                    status, match_id
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                prediction_data['date'],
-                prediction_data['league'],
-                prediction_data['home_team'],
-                prediction_data['away_team'],
-                prediction_data['predicted_outcome'],
-                None,  # actual_outcome starts as None
-                float(prediction_data['home_odds']),
-                float(prediction_data['draw_odds']),
-                float(prediction_data['away_odds']),
-                confidence,
-                float(prediction_data['bet_amount']),
-                0.0,  # profit_loss starts at 0
-                'Pending',  # status starts as Pending
-                match_id
-            ))
+            # Create clean data for insertion
+            clean_data = {
+                'date': prediction_data['date'],
+                'league': prediction_data['league'],
+                'home_team': prediction_data['home_team'],
+                'away_team': prediction_data['away_team'],
+                'predicted_outcome': prediction_data['predicted_outcome'],
+                'actual_outcome': None,  # actual_outcome starts as None
+                'home_odds': float(prediction_data['home_odds']),
+                'draw_odds': float(prediction_data['draw_odds']),
+                'away_odds': float(prediction_data['away_odds']),
+                'confidence': confidence,
+                'bet_amount': float(prediction_data['bet_amount']),
+                'profit_loss': 0.0,  # profit_loss starts at 0
+                'status': 'Pending',  # status starts as Pending
+                'match_id': match_id
+            }
             
-            conn.commit()
-            conn.close()
+            # Insert into Supabase
+            result = self.db.supabase.table('predictions').insert(clean_data).execute()
+            
             logging.info(f"Successfully added prediction for {prediction_data['home_team']} vs {prediction_data['away_team']} with match_id: {match_id} and confidence: {confidence}")
             return True
             
@@ -158,170 +54,150 @@ class PredictionHistory:
             logging.error(f"Error adding prediction: {str(e)}")
             return False
 
-    def update_prediction_result(self, prediction_id, actual_outcome, profit_loss):
+    def update_prediction_result(self, prediction_id, actual_outcome, profit_loss, home_score=None, away_score=None):
         """Update prediction with actual result and profit/loss"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        
         try:
-            cursor.execute("""
-                UPDATE predictions 
-                SET actual_outcome = ?, 
-                    profit_loss = ?,
-                    status = 'Completed'
-                WHERE id = ?
-            """, (actual_outcome, profit_loss, prediction_id))
-            conn.commit()
+            update_data = {
+                'actual_outcome': actual_outcome,
+                'profit_loss': profit_loss,
+                'status': 'Completed'
+            }
+            
+            if home_score is not None:
+                update_data['home_score'] = home_score
+            if away_score is not None:
+                update_data['away_score'] = away_score
+                
+            result = self.db.supabase.table('predictions').update(update_data).eq('id', prediction_id).execute()
+            return True
             
         except Exception as e:
-            logger.error(f"Error updating prediction result: {str(e)}")
-            conn.rollback()
-            
-        finally:
-            conn.close()
+            logging.error(f"Error updating prediction result: {str(e)}")
+            return False
 
     def get_predictions(self, start_date=None, end_date=None, status=None, confidence_levels=None, leagues=None):
         """Get predictions with optional filters"""
-        conn = sqlite3.connect(self.db_path)
-        
-        query = """
-            SELECT 
-                id, date, league, home_team, away_team, 
-                predicted_outcome, actual_outcome, 
-                home_odds, draw_odds, away_odds,
-                confidence,
-                bet_amount, profit_loss,
-                status, match_id, home_score, away_score
-            FROM predictions WHERE 1=1
-        """
-        params = []
-        
-        if start_date:
-            query += " AND date >= ?"
-            params.append(start_date)
-            
-        if end_date:
-            query += " AND date <= ?"
-            params.append(end_date)
-            
-        if status:
-            query += " AND status = ?"
-            params.append(status)
-
-        # Handle multiple confidence levels
-        if confidence_levels and "All" not in confidence_levels:
-            confidence_conditions = []
-            for level in confidence_levels:
-                if level == "High":
-                    confidence_conditions.append("confidence >= 70")
-                elif level == "Medium":
-                    confidence_conditions.append("(confidence >= 50 AND confidence < 70)")
-                elif level == "Low":
-                    confidence_conditions.append("confidence < 50")
-            if confidence_conditions:
-                query += f" AND ({' OR '.join(confidence_conditions)})"
-
-        # Handle multiple leagues
-        if leagues and "All" not in leagues:
-            placeholders = ','.join('?' * len(leagues))
-            query += f" AND league IN ({placeholders})"
-            params.extend(leagues)
-            
-        query += " ORDER BY date DESC"
-        
         try:
-            df = pd.read_sql_query(query, conn, params=params)
+            # Start building the query
+            query = self.db.supabase.table('predictions').select('*')
+            
+            # Apply filters
+            if start_date:
+                query = query.gte('date', start_date)
+            if end_date:
+                query = query.lte('date', end_date)
+            if status:
+                query = query.eq('status', status)
+                
+            # Handle confidence levels
+            if confidence_levels and "All" not in confidence_levels:
+                for level in confidence_levels:
+                    if level == "High":
+                        query = query.filter('confidence', 'gte', 70)
+                    elif level == "Medium":
+                        query = query.filter('confidence', 'gte', 50).filter('confidence', 'lt', 70)
+                    elif level == "Low":
+                        query = query.filter('confidence', 'lt', 50)
+                        
+            # Handle leagues
+            if leagues and "All" not in leagues:
+                query = query.in_('league', leagues)
+                
+            # Execute query and order by date
+            result = query.order('date.desc').execute()
+            
+            # Convert to DataFrame
+            df = pd.DataFrame(result.data)
             return df
+            
         except Exception as e:
             logging.error(f"Error getting predictions: {str(e)}")
             return pd.DataFrame()
-        finally:
-            conn.close()
 
     def calculate_statistics(self, confidence_levels=None, leagues=None):
         """Calculate prediction statistics with optional confidence level and league filters"""
-        conn = sqlite3.connect(self.db_path)
-        
-        query = """
-            SELECT 
-                COUNT(*) as total_predictions,
-                SUM(CASE WHEN status = 'Completed' THEN 1 ELSE 0 END) as completed_predictions,
-                SUM(CASE WHEN predicted_outcome = actual_outcome AND status = 'Completed' THEN 1 ELSE 0 END) as correct_predictions,
-                SUM(CASE WHEN status = 'Pending' THEN 1 ELSE 0 END) as pending_predictions,
-                ROUND(SUM(CASE WHEN status = 'Completed' AND profit_loss IS NOT NULL THEN profit_loss ELSE 0 END), 2) as total_profit,
-                SUM(CASE WHEN status = 'Completed' THEN bet_amount ELSE 0 END) as total_bet_amount
-            FROM predictions
-            WHERE 1=1
-        """
-        params = []
-
-        # Handle multiple confidence levels
-        if confidence_levels and "All" not in confidence_levels:
-            confidence_conditions = []
-            for level in confidence_levels:
-                if level == "High":
-                    confidence_conditions.append("confidence >= 70")
-                elif level == "Medium":
-                    confidence_conditions.append("(confidence >= 50 AND confidence < 70)")
-                elif level == "Low":
-                    confidence_conditions.append("confidence < 50")
-            if confidence_conditions:
-                query += f" AND ({' OR '.join(confidence_conditions)})"
-
-        # Handle multiple leagues
-        if leagues and "All" not in leagues:
-            placeholders = ','.join('?' * len(leagues))
-            query += f" AND league IN ({placeholders})"
-            params.extend(leagues)
-
         try:
-            df = pd.read_sql_query(query, conn, params=params)
-            row = df.iloc[0]
+            # Get predictions from Supabase with filters
+            query = self.db.supabase.table('predictions').select('*')
             
-            total_predictions = row['total_predictions']
-            completed_predictions = row['completed_predictions']
-            correct_predictions = row['correct_predictions']
-            pending_predictions = row['pending_predictions']
-            total_profit = row['total_profit'] if row['total_profit'] is not None else 0
-            total_bet_amount = row['total_bet_amount'] if row['total_bet_amount'] is not None else 0
+            # Apply confidence level filters
+            if confidence_levels and "All" not in confidence_levels:
+                for level in confidence_levels:
+                    if level == "High":
+                        query = query.gte('confidence', 70)
+                    elif level == "Medium":
+                        query = query.and_(f"confidence.gte.50,confidence.lt.70")
+                    elif level == "Low":
+                        query = query.lt('confidence', 50)
+                        
+            # Apply league filters
+            if leagues and "All" not in leagues:
+                query = query.in_('league', leagues)
+                
+            # Execute query
+            result = query.execute()
+            predictions = pd.DataFrame(result.data)
             
-            # Calculate success rate and ROI
-            success_rate = (correct_predictions / completed_predictions * 100) if completed_predictions > 0 else 0
-            roi = (total_profit / total_bet_amount * 100) if total_bet_amount > 0 else 0
+            if predictions.empty:
+                return [0, 0, 0.0, 0.0, 0.0], 0
             
-            return (
-                completed_predictions + pending_predictions,  # total predictions
+            # Calculate statistics
+            completed_predictions = predictions[predictions['status'] == 'Completed']
+            pending_predictions = predictions[predictions['status'] == 'Pending']
+            
+            total_predictions = len(predictions)
+            completed_count = len(completed_predictions)
+            pending_count = len(pending_predictions)
+            
+            # Calculate correct predictions
+            correct_predictions = len(
+                completed_predictions[
+                    completed_predictions['predicted_outcome'] == 
+                    completed_predictions['actual_outcome']
+                ]
+            )
+            
+            # Calculate success rate
+            success_rate = (correct_predictions / completed_count * 100) \
+                if completed_count > 0 else 0.0
+            
+            # Calculate profit and ROI
+            total_profit = completed_predictions['profit_loss'].sum() \
+                if not completed_predictions.empty else 0.0
+            
+            total_bet_amount = completed_count * float(completed_predictions['bet_amount'].iloc[0]) \
+                if not completed_predictions.empty else 0.0
+            
+            roi = (total_profit / total_bet_amount * 100) \
+                if total_bet_amount > 0 else 0.0
+            
+            return [
+                total_predictions,
                 correct_predictions,
                 success_rate,
                 total_profit,
                 roi
-            ), pending_predictions
+            ], pending_count
             
         except Exception as e:
             logging.error(f"Error calculating statistics: {str(e)}")
-            return (0, 0, 0, 0, 0), 0
-        finally:
-            conn.close()
+            return [0, 0, 0.0, 0.0, 0.0], 0
 
     def update_match_results(self, match_id, result):
         """Update match results in the database"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        
         try:
-            # First get the match details
-            cursor.execute("""
-                SELECT predicted_outcome, home_odds, draw_odds, away_odds
-                FROM predictions 
-                WHERE match_id = ?
-            """, (match_id,))
-            match_data = cursor.fetchone()
+            # First get the match details from Supabase
+            match_result = self.db.supabase.table('predictions').select('predicted_outcome,home_odds,draw_odds,away_odds').eq('match_id', match_id).execute()
             
-            if not match_data:
+            if not match_result.data:
                 print(f"No prediction found for match {match_id}")
                 return
-                
-            predicted_outcome, home_odds, draw_odds, away_odds = match_data
+            
+            match_data = match_result.data[0]
+            predicted_outcome = match_data['predicted_outcome']
+            home_odds = match_data['home_odds']
+            draw_odds = match_data['draw_odds']
+            away_odds = match_data['away_odds']
             
             # Parse the result
             if isinstance(result, dict):
@@ -361,28 +237,21 @@ class PredictionHistory:
                 actual_outcome = None
                 profit_loss = None
             
-            # Update the database
-            cursor.execute('''
-                UPDATE predictions
-                SET status = ?,
-                    home_score = ?,
-                    away_score = ?,
-                    actual_outcome = ?,
-                    profit_loss = ?,
-                    bet_amount = CASE WHEN ? = 'Completed' THEN 1.0 ELSE NULL END
-                WHERE match_id = ?
-            ''', (status, home_score, away_score, actual_outcome, profit_loss, status, match_id))
+            # Update Supabase
+            update_data = {
+                'status': status,
+                'home_score': home_score,
+                'away_score': away_score,
+                'actual_outcome': actual_outcome,
+                'profit_loss': profit_loss,
+                'bet_amount': 1.0 if status == 'Completed' else None
+            }
             
-            conn.commit()
+            result = self.db.supabase.table('predictions').update(update_data).eq('match_id', match_id).execute()
             print(f"Updated match {match_id} with status {status}, scores {home_score}-{away_score}, outcome {actual_outcome}, profit/loss {profit_loss}")
             
         except Exception as e:
             print(f"Error updating match {match_id}: {str(e)}")
-            conn.rollback()
-            
-        finally:
-            if conn:
-                conn.close()
 
     def update_match_results_all(self):
         """Update completed match results using match_analyzer"""
@@ -392,22 +261,22 @@ class PredictionHistory:
         
         analyzer = MatchAnalyzer("633379bdd5c4c3eb26919d8570866801e1c07f399197ba8c5311446b8ea77a49")
         
-        conn = sqlite3.connect(self.db_path)
-        c = conn.cursor()
-        
-        # Get pending predictions
-        c.execute("""
-            SELECT id, match_id, home_team, away_team, date 
-            FROM predictions 
-            WHERE status = 'Pending' 
-            AND match_id IS NOT NULL
-        """)
-        pending_predictions = c.fetchall()
+        # Get pending predictions from Supabase
+        result = self.db.supabase.table('predictions') \
+            .select('id,match_id,home_team,away_team,date') \
+            .filter('status', 'eq', 'Pending') \
+            .filter('match_id', 'neq', None) \
+            .execute()
+        pending_predictions = result.data
         logger.info(f"Found {len(pending_predictions)} pending predictions")
         
         for pred in pending_predictions:
             try:
-                pred_id, match_id, home_team, away_team, match_date = pred
+                match_id = pred['match_id']
+                home_team = pred['home_team']
+                away_team = pred['away_team']
+                match_date = pred['date']
+                
                 if not match_id:
                     logger.warning(f"Missing match_id for {home_team} vs {away_team} on {match_date}")
                     continue
@@ -423,10 +292,8 @@ class PredictionHistory:
                 logger.info(f"Updated result for {home_team} vs {away_team}")
                 
             except Exception as e:
-                logger.error(f"Error updating match: {str(e)}")
+                logger.error(f"Error processing match: {str(e)}")
                 continue
-        
-        conn.close()
 
 
 
@@ -434,7 +301,9 @@ def style_dataframe(df):
     """Style the predictions dataframe with colors and formatting"""
     
     def format_result(row):
-        if row['Status'] == 'Pending':
+        if row['Status'] == 'SCHEDULED':
+            return '🗓️ Scheduled'
+        elif row['Status'] == 'Pending':
             return '⏳ Pending'
         elif pd.isna(row['Actual Outcome']) or row['Actual Outcome'] == '':
             return '⏳ Pending'
@@ -444,12 +313,12 @@ def style_dataframe(df):
             return '❌ Lost'
             
     def format_actual_outcome(row):
-        if row['Status'] == 'Pending' or pd.isna(row['Actual Outcome']) or row['Actual Outcome'] == '':
-            return '-'  # Show dash for pending matches
+        if row['Status'] in ['SCHEDULED', 'Pending'] or pd.isna(row['Actual Outcome']) or row['Actual Outcome'] == '':
+            return '-'  # Show dash for scheduled/pending matches
         return row['Actual Outcome']
 
     def format_profit_loss(row):
-        if row['Status'] == 'Pending':
+        if row['Status'] in ['SCHEDULED', 'Pending']:
             return '-'
         try:
             profit = float(row['Profit/Loss'])
@@ -887,6 +756,10 @@ def show_history_page():
                 """, unsafe_allow_html=True)
                 
                 try:
+                    # Ensure predictions is a DataFrame
+                    if not isinstance(predictions, pd.DataFrame):
+                        predictions = pd.DataFrame(predictions)
+                    
                     # Convert confidence to numeric and create display version
                     predictions['confidence_num'] = pd.to_numeric(predictions['confidence'], errors='coerce')
                     predictions['Confidence'] = predictions['confidence_num'].apply(get_confidence_level)
@@ -896,11 +769,14 @@ def show_history_page():
                     
                     # Create Result column
                     predictions['Result'] = predictions.apply(
-                        lambda x: '✅ Won' if pd.notna(x['predicted_outcome']) and x['predicted_outcome'] == x['actual_outcome']
+                        lambda x: '✅ Won' if pd.notna(x['predicted_outcome']) and pd.notna(x['actual_outcome']) and x['predicted_outcome'] == x['actual_outcome']
                         else '❌ Lost' if pd.notna(x['actual_outcome'])
                         else '⏳ Pending',
                         axis=1
                     )
+                    
+                    # Format profit/loss
+                    predictions['profit_loss'] = predictions['profit_loss'].apply(lambda x: f'£{x:.2f}' if pd.notna(x) else '£0.00')
                     
                     # Define display columns mapping
                     display_columns = {

@@ -1450,10 +1450,11 @@ def update_match_results():
     """Update completed match results and calculate profits/losses"""
     history = PredictionHistory()
     
-    # Get pending predictions
-    pending_predictions = history.get_predictions(status='Pending')
+    # Get pending predictions from Supabase
+    pending_result = history.db.supabase.table('predictions').select('*').eq('status', 'Pending').execute()
+    pending_predictions = pending_result.data
     
-    for _, pred in pending_predictions.iterrows():
+    for pred in pending_predictions:
         try:
             # Find the match
             match = get_match_by_teams(
@@ -1497,11 +1498,13 @@ def update_match_results():
                     else:
                         profit = -1
                     
-                    # Update prediction result
-                    history.update_prediction_result(
+                    # Update prediction result in Supabase
+                    history.db.update_prediction_result(
                         pred['id'],
                         actual_outcome,
-                        profit
+                        profit,
+                        home_score,
+                        away_score
                     )
                 except (ValueError, TypeError) as e:
                     logger.error(f"Error processing scores for match {match['id']}: {str(e)}")
@@ -1598,23 +1601,14 @@ def process_match_prediction(match):
         if match_date == today:
             # Check for existing prediction
             history = PredictionHistory()
-            existing_predictions = history.get_predictions(
-                start_date=prediction_data['date'],
-                end_date=prediction_data['date']
-            )
+            existing_predictions = history.db.supabase.table('predictions').select('*').eq('date', prediction_data['date']).eq('home_team', prediction_data['home_team']).eq('away_team', prediction_data['away_team']).execute()
             
             # Check if prediction already exists for this match
-            match_exists = False
-            if not existing_predictions.empty:
-                match_exists = existing_predictions[
-                    (existing_predictions['home_team'] == prediction_data['home_team']) &
-                    (existing_predictions['away_team'] == prediction_data['away_team']) &
-                    (existing_predictions['date'] == prediction_data['date'])
-                ].shape[0] > 0
+            match_exists = len(existing_predictions.data) > 0
             
             # Only add if prediction doesn't exist
             if not match_exists:
-                history.add_prediction(prediction_data)
+                history.db.add_prediction(prediction_data)
         
         return prediction_data, confidence
         
