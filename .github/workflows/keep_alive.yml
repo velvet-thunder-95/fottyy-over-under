@@ -29,23 +29,32 @@ jobs:
       - name: Health check
         if: always()  # Run even if auto-prediction fails
         run: |
-          # First login to get the session cookie
-          RESPONSE=$(curl -s -c cookies.txt -X POST "https://fottyy.streamlit.app/?page=login" \
-            -H "Content-Type: application/x-www-form-urlencoded" \
-            -d "username=matchday_wizard&password=GoalMaster")
+          # First get initial session and handle auth redirect
+          RESPONSE=$(curl -s -c cookies.txt -L "https://fottyy.streamlit.app")
           
-          # Now use the cookie for health check
+          # Login with form data and follow redirects
+          curl -s -b cookies.txt -c cookies.txt -L -X POST "https://fottyy.streamlit.app/?page=login" \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            -d "username=matchday_wizard&password=GoalMaster"
+          
+          # Now use the authenticated session for health check
           for i in {1..3}; do
             echo "Attempt $i: Checking app health..."
-            curl -v -b cookies.txt "https://fottyy.streamlit.app/?health-check=true" && break || {
+            HEALTH_CHECK=$(curl -s -b cookies.txt -L "https://fottyy.streamlit.app/?health-check=true")
+            
+            if echo "$HEALTH_CHECK" | grep -q '"status": "healthy"'; then
+              echo "Health check successful!"
+              break
+            else
               if [ $i -lt 3 ]; then
-                echo "Retrying in 10 seconds..."
+                echo "Health check failed, retrying in 10 seconds..."
                 sleep 10
               else
                 echo "Health check failed after 3 attempts"
+                echo "Response: $HEALTH_CHECK"
                 exit 1
               fi
-            }
+            fi
           done
           
           # Clean up

@@ -23,6 +23,15 @@ def auto_predict():
         if not response.ok:
             logger.error("Failed to get initial session")
             return False
+            
+        # Extract any auth redirect URL if present
+        if "auth/app" in response.url:
+            logger.info("Handling Streamlit authentication...")
+            # Follow the auth redirect
+            auth_response = session.get(response.url)
+            if not auth_response.ok:
+                logger.error("Failed to complete Streamlit authentication")
+                return False
 
         # Step 2: Login
         logger.info("Attempting to login...")
@@ -38,16 +47,27 @@ def auto_predict():
             logger.error("Login failed")
             return False
             
-        # Step 2: Navigate to prediction page and wait for predictions
+        # Verify we're properly logged in by checking for redirect
+        if "auth/app" in response.url:
+            logger.info("Following post-login authentication...")
+            auth_response = session.get(response.url)
+            if not auth_response.ok:
+                logger.error("Failed to complete post-login authentication")
+                return False
+            
+        # Step 3: Navigate to prediction page and wait for predictions
         logger.info("Getting predictions...")
         params = {
             "page": "main",
-            "auto_predict": "true"  # We'll add this parameter to trigger automatic predictions
+            "auto_predict": "true"  # Trigger automatic predictions
         }
         response = session.get(BASE_URL, params=params)
         if not response.ok:
             logger.error("Failed to get predictions")
             return False
+            
+        logger.info("Auto-prediction completed successfully")
+        return True
             
         logger.info("Auto-prediction completed successfully")
         return True
