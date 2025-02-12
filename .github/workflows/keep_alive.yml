@@ -32,7 +32,7 @@ jobs:
           # Function to check if the app is accessible
           check_app() {
             response=$(curl -s -o /dev/null -w "%{http_code}" "https://fottyygit.streamlit.app")
-            if [ "$response" = "200" ]; then
+            if [ "$response" = "200" ] || [ "$response" = "303" ]; then
               return 0
             else
               return 1
