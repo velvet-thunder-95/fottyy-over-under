@@ -250,17 +250,21 @@ class PredictionHistory:
                         data = {
                             'status': 'Completed',
                             'scores': f"{result['home_score']}-{result['away_score']}",
-                            'outcome': actual_outcome,
+                            'actual_outcome': actual_outcome,  # Changed from 'outcome' to 'actual_outcome'
                             'profit_loss': profit_loss  # This is guaranteed to be a float
                         }
                         
                         # Debug print before update
-                        print(f"Storing profit_loss value: {profit_loss} (type: {type(profit_loss)})")
+                        print(f"Storing match {match_id} with actual_outcome: {actual_outcome}, profit_loss: {profit_loss}")
                         
-                        self.db.supabase.table('predictions')\
-                            .update(data)\
-                            .eq('match_id', match_id)\
-                            .execute()
+                        try:
+                            self.db.supabase.table('predictions')\
+                                .update(data)\
+                                .eq('match_id', match_id)\
+                                .execute()
+                            print(f"Successfully updated match {match_id}")
+                        except Exception as e:
+                            print(f"Error updating match {match_id}: {str(e)}")
                             
                         print(f"Updated match {match_id} with profit/loss: {profit_loss}")
                     else:
