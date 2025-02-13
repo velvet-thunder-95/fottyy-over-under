@@ -211,7 +211,7 @@ class PredictionHistory:
             
             # Initialize variables
             actual_outcome = None
-            profit_loss = None
+            profit_loss = 0.0  # Default to 0
             bet_amount = 1.0  # Fixed $1 bet amount
             
             # Only calculate outcome and profit/loss if the match is completed
@@ -240,55 +240,38 @@ class PredictionHistory:
                                 profit_loss = float(round((away_odds * bet_amount) - bet_amount, 2))
                             else:  # DRAW
                                 profit_loss = float(round((draw_odds * bet_amount) - bet_amount, 2))
-                            print(f'Won bet! Odds: {home_odds}/{draw_odds}/{away_odds}, Profit: {profit_loss} (type: {type(profit_loss)})')
+                            print(f'Won bet! Odds: {home_odds}/{draw_odds}/{away_odds}, Profit: {profit_loss}')
                         else:
                             # Lost: Lose the bet amount
                             profit_loss = float(-bet_amount)
-                            print(f'Lost bet! Predicted: {predicted_outcome}, Actual: {actual_outcome}, Loss: {profit_loss} (type: {type(profit_loss)})')
-                            
-                        # Update the database with the calculated profit/loss
-                        data = {
-                            'status': 'Completed',
-                            'scores': f"{result['home_score']}-{result['away_score']}",
-                            'actual_outcome': actual_outcome,  # Changed from 'outcome' to 'actual_outcome'
-                            'profit_loss': profit_loss  # This is guaranteed to be a float
-                        }
-                        
-                        # Debug print before update
-                        print(f"Storing match {match_id} with actual_outcome: {actual_outcome}, profit_loss: {profit_loss}")
-                        
-                        try:
-                            self.db.supabase.table('predictions')\
-                                .update(data)\
-                                .eq('match_id', match_id)\
-                                .execute()
-                            print(f"Successfully updated match {match_id}")
-                        except Exception as e:
-                            print(f"Error updating match {match_id}: {str(e)}")
-                            
-                        print(f"Updated match {match_id} with profit/loss: {profit_loss}")
+                            print(f'Lost bet! Predicted: {predicted_outcome}, Actual: {actual_outcome}, Loss: {profit_loss}')
                     else:
                         print(f'Missing odds: {home_odds}/{draw_odds}/{away_odds}')
-                        profit_loss = 0.0  # Default to 0 if no odds available
                 except (ValueError, TypeError) as e:
                     print(f'Error calculating profit/loss: {str(e)}')
-                    profit_loss = 0.0  # Default to 0 if there's an error
             
-            # Update Supabase
+            # Prepare update data
             update_data = {
                 'status': status,
-                'home_score': home_score,
-                'away_score': away_score,
+                'scores': f"{home_score}-{away_score}" if home_score is not None and away_score is not None else None,
                 'actual_outcome': actual_outcome,
-                'profit_loss': profit_loss,
-                'bet_amount': 1.0  # Always set bet_amount to $1
+                'profit_loss': profit_loss
             }
             
-            result = self.db.supabase.table('predictions').update(update_data).eq('match_id', match_id).execute()
-            print(f"Updated match {match_id} with status {status}, scores {home_score}-{away_score}, outcome {actual_outcome}, profit/loss {profit_loss}")
+            # Debug print before update
+            print(f"Updating match {match_id} with data: {update_data}")
+            
+            try:
+                self.db.supabase.table('predictions')\
+                    .update(update_data)\
+                    .eq('match_id', match_id)\
+                    .execute()
+                print(f"Successfully updated match {match_id}")
+            except Exception as e:
+                print(f"Error updating match {match_id}: {str(e)}")
             
         except Exception as e:
-            print(f"Error updating match {match_id}: {str(e)}")
+            print(f"Error processing match {match_id}: {str(e)}")
 
     def update_match_results_all(self):
         """Update completed match results using match_analyzer"""
