@@ -235,16 +235,16 @@ class PredictionHistory:
                         if predicted_outcome == actual_outcome:
                             # Won: Calculate profit based on the predicted outcome's odds
                             if predicted_outcome == 'HOME':
-                                profit_loss = round((home_odds * bet_amount) - bet_amount, 2)
+                                profit_loss = float(round((home_odds * bet_amount) - bet_amount, 2))
                             elif predicted_outcome == 'AWAY':
-                                profit_loss = round((away_odds * bet_amount) - bet_amount, 2)
+                                profit_loss = float(round((away_odds * bet_amount) - bet_amount, 2))
                             else:  # DRAW
-                                profit_loss = round((draw_odds * bet_amount) - bet_amount, 2)
-                            print(f'Won bet! Odds: {home_odds}/{draw_odds}/{away_odds}, Profit: {profit_loss}')
+                                profit_loss = float(round((draw_odds * bet_amount) - bet_amount, 2))
+                            print(f'Won bet! Odds: {home_odds}/{draw_odds}/{away_odds}, Profit: {profit_loss} (type: {type(profit_loss)})')
                         else:
                             # Lost: Lose the bet amount
-                            profit_loss = -bet_amount
-                            print(f'Lost bet! Predicted: {predicted_outcome}, Actual: {actual_outcome}')
+                            profit_loss = float(-bet_amount)
+                            print(f'Lost bet! Predicted: {predicted_outcome}, Actual: {actual_outcome}, Loss: {profit_loss} (type: {type(profit_loss)})')
                     else:
                         print(f'Missing odds: {home_odds}/{draw_odds}/{away_odds}')
                         profit_loss = 0.0  # Default to 0 if no odds available
@@ -838,13 +838,19 @@ def show_history_page():
                     # Create final dataframe
                     final_df = predictions[list(display_columns.keys())].copy()
                     
-                    # Convert profit_loss to numeric, replacing any None or NaN with 0
-                    final_df['profit_loss'] = pd.to_numeric(final_df['profit_loss'], errors='coerce').fillna(0)
-                    
-                    # Format profit/loss before renaming columns
+                    # Convert profit/loss to numeric and format
+                    final_df['profit_loss'] = pd.to_numeric(final_df['profit_loss'], errors='coerce').fillna(0.0)
                     final_df['profit_loss'] = final_df['profit_loss'].apply(
                         lambda x: f'+£{x:.2f}' if x > 0 else f'-£{abs(x):.2f}' if x < 0 else '£0.00'
                     )
+                    
+                    # Debug print
+                    print("\nRaw profit/loss values before formatting:")
+                    print(predictions[['match_id', 'profit_loss']].to_string())
+                    
+                    # Print for debugging
+                    print("\nFormatted profit/loss values:")
+                    print(final_df[['match_id', 'profit_loss']].to_string())
                     
                     # Rename columns
                     final_df = final_df.rename(columns=display_columns)
