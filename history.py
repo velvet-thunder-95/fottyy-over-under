@@ -78,8 +78,11 @@ class PredictionHistory:
     def get_predictions(self, start_date=None, end_date=None, status=None, confidence_levels=None, leagues=None):
         """Get predictions with optional filters"""
         try:
-            # Start building the query
-            query = self.db.supabase.table('predictions').select('*')
+            # Start building the query with all columns
+            columns = ['date', 'league', 'home_team', 'away_team', 'predicted_outcome', 
+                      'actual_outcome', 'home_odds', 'draw_odds', 'away_odds', 'confidence', 
+                      'bet_amount', 'profit_loss', 'status', 'match_id', 'home_score', 'away_score']
+            query = self.db.supabase.table('predictions').select(','.join(columns))
             
             # Apply filters
             if start_date:
@@ -106,8 +109,22 @@ class PredictionHistory:
             # Execute query and order by date
             result = query.order('date.desc').execute()
             
-            # Convert to DataFrame
+            # Convert to DataFrame and ensure numeric types
             df = pd.DataFrame(result.data)
+            if not df.empty:
+                # Convert numeric columns
+                numeric_columns = ['profit_loss', 'bet_amount', 'confidence', 
+                                 'home_odds', 'draw_odds', 'away_odds']
+                for col in numeric_columns:
+                    if col in df.columns:
+                        df[col] = pd.to_numeric(df[col], errors='coerce')
+                
+                # Print debug info
+                print("\nDataFrame info after conversion:")
+                print(df.info())
+                print("\nProfit/Loss values:")
+                print(df[['profit_loss', 'status']].head())
+            
             return df
             
         except Exception as e:
@@ -858,26 +875,33 @@ def show_history_page():
                     
                     # Debug print raw values
                     print("\nRaw profit/loss values from database:")
-                    print(predictions[['profit_loss', 'status']].to_string())
+                    print(predictions[['profit_loss', 'status', 'predicted_outcome', 'actual_outcome']].to_string())
                     
-                    # Convert profit/loss column to float, replacing NaN with 0.0
-                    final_df['profit_loss'] = pd.to_numeric(predictions['profit_loss'], errors='coerce').fillna(0.0)
+                    # Ensure profit_loss is numeric
+                    final_df['profit_loss'] = pd.to_numeric(predictions['profit_loss'], errors='coerce')
                     
-                    # Set profit/loss to 0 for non-completed matches
-                    final_df.loc[final_df['status'] != 'Completed', 'profit_loss'] = 0.0
+                    # Handle completed matches
+                    completed_mask = (final_df['status'] == 'Completed')
+                    final_df.loc[~completed_mask, 'profit_loss'] = 0.0
                     
                     # Debug print after conversion
-                    print("\nProfit/loss values after conversion:")
-                    print(final_df[['profit_loss']].to_string())
+                    print("\nProfit/loss values after status check:")
+                    print(final_df[['profit_loss', 'status']].to_string())
                     
-                    # Format profit/loss values with proper currency symbol
-                    final_df['profit_loss'] = final_df['profit_loss'].apply(
-                        lambda x: f'+£{x:.2f}' if x > 0 else f'-£{abs(x):.2f}' if x < 0 else '£0.00'
-                    )
+                    # Format profit/loss values
+                    def format_profit_loss(row):
+                        if row['status'] != 'Completed':
+                            return '-'
+                        value = row['profit_loss']
+                        if pd.isna(value):
+                            return '£0.00'
+                        return f'+£{value:.2f}' if value > 0 else f'-£{abs(value):.2f}' if value < 0 else '£0.00'
+                    
+                    final_df['profit_loss'] = final_df.apply(format_profit_loss, axis=1)
                     
                     # Print formatted values
                     print("\nFormatted profit/loss values:")
-                    print(final_df[['profit_loss']].to_string())
+                    print(final_df[['profit_loss', 'status']].to_string())
                     
                     # Rename columns
                     final_df = final_df.rename(columns=display_columns)
