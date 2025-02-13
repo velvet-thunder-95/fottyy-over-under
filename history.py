@@ -397,7 +397,7 @@ def style_dataframe(df):
     
     # Function to style profit/loss values
     def style_profit_loss(val):
-        if not isinstance(val, str) or val == '-':
+        if not isinstance(val, str):
             return ''
         if val.startswith('+'):
             return 'color: #4CAF50; font-weight: 600'
@@ -408,7 +408,7 @@ def style_dataframe(df):
     # Create the styled DataFrame
     styled_df = display_df.style\
         .apply(style_row, axis=1)\
-        .applymap(style_profit_loss, subset=['Profit/Loss'])
+        .map(style_profit_loss, subset=['Profit/Loss'])
     
     # Add table styles
     styled_df.set_table_styles([
@@ -838,13 +838,12 @@ def show_history_page():
                     # Create final dataframe
                     final_df = predictions[list(display_columns.keys())].copy()
                     
+                    # Convert profit_loss to numeric, replacing any None or NaN with 0
+                    final_df['profit_loss'] = pd.to_numeric(final_df['profit_loss'], errors='coerce').fillna(0)
+                    
                     # Format profit/loss before renaming columns
-                    final_df['profit_loss'] = final_df.apply(
-                        lambda row: f'+£{row["profit_loss"]:.2f}' if pd.notna(row['profit_loss']) and row['profit_loss'] > 0
-                        else f'-£{abs(row["profit_loss"]):.2f}' if pd.notna(row['profit_loss']) and row['profit_loss'] < 0
-                        else '£0.00' if pd.notna(row['profit_loss'])
-                        else '-',
-                        axis=1
+                    final_df['profit_loss'] = final_df['profit_loss'].apply(
+                        lambda x: f'+£{x:.2f}' if x > 0 else f'-£{abs(x):.2f}' if x < 0 else '£0.00'
                     )
                     
                     # Rename columns
