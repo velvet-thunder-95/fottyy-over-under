@@ -245,6 +245,24 @@ class PredictionHistory:
                             # Lost: Lose the bet amount
                             profit_loss = float(-bet_amount)
                             print(f'Lost bet! Predicted: {predicted_outcome}, Actual: {actual_outcome}, Loss: {profit_loss} (type: {type(profit_loss)})')
+                            
+                        # Update the database with the calculated profit/loss
+                        data = {
+                            'status': 'Completed',
+                            'scores': f"{result['home_score']}-{result['away_score']}",
+                            'outcome': actual_outcome,
+                            'profit_loss': profit_loss  # This is guaranteed to be a float
+                        }
+                        
+                        # Debug print before update
+                        print(f"Storing profit_loss value: {profit_loss} (type: {type(profit_loss)})")
+                        
+                        self.supabase.table('predictions')\
+                            .update(data)\
+                            .eq('match_id', match_id)\
+                            .execute()
+                            
+                        print(f"Updated match {match_id} with profit/loss: {profit_loss}")
                     else:
                         print(f'Missing odds: {home_odds}/{draw_odds}/{away_odds}')
                         profit_loss = 0.0  # Default to 0 if no odds available
@@ -838,17 +856,26 @@ def show_history_page():
                     # Create final dataframe
                     final_df = predictions[list(display_columns.keys())].copy()
                     
-                    # Convert profit/loss to numeric and format
-                    final_df['profit_loss'] = pd.to_numeric(final_df['profit_loss'], errors='coerce').fillna(0.0)
+                    # Debug print raw values
+                    print("\nRaw profit/loss values from database:")
+                    print(predictions[['match_id', 'profit_loss', 'status']].to_string())
+                    
+                    # Convert profit/loss column to float, replacing NaN with 0.0
+                    final_df['profit_loss'] = pd.to_numeric(predictions['profit_loss'], errors='coerce').fillna(0.0)
+                    
+                    # Set profit/loss to 0 for non-completed matches
+                    final_df.loc[final_df['status'] != 'Completed', 'profit_loss'] = 0.0
+                    
+                    # Debug print after conversion
+                    print("\nProfit/loss values after conversion:")
+                    print(final_df[['match_id', 'profit_loss']].to_string())
+                    
+                    # Format profit/loss values with proper currency symbol
                     final_df['profit_loss'] = final_df['profit_loss'].apply(
                         lambda x: f'+£{x:.2f}' if x > 0 else f'-£{abs(x):.2f}' if x < 0 else '£0.00'
                     )
                     
-                    # Debug print
-                    print("\nRaw profit/loss values before formatting:")
-                    print(predictions[['match_id', 'profit_loss']].to_string())
-                    
-                    # Print for debugging
+                    # Print formatted values
                     print("\nFormatted profit/loss values:")
                     print(final_df[['match_id', 'profit_loss']].to_string())
                     
