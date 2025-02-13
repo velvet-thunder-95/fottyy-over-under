@@ -257,7 +257,7 @@ class PredictionHistory:
                         # Debug print before update
                         print(f"Storing profit_loss value: {profit_loss} (type: {type(profit_loss)})")
                         
-                        self.supabase.table('predictions')\
+                        self.db.supabase.table('predictions')\
                             .update(data)\
                             .eq('match_id', match_id)\
                             .execute()
@@ -858,7 +858,7 @@ def show_history_page():
                     
                     # Debug print raw values
                     print("\nRaw profit/loss values from database:")
-                    print(predictions[['match_id', 'profit_loss', 'status']].to_string())
+                    print(predictions[['profit_loss', 'status']].to_string())
                     
                     # Convert profit/loss column to float, replacing NaN with 0.0
                     final_df['profit_loss'] = pd.to_numeric(predictions['profit_loss'], errors='coerce').fillna(0.0)
@@ -868,7 +868,7 @@ def show_history_page():
                     
                     # Debug print after conversion
                     print("\nProfit/loss values after conversion:")
-                    print(final_df[['match_id', 'profit_loss']].to_string())
+                    print(final_df[['profit_loss']].to_string())
                     
                     # Format profit/loss values with proper currency symbol
                     final_df['profit_loss'] = final_df['profit_loss'].apply(
@@ -877,7 +877,7 @@ def show_history_page():
                     
                     # Print formatted values
                     print("\nFormatted profit/loss values:")
-                    print(final_df[['match_id', 'profit_loss']].to_string())
+                    print(final_df[['profit_loss']].to_string())
                     
                     # Rename columns
                     final_df = final_df.rename(columns=display_columns)
