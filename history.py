@@ -225,20 +225,32 @@ class PredictionHistory:
                     actual_outcome = 'DRAW'
                     
                 # Calculate profit/loss using $1 bet amount
-                if all([home_odds, draw_odds, away_odds]):  # Only if we have odds
-                    if predicted_outcome == actual_outcome:
-                        # Won: Calculate profit based on the predicted outcome's odds
-                        if predicted_outcome == 'HOME':
-                            profit_loss = round((float(home_odds) * bet_amount) - bet_amount, 2)
-                        elif predicted_outcome == 'AWAY':
-                            profit_loss = round((float(away_odds) * bet_amount) - bet_amount, 2)
-                        else:  # DRAW
-                            profit_loss = round((float(draw_odds) * bet_amount) - bet_amount, 2)
+                try:
+                    if all([home_odds, draw_odds, away_odds]):  # Only if we have odds
+                        # Convert odds to float and handle any string formatting
+                        home_odds = float(str(home_odds).strip())
+                        away_odds = float(str(away_odds).strip())
+                        draw_odds = float(str(draw_odds).strip())
+                        
+                        if predicted_outcome == actual_outcome:
+                            # Won: Calculate profit based on the predicted outcome's odds
+                            if predicted_outcome == 'HOME':
+                                profit_loss = round((home_odds * bet_amount) - bet_amount, 2)
+                            elif predicted_outcome == 'AWAY':
+                                profit_loss = round((away_odds * bet_amount) - bet_amount, 2)
+                            else:  # DRAW
+                                profit_loss = round((draw_odds * bet_amount) - bet_amount, 2)
+                            print(f'Won bet! Odds: {home_odds}/{draw_odds}/{away_odds}, Profit: {profit_loss}')
+                        else:
+                            # Lost: Lose the bet amount
+                            profit_loss = -bet_amount
+                            print(f'Lost bet! Predicted: {predicted_outcome}, Actual: {actual_outcome}')
                     else:
-                        # Lost: Lose the bet amount
-                        profit_loss = -bet_amount
-                else:
-                    profit_loss = 0.0  # Default to 0 if no odds available
+                        print(f'Missing odds: {home_odds}/{draw_odds}/{away_odds}')
+                        profit_loss = 0.0  # Default to 0 if no odds available
+                except (ValueError, TypeError) as e:
+                    print(f'Error calculating profit/loss: {str(e)}')
+                    profit_loss = 0.0  # Default to 0 if there's an error
             
             # Update Supabase
             update_data = {
@@ -361,19 +373,12 @@ def style_dataframe(df):
         
         styles = [base_style.copy() for _ in range(len(row))]
         
-        # Style Profit/Loss column
-        profit_loss_idx = display_df.columns.get_loc('Profit/Loss')
-        if row['Profit/Loss'] != '-':
-            try:
-                # Extract numeric value from formatted string
-                profit_str = row['Profit/Loss'].replace('£', '').replace('+', '')
-                profit = float(profit_str)
-                if profit > 0:
-                    styles[profit_loss_idx].extend(['color: #4CAF50', 'font-weight: 600'])
-                elif profit < 0:
-                    styles[profit_loss_idx].extend(['color: #f44336', 'font-weight: 600'])
-            except (ValueError, TypeError):
-                pass
+        # Get column indices
+        profit_loss_idx = None
+        try:
+            profit_loss_idx = display_df.columns.get_loc('Profit/Loss')
+        except KeyError:
+            pass
         
         # Style row background
         bg_style = None
@@ -390,8 +395,20 @@ def style_dataframe(df):
         
         return [';'.join(style) for style in styles]
     
+    # Function to style profit/loss values
+    def style_profit_loss(val):
+        if not isinstance(val, str) or val == '-':
+            return ''
+        if val.startswith('+'):
+            return 'color: #4CAF50; font-weight: 600'
+        elif val.startswith('-'):
+            return 'color: #f44336; font-weight: 600'
+        return ''
+    
     # Create the styled DataFrame
-    styled_df = display_df.style.apply(style_row, axis=1)
+    styled_df = display_df.style\
+        .apply(style_row, axis=1)\
+        .applymap(style_profit_loss, subset=['Profit/Loss'])
     
     # Add table styles
     styled_df.set_table_styles([
@@ -820,6 +837,17 @@ def show_history_page():
                     
                     # Create final dataframe
                     final_df = predictions[list(display_columns.keys())].copy()
+                    
+                    # Format profit/loss before renaming columns
+                    final_df['profit_loss'] = final_df.apply(
+                        lambda row: f'+£{row["profit_loss"]:.2f}' if pd.notna(row['profit_loss']) and row['profit_loss'] > 0
+                        else f'-£{abs(row["profit_loss"]):.2f}' if pd.notna(row['profit_loss']) and row['profit_loss'] < 0
+                        else '£0.00' if pd.notna(row['profit_loss'])
+                        else '-',
+                        axis=1
+                    )
+                    
+                    # Rename columns
                     final_df = final_df.rename(columns=display_columns)
                     
                     # Apply styling
