@@ -26,7 +26,7 @@ class PredictionHistory:
             confidence = float(prediction_data.get('confidence', 0.0))
             match_id = str(prediction_data.get('match_id', ''))
             
-            # Create clean data for insertion
+            # Create clean data for insertion with fixed $1 bet amount
             clean_data = {
                 'date': prediction_data['date'],
                 'league': prediction_data['league'],
@@ -38,7 +38,7 @@ class PredictionHistory:
                 'draw_odds': float(prediction_data['draw_odds']),
                 'away_odds': float(prediction_data['away_odds']),
                 'confidence': confidence,
-                'bet_amount': float(prediction_data['bet_amount']),
+                'bet_amount': 1.0,  # Fixed $1 bet amount
                 'profit_loss': 0.0,  # profit_loss starts at 0
                 'status': 'Pending',  # status starts as Pending
                 'match_id': match_id
@@ -209,8 +209,14 @@ class PredictionHistory:
                 away_score = None
                 status = 'Completed'
             
-            # Determine actual outcome
-            if home_score is not None and away_score is not None:
+            # Initialize variables
+            actual_outcome = None
+            profit_loss = None
+            bet_amount = 1.0  # Fixed $1 bet amount
+            
+            # Only calculate outcome and profit/loss if the match is completed
+            if status == 'Completed' and home_score is not None and away_score is not None:
+                # Determine actual outcome
                 if home_score > away_score:
                     actual_outcome = 'HOME'
                 elif away_score > home_score:
@@ -221,21 +227,18 @@ class PredictionHistory:
                 # Calculate profit/loss using $1 bet amount
                 if all([home_odds, draw_odds, away_odds]):  # Only if we have odds
                     if predicted_outcome == actual_outcome:
-                        # Won: Get the profit based on the correct odds
-                        if actual_outcome == 'HOME':
-                            profit_loss = round(float(home_odds) - 1.0, 2)
-                        elif actual_outcome == 'AWAY':
-                            profit_loss = round(float(away_odds) - 1.0, 2)
+                        # Won: Calculate profit based on the predicted outcome's odds
+                        if predicted_outcome == 'HOME':
+                            profit_loss = round((float(home_odds) * bet_amount) - bet_amount, 2)
+                        elif predicted_outcome == 'AWAY':
+                            profit_loss = round((float(away_odds) * bet_amount) - bet_amount, 2)
                         else:  # DRAW
-                            profit_loss = round(float(draw_odds) - 1.0, 2)
+                            profit_loss = round((float(draw_odds) * bet_amount) - bet_amount, 2)
                     else:
-                        # Lost: Lose the $1 bet
-                        profit_loss = -1.0
+                        # Lost: Lose the bet amount
+                        profit_loss = -bet_amount
                 else:
-                    profit_loss = None
-            else:
-                actual_outcome = None
-                profit_loss = None
+                    profit_loss = 0.0  # Default to 0 if no odds available
             
             # Update Supabase
             update_data = {
@@ -244,7 +247,7 @@ class PredictionHistory:
                 'away_score': away_score,
                 'actual_outcome': actual_outcome,
                 'profit_loss': profit_loss,
-                'bet_amount': 1.0 if status == 'Completed' else None
+                'bet_amount': 1.0  # Always set bet_amount to $1
             }
             
             result = self.db.supabase.table('predictions').update(update_data).eq('match_id', match_id).execute()
@@ -261,16 +264,16 @@ class PredictionHistory:
         
         analyzer = MatchAnalyzer("633379bdd5c4c3eb26919d8570866801e1c07f399197ba8c5311446b8ea77a49")
         
-        # Get pending predictions from Supabase
+        # Get completed predictions from Supabase that need profit/loss recalculation
         result = self.db.supabase.table('predictions') \
-            .select('id,match_id,home_team,away_team,date') \
-            .filter('status', 'eq', 'Pending') \
+            .select('id,match_id,home_team,away_team,date,predicted_outcome,home_odds,draw_odds,away_odds,actual_outcome') \
+            .filter('status', 'eq', 'Completed') \
             .filter('match_id', 'neq', None) \
             .execute()
-        pending_predictions = result.data
-        logger.info(f"Found {len(pending_predictions)} pending predictions")
+        completed_predictions = result.data
+        logger.info(f"Found {len(completed_predictions)} completed predictions")
         
-        for pred in pending_predictions:
+        for pred in completed_predictions:
             try:
                 match_id = pred['match_id']
                 home_team = pred['home_team']
@@ -321,12 +324,12 @@ def style_dataframe(df):
         if row['Status'] in ['SCHEDULED', 'Pending']:
             return '-'
         try:
-            profit = float(row['Profit/Loss'])
+            profit = float(row['profit_loss'])
             if profit > 0:
-                return f'+${profit:.2f}'
+                return f'+£{profit:.2f}'
             elif profit < 0:
-                return f'-${abs(profit):.2f}'
-            return '$0.00'
+                return f'-£{abs(profit):.2f}'
+            return '£0.00'
         except (ValueError, TypeError):
             return '-'
 
@@ -352,14 +355,34 @@ def style_dataframe(df):
             'border-bottom: 1px solid #e0e0e0'
         ]
         
-        if row['Status'] == 'Pending':
-            return [';'.join(base_style + ['background-color: #f5f5f5'])] * len(row)
-        elif pd.isna(row['Actual Outcome']) or row['Actual Outcome'] == '':
-            return [';'.join(base_style + ['background-color: #f5f5f5'])] * len(row)
+        styles = [base_style.copy() for _ in range(len(row))]
+        
+        # Style Profit/Loss column
+        profit_loss_idx = display_df.columns.get_loc('Profit/Loss')
+        if row['Profit/Loss'] != '-':
+            try:
+                profit = float(row['profit_loss'])
+                if profit > 0:
+                    styles[profit_loss_idx].extend(['color: #4CAF50', 'font-weight: 600'])
+                elif profit < 0:
+                    styles[profit_loss_idx].extend(['color: #f44336', 'font-weight: 600'])
+            except (ValueError, TypeError):
+                pass
+        
+        # Style row background
+        bg_style = None
+        if row['Status'] == 'Pending' or pd.isna(row['Actual Outcome']) or row['Actual Outcome'] == '':
+            bg_style = 'background-color: #f5f5f5'
         elif row['Prediction'] == row['Actual Outcome']:
-            return [';'.join(base_style + ['background-color: #e8f5e9'])] * len(row)  # Lighter green
+            bg_style = 'background-color: #e8f5e9'  # Lighter green
         else:
-            return [';'.join(base_style + ['background-color: #fce4ec'])] * len(row)  # Lighter red
+            bg_style = 'background-color: #fce4ec'  # Lighter red
+        
+        if bg_style:
+            for style in styles:
+                style.append(bg_style)
+        
+        return [';'.join(style) for style in styles]
     
     # Create the styled DataFrame
     styled_df = display_df.style.apply(style_row, axis=1)
@@ -775,8 +798,8 @@ def show_history_page():
                         axis=1
                     )
                     
-                    # Format profit/loss
-                    predictions['profit_loss'] = predictions['profit_loss'].apply(lambda x: f'£{x:.2f}' if pd.notna(x) else '£0.00')
+                    # Format profit/loss with currency symbol
+                    predictions['Profit/Loss'] = predictions['profit_loss'].apply(lambda x: f'£{x:.2f}' if pd.notna(x) else '-')
                     
                     # Define display columns mapping
                     display_columns = {
@@ -788,7 +811,7 @@ def show_history_page():
                         'Confidence': 'Confidence',
                         'actual_outcome': 'Actual Outcome',
                         'Result': 'Result',
-                        'profit_loss': 'Profit/Loss',
+                        'Profit/Loss': 'Profit/Loss',
                         'status': 'Status'
                     }
                     
