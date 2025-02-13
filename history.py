@@ -253,7 +253,8 @@ class PredictionHistory:
             # Prepare update data
             update_data = {
                 'status': status,
-                'scores': f"{home_score}-{away_score}" if home_score is not None and away_score is not None else None,
+                'home_score': home_score,
+                'away_score': away_score,
                 'actual_outcome': actual_outcome,
                 'profit_loss': profit_loss
             }
@@ -262,11 +263,23 @@ class PredictionHistory:
             print(f"Updating match {match_id} with data: {update_data}")
             
             try:
-                self.db.supabase.table('predictions')\
-                    .update(update_data)\
+                # Get current data to check what fields exist
+                current = self.db.supabase.table('predictions')\
+                    .select('*')\
                     .eq('match_id', match_id)\
                     .execute()
-                print(f"Successfully updated match {match_id}")
+                
+                if current.data:
+                    # Only include fields that exist in the table
+                    existing_fields = current.data[0].keys()
+                    update_data = {k: v for k, v in update_data.items() if k in existing_fields}
+                    
+                    # Update with only existing fields
+                    self.db.supabase.table('predictions')\
+                        .update(update_data)\
+                        .eq('match_id', match_id)\
+                        .execute()
+                    print(f"Successfully updated match {match_id} with fields: {list(update_data.keys())}")
             except Exception as e:
                 print(f"Error updating match {match_id}: {str(e)}")
             
