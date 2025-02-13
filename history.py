@@ -324,7 +324,11 @@ def style_dataframe(df):
         if row['Status'] in ['SCHEDULED', 'Pending']:
             return '-'
         try:
-            profit = float(row['profit_loss'])
+            # Use the original profit_loss value before formatting
+            profit = row.get('profit_loss', 0)
+            if pd.isna(profit):
+                return '-'
+            profit = float(profit)
             if profit > 0:
                 return f'+£{profit:.2f}'
             elif profit < 0:
@@ -361,7 +365,9 @@ def style_dataframe(df):
         profit_loss_idx = display_df.columns.get_loc('Profit/Loss')
         if row['Profit/Loss'] != '-':
             try:
-                profit = float(row['profit_loss'])
+                # Extract numeric value from formatted string
+                profit_str = row['Profit/Loss'].replace('£', '').replace('+', '')
+                profit = float(profit_str)
                 if profit > 0:
                     styles[profit_loss_idx].extend(['color: #4CAF50', 'font-weight: 600'])
                 elif profit < 0:
@@ -798,9 +804,6 @@ def show_history_page():
                         axis=1
                     )
                     
-                    # Format profit/loss with currency symbol
-                    predictions['Profit/Loss'] = predictions['profit_loss'].apply(lambda x: f'£{x:.2f}' if pd.notna(x) else '-')
-                    
                     # Define display columns mapping
                     display_columns = {
                         'date': 'Date',
@@ -811,7 +814,7 @@ def show_history_page():
                         'Confidence': 'Confidence',
                         'actual_outcome': 'Actual Outcome',
                         'Result': 'Result',
-                        'Profit/Loss': 'Profit/Loss',
+                        'profit_loss': 'Profit/Loss',  # Keep original column name
                         'status': 'Status'
                     }
                     
