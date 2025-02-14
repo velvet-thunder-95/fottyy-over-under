@@ -309,23 +309,24 @@ class PredictionHistory:
             print(f"Error processing match {match_id}: {str(e)}")
 
     def update_match_results_all(self):
-        """Update completed match results using match_analyzer"""
+        """Update match results for pending predictions only"""
         import logging
         logging.basicConfig(level=logging.INFO)
         logger = logging.getLogger(__name__)
         
         analyzer = MatchAnalyzer("633379bdd5c4c3eb26919d8570866801e1c07f399197ba8c5311446b8ea77a49")
         
-        # Get completed predictions from Supabase that need profit/loss recalculation
+        # Get only pending predictions that have a match_id
         result = self.db.supabase.table('predictions') \
-            .select('id,match_id,home_team,away_team,date,predicted_outcome,home_odds,draw_odds,away_odds,actual_outcome') \
-            .filter('status', 'eq', 'Completed') \
+            .select('id,match_id,home_team,away_team,date,predicted_outcome,home_odds,draw_odds,away_odds') \
             .filter('match_id', 'neq', None) \
+            .filter('status', 'eq', 'Pending') \
             .execute()
-        completed_predictions = result.data
-        logger.info(f"Found {len(completed_predictions)} completed predictions")
+        pending_predictions = result.data
+        logger.info(f"Found {len(pending_predictions)} pending predictions to check")
         
-        for pred in completed_predictions:
+        updated_count = 0
+        for pred in pending_predictions:
             try:
                 match_id = pred['match_id']
                 home_team = pred['home_team']
@@ -335,20 +336,26 @@ class PredictionHistory:
                 if not match_id:
                     logger.warning(f"Missing match_id for {home_team} vs {away_team} on {match_date}")
                     continue
-                    
-                # Get match result
+                
+                # Get current match result from API
                 result = analyzer.analyze_match_result(match_id)
                 if not result:
-                    logger.info(f"Match not complete: {home_team} vs {away_team}")
+                    logger.debug(f"Match still pending: {home_team} vs {away_team}")
                     continue
-                    
-                # Update the result
-                self.update_match_results(match_id, result)
-                logger.info(f"Updated result for {home_team} vs {away_team}")
+                
+                # Only update if the API shows the match is completed
+                api_status = result.get('status')
+                if api_status == 'Completed':
+                    # Update the result
+                    self.update_match_results(match_id, result)
+                    logger.info(f"Updated {home_team} vs {away_team} - Match completed with result")
+                    updated_count += 1
                 
             except Exception as e:
-                logger.error(f"Error processing match: {str(e)}")
+                logger.error(f"Error processing match {match_id}: {str(e)}")
                 continue
+        
+        logger.info(f"Updated {updated_count} pending matches")
 
 
 
