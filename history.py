@@ -101,38 +101,51 @@ class PredictionHistory:
                 if "Medium" in confidence_levels:
                     medium_query = self.db.supabase.table('predictions').select('*')\
                         .gte('confidence', 50).lt('confidence', 70)
+                    if leagues and "All" not in leagues:
+                        medium_query = medium_query.in_('league', leagues)
                     medium_result = medium_query.execute()
                     predictions_list.extend(medium_result.data)
                     
                 if "High" in confidence_levels:
                     high_query = self.db.supabase.table('predictions').select('*')\
                         .gte('confidence', 70)
+                    if leagues and "All" not in leagues:
+                        high_query = high_query.in_('league', leagues)
                     high_result = high_query.execute()
                     predictions_list.extend(high_result.data)
                     
                 if "Low" in confidence_levels:
                     low_query = self.db.supabase.table('predictions').select('*')\
                         .lt('confidence', 50)
+                    if leagues and "All" not in leagues:
+                        low_query = low_query.in_('league', leagues)
                     low_result = low_query.execute()
                     predictions_list.extend(low_result.data)
                 
                 # Convert to DataFrame
-                return pd.DataFrame(predictions_list)
+                df = pd.DataFrame(predictions_list)
+            else:
+                # If no confidence levels selected or 'All' is selected
+                if leagues and "All" not in leagues:
+                    query = query.in_('league', leagues)
+                result = query.execute()
+                df = pd.DataFrame(result.data)
             
-            # If no confidence levels selected or 'All' is selected, continue with original query
-            result = query.execute()
-            return pd.DataFrame(result.data)
-                        
-            # Handle leagues
-            if leagues and "All" not in leagues:
-                # For each league, get predictions and combine
-                league_predictions = []
-                for league in leagues:
-                    league_query = self.db.supabase.table('predictions').select('*')\
-                        .eq('league', league)
-                    league_result = league_query.execute()
-                    league_predictions.extend(league_result.data)
-                return pd.DataFrame(league_predictions)
+            # Execute query and order by date
+            if not df.empty:
+                # Ensure profit_loss is numeric and has proper default values
+                df['profit_loss'] = pd.to_numeric(df['profit_loss'], errors='coerce').fillna(0.0)
+                
+                # Convert other numeric columns
+                numeric_columns = ['bet_amount', 'confidence', 'home_odds', 'draw_odds', 'away_odds']
+                for col in numeric_columns:
+                    if col in df.columns:
+                        df[col] = pd.to_numeric(df[col], errors='coerce')
+                
+                # Ensure proper profit_loss values based on status
+                df.loc[df['status'] != 'Completed', 'profit_loss'] = 0.0
+            
+            return df
                 
             # Execute query and order by date
             result = query.order('date.desc').execute()
@@ -179,25 +192,33 @@ class PredictionHistory:
                 if "Medium" in confidence_levels:
                     medium_query = self.db.supabase.table('predictions').select('*')\
                         .gte('confidence', 50).lt('confidence', 70)
+                    if leagues and "All" not in leagues:
+                        medium_query = medium_query.in_('league', leagues)
                     medium_result = medium_query.execute()
                     predictions_list.extend(medium_result.data)
                     
                 if "High" in confidence_levels:
                     high_query = self.db.supabase.table('predictions').select('*')\
                         .gte('confidence', 70)
+                    if leagues and "All" not in leagues:
+                        high_query = high_query.in_('league', leagues)
                     high_result = high_query.execute()
                     predictions_list.extend(high_result.data)
                     
                 if "Low" in confidence_levels:
                     low_query = self.db.supabase.table('predictions').select('*')\
                         .lt('confidence', 50)
+                    if leagues and "All" not in leagues:
+                        low_query = low_query.in_('league', leagues)
                     low_result = low_query.execute()
                     predictions_list.extend(low_result.data)
                 
                 # Convert to DataFrame and calculate statistics
                 predictions = pd.DataFrame(predictions_list)
             else:
-                # If no confidence levels selected or 'All' is selected, continue with original query
+                # If no confidence levels selected or 'All' is selected
+                if leagues and "All" not in leagues:
+                    query = query.in_('league', leagues)
                 result = query.execute()
                 predictions = pd.DataFrame(result.data)
             
