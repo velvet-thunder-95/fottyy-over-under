@@ -94,17 +94,12 @@ class PredictionHistory:
                 
             # Handle confidence levels
             if confidence_levels and "All" not in confidence_levels:
-                conditions = []
-                for level in confidence_levels:
-                    if level == "High":
-                        conditions.append("confidence.gte.70")
-                    elif level == "Medium":
-                        conditions.append("confidence.gte.50,confidence.lt.70")
-                    elif level == "Low":
-                        conditions.append("confidence.lt.50")
-                
-                if conditions:
-                    query = query.or_(','.join(conditions))
+                if "Medium" in confidence_levels:
+                    query = query.gte('confidence', 50).lt('confidence', 70)
+                if "High" in confidence_levels:
+                    query = query.gte('confidence', 70)
+                if "Low" in confidence_levels:
+                    query = query.lt('confidence', 50)
                         
             # Handle leagues
             if leagues and "All" not in leagues:
@@ -148,17 +143,12 @@ class PredictionHistory:
             
             # Apply confidence level filters
             if confidence_levels and "All" not in confidence_levels:
-                conditions = []
-                for level in confidence_levels:
-                    if level == "High":
-                        conditions.append("confidence.gte.70")
-                    elif level == "Medium":
-                        conditions.append("confidence.gte.50,confidence.lt.70")
-                    elif level == "Low":
-                        conditions.append("confidence.lt.50")
-                
-                if conditions:
-                    query = query.or_(','.join(conditions))
+                if "Medium" in confidence_levels:
+                    query = query.gte('confidence', 50).lt('confidence', 70)
+                if "High" in confidence_levels:
+                    query = query.gte('confidence', 70)
+                if "Low" in confidence_levels:
+                    query = query.lt('confidence', 50)
                         
             # Apply league filters
             if leagues and "All" not in leagues:
