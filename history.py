@@ -94,13 +94,18 @@ class PredictionHistory:
                 
             # Handle confidence levels
             if confidence_levels and "All" not in confidence_levels:
+                confidence_conditions = []
                 for level in confidence_levels:
                     if level == "High":
-                        query = query.filter('confidence', 'gte', 70)
+                        confidence_conditions.append('confidence.gte.70')
                     elif level == "Medium":
-                        query = query.filter('confidence', 'gte', 50).filter('confidence', 'lt', 70)
+                        confidence_conditions.append('confidence.gte.50,confidence.lt.70')
                     elif level == "Low":
-                        query = query.filter('confidence', 'lt', 50)
+                        confidence_conditions.append('confidence.lt.50')
+                
+                if confidence_conditions:
+                    # Combine conditions with OR
+                    query = query.or_(','.join(confidence_conditions))
                         
             # Handle leagues
             if leagues and "All" not in leagues:
@@ -144,13 +149,18 @@ class PredictionHistory:
             
             # Apply confidence level filters
             if confidence_levels and "All" not in confidence_levels:
+                confidence_conditions = []
                 for level in confidence_levels:
                     if level == "High":
-                        query = query.gte('confidence', 70)
+                        confidence_conditions.append('confidence.gte.70')
                     elif level == "Medium":
-                        query = query.and_(f"confidence.gte.50,confidence.lt.70")
+                        confidence_conditions.append('confidence.gte.50,confidence.lt.70')
                     elif level == "Low":
-                        query = query.lt('confidence', 50)
+                        confidence_conditions.append('confidence.lt.50')
+                
+                if confidence_conditions:
+                    # Combine conditions with OR
+                    query = query.or_(','.join(confidence_conditions))
                         
             # Apply league filters
             if leagues and "All" not in leagues:
