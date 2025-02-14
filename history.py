@@ -109,21 +109,26 @@ class PredictionHistory:
             # Execute query and order by date
             result = query.order('date.desc').execute()
             
-            # Convert to DataFrame and ensure numeric types
+            # Convert to DataFrame
             df = pd.DataFrame(result.data)
             if not df.empty:
-                # Convert numeric columns
-                numeric_columns = ['profit_loss', 'bet_amount', 'confidence', 
-                                 'home_odds', 'draw_odds', 'away_odds']
+                # Ensure profit_loss is numeric and has proper default values
+                df['profit_loss'] = pd.to_numeric(df['profit_loss'], errors='coerce').fillna(0.0)
+                
+                # Convert other numeric columns
+                numeric_columns = ['bet_amount', 'confidence', 'home_odds', 'draw_odds', 'away_odds']
                 for col in numeric_columns:
                     if col in df.columns:
                         df[col] = pd.to_numeric(df[col], errors='coerce')
                 
-                # Print debug info
+                # Ensure proper profit_loss values based on status
+                df.loc[df['status'] != 'Completed', 'profit_loss'] = 0.0
+                
+                # Debug info
                 print("\nDataFrame info after conversion:")
                 print(df.info())
                 print("\nProfit/Loss values:")
-                print(df[['profit_loss', 'status']].head())
+                print(df[['profit_loss', 'status', 'predicted_outcome', 'actual_outcome']].head())
             
             return df
             
@@ -350,51 +355,67 @@ class PredictionHistory:
 def style_dataframe(df):
     """Style the predictions dataframe with colors and formatting"""
     
-    def format_result(row):
-        if row['Status'] == 'SCHEDULED':
-            return '🗓️ Scheduled'
-        elif row['Status'] == 'Pending':
-            return '⏳ Pending'
-        elif pd.isna(row['Actual Outcome']) or row['Actual Outcome'] == '':
-            return '⏳ Pending'
-        elif row['Prediction'] == row['Actual Outcome']:
-            return '✅ Won'
+    def style_row(row):
+        base_style = [
+            'font-size: 14px',
+            'font-weight: 400',
+            'color: #333333',
+            'padding: 12px 15px',
+            'border-bottom: 1px solid #e0e0e0'
+        ]
+        
+        styles = [base_style.copy() for _ in range(len(row))]
+        
+        # Style row background based on result
+        bg_style = None
+        if row['Status'] == 'Pending' or pd.isna(row.get('Actual Outcome', '')) or row.get('Actual Outcome', '') == '':
+            bg_style = 'background-color: #f5f5f5'
+        elif row.get('Prediction', '') == row.get('Actual Outcome', ''):
+            bg_style = 'background-color: #e8f5e9'  # Lighter green
         else:
-            return '❌ Lost'
-            
-    def format_actual_outcome(row):
-        if row['Status'] in ['SCHEDULED', 'Pending'] or pd.isna(row['Actual Outcome']) or row['Actual Outcome'] == '':
-            return '-'  # Show dash for scheduled/pending matches
-        return row['Actual Outcome']
-
-    def format_profit_loss(row):
-        if row['Status'] in ['SCHEDULED', 'Pending']:
-            return '-'
-        try:
-            # Use the original profit_loss value before formatting
-            profit = row.get('profit_loss', 0)
-            if pd.isna(profit):
-                return '-'
-            profit = float(profit)
-            if profit > 0:
-                return f'+£{profit:.2f}'
-            elif profit < 0:
-                return f'-£{abs(profit):.2f}'
-            return '£0.00'
-        except (ValueError, TypeError):
-            return '-'
-
-    # Create a copy to avoid modifying the original
-    display_df = df.copy()
+            bg_style = 'background-color: #fce4ec'  # Lighter red
+        
+        if bg_style:
+            for style in styles:
+                style.append(bg_style)
+        
+        return [';'.join(style) for style in styles]
     
-    # Format the Result column
-    display_df['Result'] = display_df.apply(format_result, axis=1)
+    def style_profit_loss(val):
+        if not isinstance(val, str) or val == '-':
+            return ''
+        if val.startswith('+'):
+            return 'color: #4CAF50; font-weight: 600'
+        elif val.startswith('-'):
+            return 'color: #f44336; font-weight: 600'
+        elif val == '£0.00':
+            return 'color: #6c757d'
+        return ''
     
-    # Format the Actual Outcome column
-    display_df['Actual Outcome'] = display_df.apply(format_actual_outcome, axis=1)
+    def style_confidence(val):
+        if 'High' in str(val):
+            return 'background-color: #d4edda; color: #155724; font-weight: bold'
+        elif 'Medium' in str(val):
+            return 'background-color: #fff3cd; color: #856404; font-weight: bold'
+        elif 'Low' in str(val):
+            return 'background-color: #f8d7da; color: #721c24; font-weight: bold'
+        return ''
     
-    # Format Profit/Loss
-    display_df['Profit/Loss'] = display_df.apply(format_profit_loss, axis=1)
+    def style_result(val):
+        if '✅' in str(val):  # Won
+            return 'color: #28a745; font-weight: bold'
+        elif '❌' in str(val):  # Lost
+            return 'color: #dc3545; font-weight: bold'
+        return ''
+    
+    # Create the styled DataFrame
+    styled = df.style\
+        .apply(style_row, axis=1)\
+        .map(style_profit_loss, subset=['Profit/Loss'])\
+        .map(style_confidence, subset=['Confidence'])\
+        .map(style_result, subset=['Result'])
+    
+    return styled
     
     # Apply styling
     def style_row(row):
@@ -870,40 +891,54 @@ def show_history_page():
                         'status': 'Status'
                     }
                     
-                    # Create final dataframe
+                    # Create final dataframe with explicit column selection
                     final_df = predictions[list(display_columns.keys())].copy()
                     
                     # Debug print raw values
                     print("\nRaw profit/loss values from database:")
                     print(predictions[['profit_loss', 'status', 'predicted_outcome', 'actual_outcome']].to_string())
                     
-                    # Ensure profit_loss is numeric
-                    final_df['profit_loss'] = pd.to_numeric(predictions['profit_loss'], errors='coerce')
+                    # Format Result column
+                    def format_result(row):
+                        if row['status'] == 'SCHEDULED':
+                            return '🗓️ Scheduled'
+                        elif row['status'] == 'Pending':
+                            return '⏳ Pending'
+                        elif pd.isna(row['actual_outcome']) or row['actual_outcome'] == '':
+                            return '⏳ Pending'
+                        elif row['predicted_outcome'] == row['actual_outcome']:
+                            return '✅ Won'
+                        else:
+                            return '❌ Lost'
                     
-                    # Handle completed matches
-                    completed_mask = (final_df['status'] == 'Completed')
-                    final_df.loc[~completed_mask, 'profit_loss'] = 0.0
-                    
-                    # Debug print after conversion
-                    print("\nProfit/loss values after status check:")
-                    print(final_df[['profit_loss', 'status']].to_string())
+                    # Format Actual Outcome column
+                    def format_actual_outcome(row):
+                        if row['status'] in ['SCHEDULED', 'Pending'] or pd.isna(row['actual_outcome']) or row['actual_outcome'] == '':
+                            return '-'
+                        return row['actual_outcome']
                     
                     # Format profit/loss values
-                    def format_profit_loss(row):
+                    def format_pl(row):
                         if row['status'] != 'Completed':
                             return '-'
-                        value = row['profit_loss']
-                        if pd.isna(value):
+                        try:
+                            value = float(row['profit_loss'])
+                            if pd.isna(value):
+                                return '£0.00'
+                            return f'+£{value:.2f}' if value > 0 else f'-£{abs(value):.2f}' if value < 0 else '£0.00'
+                        except (ValueError, TypeError):
                             return '£0.00'
-                        return f'+£{value:.2f}' if value > 0 else f'-£{abs(value):.2f}' if value < 0 else '£0.00'
                     
-                    final_df['profit_loss'] = final_df.apply(format_profit_loss, axis=1)
+                    # Apply all formatting
+                    final_df['Result'] = final_df.apply(format_result, axis=1)
+                    final_df['actual_outcome'] = final_df.apply(format_actual_outcome, axis=1)
+                    final_df['profit_loss'] = final_df.apply(format_pl, axis=1)
                     
-                    # Print formatted values
+                    # Print debug info
                     print("\nFormatted profit/loss values:")
-                    print(final_df[['profit_loss', 'status']].to_string())
+                    print(final_df[['profit_loss', 'status']].head().to_string())
                     
-                    # Rename columns
+                    # Rename columns for display
                     final_df = final_df.rename(columns=display_columns)
                     
                     # Apply styling
