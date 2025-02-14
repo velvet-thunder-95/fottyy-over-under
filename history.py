@@ -94,15 +94,34 @@ class PredictionHistory:
                 
             # Handle confidence levels
             if confidence_levels and "All" not in confidence_levels:
-                filter_conditions = []
+                # Start with an empty list for our predictions
+                predictions_list = []
+                
+                # Get predictions for each confidence level
                 if "Medium" in confidence_levels:
-                    filter_conditions.append("and(gte(confidence,50),lt(confidence,70))")
+                    medium_query = self.db.supabase.table('predictions').select('*')\
+                        .gte('confidence', 50).lt('confidence', 70)
+                    medium_result = medium_query.execute()
+                    predictions_list.extend(medium_result.data)
+                    
                 if "High" in confidence_levels:
-                    filter_conditions.append("gte(confidence,70)")
+                    high_query = self.db.supabase.table('predictions').select('*')\
+                        .gte('confidence', 70)
+                    high_result = high_query.execute()
+                    predictions_list.extend(high_result.data)
+                    
                 if "Low" in confidence_levels:
-                    filter_conditions.append("lt(confidence,50)")
-                if filter_conditions:
-                    query = query.filter(f"or({','.join(filter_conditions)})")
+                    low_query = self.db.supabase.table('predictions').select('*')\
+                        .lt('confidence', 50)
+                    low_result = low_query.execute()
+                    predictions_list.extend(low_result.data)
+                
+                # Convert to DataFrame
+                return pd.DataFrame(predictions_list)
+            
+            # If no confidence levels selected or 'All' is selected, continue with original query
+            result = query.execute()
+            return pd.DataFrame(result.data)
                         
             # Handle leagues
             if leagues and "All" not in leagues:
@@ -146,15 +165,34 @@ class PredictionHistory:
             
             # Apply confidence level filters
             if confidence_levels and "All" not in confidence_levels:
-                filter_conditions = []
+                # Start with an empty list for our predictions
+                predictions_list = []
+                
+                # Get predictions for each confidence level
                 if "Medium" in confidence_levels:
-                    filter_conditions.append("and(gte(confidence,50),lt(confidence,70))")
+                    medium_query = self.db.supabase.table('predictions').select('*')\
+                        .gte('confidence', 50).lt('confidence', 70)
+                    medium_result = medium_query.execute()
+                    predictions_list.extend(medium_result.data)
+                    
                 if "High" in confidence_levels:
-                    filter_conditions.append("gte(confidence,70)")
+                    high_query = self.db.supabase.table('predictions').select('*')\
+                        .gte('confidence', 70)
+                    high_result = high_query.execute()
+                    predictions_list.extend(high_result.data)
+                    
                 if "Low" in confidence_levels:
-                    filter_conditions.append("lt(confidence,50)")
-                if filter_conditions:
-                    query = query.filter(f"or({','.join(filter_conditions)})")
+                    low_query = self.db.supabase.table('predictions').select('*')\
+                        .lt('confidence', 50)
+                    low_result = low_query.execute()
+                    predictions_list.extend(low_result.data)
+                
+                # Convert to DataFrame
+                return pd.DataFrame(predictions_list)
+            
+            # If no confidence levels selected or 'All' is selected, continue with original query
+            result = query.execute()
+            return pd.DataFrame(result.data)
                         
             # Apply league filters
             if leagues and "All" not in leagues:
