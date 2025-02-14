@@ -125,7 +125,14 @@ class PredictionHistory:
                         
             # Handle leagues
             if leagues and "All" not in leagues:
-                query = query.in_('league', leagues)
+                # For each league, get predictions and combine
+                league_predictions = []
+                for league in leagues:
+                    league_query = self.db.supabase.table('predictions').select('*')\
+                        .eq('league', league)
+                    league_result = league_query.execute()
+                    league_predictions.extend(league_result.data)
+                return pd.DataFrame(league_predictions)
                 
             # Execute query and order by date
             result = query.order('date.desc').execute()
@@ -230,7 +237,14 @@ class PredictionHistory:
                         
             # Apply league filters
             if leagues and "All" not in leagues:
-                query = query.in_('league', leagues)
+                # For each league, get predictions and combine
+                league_predictions = []
+                for league in leagues:
+                    league_query = self.db.supabase.table('predictions').select('*')\
+                        .eq('league', league)
+                    league_result = league_query.execute()
+                    league_predictions.extend(league_result.data)
+                predictions = pd.DataFrame(league_predictions)
                 
             # Execute query
             result = query.execute()
@@ -870,6 +884,11 @@ def show_history_page():
             confidence_levels=None if "All" in confidence_levels else confidence_levels,
             leagues=None if "All" in selected_leagues else selected_leagues
         )
+        
+        # If predictions is None or empty, show message
+        if predictions is None or predictions.empty:
+            st.info("No predictions found for the selected filters.")
+            return
         
         if not predictions.empty:
             # Update any pending predictions
