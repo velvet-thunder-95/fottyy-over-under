@@ -187,12 +187,46 @@ class PredictionHistory:
                     low_result = low_query.execute()
                     predictions_list.extend(low_result.data)
                 
-                # Convert to DataFrame
-                return pd.DataFrame(predictions_list)
+                # Convert to DataFrame and calculate statistics
+                predictions = pd.DataFrame(predictions_list)
+            else:
+                # If no confidence levels selected or 'All' is selected, continue with original query
+                result = query.execute()
+                predictions = pd.DataFrame(result.data)
             
-            # If no confidence levels selected or 'All' is selected, continue with original query
-            result = query.execute()
-            return pd.DataFrame(result.data)
+            if predictions.empty:
+                return [0, 0, 0.0, 0.0, 0.0], 0
+            
+            # Calculate statistics
+            completed_predictions = predictions[predictions['status'] == 'Completed']
+            pending_predictions = predictions[predictions['status'] == 'Pending']
+            
+            total_predictions = len(predictions)
+            completed_count = len(completed_predictions)
+            pending_count = len(pending_predictions)
+            
+            if completed_count == 0:
+                return [total_predictions, 0, 0.0, 0.0, 0.0], pending_count
+            
+            # Calculate correct predictions
+            correct_predictions = len(
+                completed_predictions[
+                    completed_predictions['predicted_outcome'] == 
+                    completed_predictions['actual_outcome']
+                ]
+            )
+            
+            # Calculate success rate
+            success_rate = (correct_predictions / completed_count * 100) if completed_count > 0 else 0.0
+            
+            # Calculate total profit/loss
+            total_profit = completed_predictions['profit_loss'].sum()
+            
+            # Calculate ROI
+            total_bet_amount = completed_predictions['bet_amount'].sum()
+            roi = (total_profit / total_bet_amount * 100) if total_bet_amount > 0 else 0.0
+            
+            return [total_predictions, correct_predictions, success_rate, total_profit, roi], pending_count
                         
             # Apply league filters
             if leagues and "All" not in leagues:
