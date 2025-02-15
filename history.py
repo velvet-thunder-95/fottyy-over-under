@@ -92,6 +92,9 @@ class PredictionHistory:
             if status:
                 query = query.eq('status', status)
                 
+            # Order by date in descending order (newest first)
+            query = query.order('date', desc=True)
+                
             # Handle confidence levels
             if confidence_levels and "All" not in confidence_levels:
                 # Start with an empty list for our predictions
@@ -850,27 +853,40 @@ def show_history_page():
         # Add filters to sidebar
         st.sidebar.markdown("## Filters", help="Filter your prediction history")
         
-        # Date filters
+        # Get all predictions first to determine date range
+        all_predictions = history.get_predictions()
+        if not all_predictions.empty:
+            min_date = pd.to_datetime(all_predictions['date']).min().date()
+            max_date = pd.to_datetime(all_predictions['date']).max().date()
+        else:
+            min_date = datetime.now().date() - timedelta(days=30)
+            max_date = datetime.now().date()
+
+        # Date filters with dynamic min/max dates
         start_date = st.sidebar.date_input(
             "Start Date",
-            value=datetime.now().date() - timedelta(days=30),
+            value=min_date,
+            min_value=min_date,
+            max_value=max_date,
             help="Filter predictions from this date"
         )
         
         end_date = st.sidebar.date_input(
             "End Date",
-            value=datetime.now().date(),
+            value=max_date,
+            min_value=min_date,
+            max_value=max_date,
             help="Filter predictions until this date"
         )
 
         # Validate dates
         if start_date > end_date:
             st.sidebar.error("Error: End date must be after start date")
-            start_date, end_date = end_date, start_date  # Swap dates to ensure valid range
+            start_date, end_date = end_date, start_date
 
         # Format dates for database query
         start_date_str = start_date.strftime("%Y-%m-%d")
-        end_date_str = (end_date + timedelta(days=1)).strftime("%Y-%m-%d")  # Add 1 day to include end date
+        end_date_str = end_date.strftime("%Y-%m-%d")  # No need to add extra day
         
         # Get unique leagues from predictions
         all_predictions = history.get_predictions()
