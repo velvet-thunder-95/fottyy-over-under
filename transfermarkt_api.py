@@ -896,3 +896,24 @@ class TransfermarktAPI:
         except Exception as e:
             logger.error(f"Error getting market values: {str(e)}")
             return None, None
+
+    def get_market_values_batch(self, teams, domain="de"):
+        """Get market values for multiple teams in a single batch"""
+        logger.info(f"Getting market values for {len(teams)} teams in batch")
+        
+        try:
+            # Use the existing get_multiple_teams_market_value method
+            market_values = self.get_multiple_teams_market_value(teams, domain)
+            
+            # Format the results as expected by the odds generator
+            return {
+                team: {
+                    'market_value': value,
+                    'currency': 'EUR',
+                    'last_updated': None  # We don't track this currently
+                } for team, value in market_values.items()
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting market values batch: {str(e)}")
+            return {team: {'market_value': 0, 'currency': 'EUR', 'last_updated': None} for team in teams}

@@ -21,8 +21,27 @@ import pytz
 from zoneinfo import ZoneInfo
 import time
 from transfermarkt_api import TransfermarktAPI
+from odds_generator import OddsGenerator
 import base64
 from unidecode import unidecode as unidecode_text
+import logging
+import xgboost as xgb
+from sklearn.impute import SimpleImputer
+import joblib
+from sklearn.preprocessing import StandardScaler
+import logging
+import xgboost as xgb
+from history import show_history_page, PredictionHistory
+from session_state import init_session_state, check_login_state
+import json
+from scipy.stats import poisson
+import pytz
+from zoneinfo import ZoneInfo
+import time
+from transfermarkt_api import TransfermarktAPI
+import base64
+from unidecode import unidecode as unidecode_text
+from odds_generator import OddsGenerator  # Import the odds generator
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -660,6 +679,8 @@ def load_model():
 
 # Load the predictor model
 predictor = load_model()
+transfermarkt_api = TransfermarktAPI()
+odds_generator = OddsGenerator(transfermarkt_api)  # Pass the transfermarkt_api instance
 
 def create_match_features_from_api(match_data):
     """Create features DataFrame from match data with error handling"""
@@ -817,149 +838,251 @@ def create_match_features_from_api(match_data):
         
         # Odds and implied probabilities with safe defaults
         try:
-            odds_home = max(1.1, float(match_data.get('odds_ft_1', 2.0)))
-            odds_draw = max(1.1, float(match_data.get('odds_ft_x', 3.0)))
-            odds_away = max(1.1, float(match_data.get('odds_ft_2', 2.0)))
-        except (ValueError, TypeError):
-            logger.warning("Invalid odds values, using defaults")
-            odds_home = 2.0
-            odds_draw = 3.0
-            odds_away = 2.0
-        
-        features['odds_home_win'] = odds_home
-        features['odds_draw'] = odds_draw
-        features['odds_away_win'] = odds_away
-        
-        # Calculate implied probabilities with margin adjustment
-        total_prob = (1/odds_home + 1/odds_draw + 1/odds_away)
-        if total_prob > 0:
-            features['implied_home_prob'] = (1/odds_home) / total_prob
-            features['implied_draw_prob'] = (1/odds_draw) / total_prob
-            features['implied_away_prob'] = (1/odds_away) / total_prob
-        else:
-            logger.warning("Invalid total probability, using default distribution")
-            features['implied_home_prob'] = 0.4
-            features['implied_draw_prob'] = 0.25
-            features['implied_away_prob'] = 0.35
-        
-        # Add all required derived features
-        features['win_rate_difference'] = features['home_win_rate'] - features['away_win_rate']
-        features['possession_difference'] = features['home_possession'] - features['away_possession']
-        features['xg_difference'] = features['home_xg'] - features['away_xg']
-        features['shot_difference'] = features['home_shots'] - features['away_shots']
-        features['momentum_difference'] = features['home_momentum'] - features['away_momentum']
-        features['implied_prob_sum'] = features['implied_home_prob'] + features['implied_draw_prob'] + features['implied_away_prob']
-        features['form_difference'] = features['home_form_points'] - features['away_form_points']
-        features['odds_ratio'] = features['odds_home_win'] / max(0.1, features['odds_away_win'])
-        features['total_momentum'] = features['home_momentum'] + features['away_momentum']
-        
-        # All features needed by the model
-        training_features = [
-            'season', 'competition_id', 'home_total_matches', 'away_total_matches',
-            'home_win_rate', 'away_win_rate', 'home_form_points', 'away_form_points',
-            'home_shots', 'away_shots', 'home_shots_on_target', 'away_shots_on_target',
-            'home_corners', 'away_corners', 'home_fouls', 'away_fouls',
-            'home_possession', 'away_possession', 'home_xg', 'away_xg',
-            'shot_accuracy_home', 'shot_accuracy_away', 'home_win_rate_ratio',
-            'home_momentum', 'away_momentum', 'odds_home_win', 'odds_draw',
-            'odds_away_win', 'implied_home_prob', 'implied_draw_prob',
-            'implied_away_prob', 'form_difference', 'win_rate_difference',
-            'shot_difference', 'possession_difference', 'xg_difference',
-            'total_momentum', 'momentum_difference', 'odds_ratio', 'implied_prob_sum'
-        ]
+            # First try to get odds from FootyStats
+            odds_home = match_data.get('odds_ft_1')
+            odds_draw = match_data.get('odds_ft_x')
+            odds_away = match_data.get('odds_ft_2')
+            
+            # If FootyStats odds are not available, use odds from odds generator
+            if odds_home is None or odds_draw is None or odds_away is None:
+                logger.info("Using odds from odds generator")
+                odds_home = float(match_data.get('generated_odds_1', 2.0))
+                odds_draw = float(match_data.get('generated_odds_x', 3.0))
+                odds_away = float(match_data.get('generated_odds_2', 2.0))
+                
+            # Ensure odds are valid positive numbers
+            odds_home = max(1.1, float(odds_home))
+            odds_draw = max(1.1, float(odds_draw))
+            odds_away = max(1.1, float(odds_away))
+            
+            # Get over/under odds
+            odds_over25 = max(1.1, float(match_data.get('odds_ft_over25', match_data.get('generated_odds_over25', 2.0))))
+            odds_under25 = max(1.1, float(match_data.get('odds_ft_under25', match_data.get('generated_odds_under25', 2.0))))
+            
+            features['odds_home_win'] = odds_home
+            features['odds_draw'] = odds_draw
+            features['odds_away_win'] = odds_away
+            features['odds_over25'] = odds_over25
+            features['odds_under25'] = odds_under25
+            
+            # Calculate implied probabilities and EV for match outcomes
+            if all([odds_home, odds_draw, odds_away]):
+                # Convert odds to probabilities
+                total_prob = (1/odds_home + 1/odds_draw + 1/odds_away)
+                home_implied = (1/odds_home) / total_prob
+                draw_implied = (1/odds_draw) / total_prob
+                away_implied = (1/odds_away) / total_prob
+                
+                # Debug prints
+                print(f"Home - Pred: {home_implied*100:.2f}%, Odds: {odds_home:.2f}")
+                print(f"Draw - Pred: {draw_implied*100:.2f}%, Odds: {odds_draw:.2f}")
+                print(f"Away - Pred: {away_implied*100:.2f}%, Odds: {odds_away:.2f}")
+                
+                home_ev = calculate_ev(home_implied*100, odds_home)
+                draw_ev = calculate_ev(draw_implied*100, odds_draw)
+                away_ev = calculate_ev(away_implied*100, odds_away)
+                
+                # Debug prints
+                print(f"Home EV: {home_ev:.2f}%")
+                print(f"Draw EV: {draw_ev:.2f}%")
+                print(f"Away EV: {away_ev:.2f}%")
+            else:
+                home_implied = draw_implied = away_implied = 0
+                home_ev = draw_ev = away_ev = 0
+            
+            # Extract existing odds from match data
+            footystats_odds = {
+                'home_odds': float(match_data.get('odds_ft_1', 0)),
+                'draw_odds': float(match_data.get('odds_ft_x', 0)),
+                'away_odds': float(match_data.get('odds_ft_2', 0)),
+                'over25_odds': float(match_data.get('odds_ft_over25', 0)),
+                'under25_odds': float(match_data.get('odds_ft_under25', 0))
+            }
+            
+            # Use odds generator if any FootyStats odds are missing
+            if not all(footystats_odds.values()):
+                generated_odds = odds_generator.get_odds(match_data, footystats_odds)
+                match_data['odds_ft_1'] = generated_odds['home_odds']
+                match_data['odds_ft_x'] = generated_odds['draw_odds']
+                match_data['odds_ft_2'] = generated_odds['away_odds']
+                match_data['odds_ft_over25'] = generated_odds['over25_odds']
+                match_data['odds_ft_under25'] = generated_odds['under25_odds']
+            
+            # Calculate implied probabilities with margin adjustment
+            if all([match_data['odds_ft_1'], match_data['odds_ft_x'], match_data['odds_ft_2']]):
+                # Convert odds to probabilities
+                total_prob = (1/match_data['odds_ft_1'] + 1/match_data['odds_ft_x'] + 1/match_data['odds_ft_2'])
+                features['implied_home_prob'] = (1/match_data['odds_ft_1']) / total_prob
+                features['implied_draw_prob'] = (1/match_data['odds_ft_x']) / total_prob
+                features['implied_away_prob'] = (1/match_data['odds_ft_2']) / total_prob
+            else:
+                logger.warning("Invalid total probability, using default distribution")
+                features['implied_home_prob'] = 0.4
+                features['implied_draw_prob'] = 0.25
+                features['implied_away_prob'] = 0.35
+            
+            # Add all required derived features
+            features['win_rate_difference'] = features['home_win_rate'] - features['away_win_rate']
+            features['possession_difference'] = features['home_possession'] - features['away_possession']
+            features['xg_difference'] = features['home_xg'] - features['away_xg']
+            features['shot_difference'] = features['home_shots'] - features['away_shots']
+            features['momentum_difference'] = features['home_momentum'] - features['away_momentum']
+            features['implied_prob_sum'] = features['implied_home_prob'] + features['implied_draw_prob'] + features['implied_away_prob']
+            features['form_difference'] = features['home_form_points'] - features['away_form_points']
+            features['odds_ratio'] = features['odds_home_win'] / max(0.1, features['odds_away_win'])
+            features['total_momentum'] = features['home_momentum'] + features['away_momentum']
+            
+            # All features needed by the model
+            training_features = [
+                'season', 'competition_id', 'home_total_matches', 'away_total_matches',
+                'home_win_rate', 'away_win_rate', 'home_form_points', 'away_form_points',
+                'home_shots', 'away_shots', 'home_shots_on_target', 'away_shots_on_target',
+                'home_corners', 'away_corners', 'home_fouls', 'away_fouls',
+                'home_possession', 'away_possession', 'home_xg', 'away_xg',
+                'shot_accuracy_home', 'shot_accuracy_away', 'home_win_rate_ratio',
+                'home_momentum', 'away_momentum', 'odds_home_win', 'odds_draw',
+                'odds_away_win', 'implied_home_prob', 'implied_draw_prob',
+                'implied_away_prob', 'form_difference', 'win_rate_difference',
+                'shot_difference', 'possession_difference', 'xg_difference',
+                'total_momentum', 'momentum_difference', 'odds_ratio', 'implied_prob_sum'
+            ]
 
-        # Add any missing training features with default values
-        for feature in training_features:
-            if feature not in features:
-                if feature in ['season', 'competition_id', 'home_total_matches', 'away_total_matches']:
-                    features[feature] = 0
-                elif feature in ['shot_accuracy_home', 'shot_accuracy_away', 'home_win_rate_ratio']:
-                    features[feature] = 0.5
-                else:
-                    features[feature] = 0
+            # Add any missing training features with default values
+            for feature in training_features:
+                if feature not in features:
+                    if feature in ['season', 'competition_id', 'home_total_matches', 'away_total_matches']:
+                        features[feature] = 0
+                    elif feature in ['shot_accuracy_home', 'shot_accuracy_away', 'home_win_rate_ratio']:
+                        features[feature] = 0.5
+                    else:
+                        features[feature] = 0
 
-        # Convert to DataFrame with proper feature order
-        df = pd.DataFrame([features])
+            # Convert to DataFrame with proper feature order
+            df = pd.DataFrame([features])
+            
+            # Ensure columns are in the correct order
+            df = df[training_features]
+            
+            return df
         
-        # Ensure columns are in the correct order
-        df = df[training_features]
-        
-        return df
-        
+        except Exception as e:
+            logger.error(f"Error in create_match_features_from_api: {str(e)}")
+            raise
+
     except Exception as e:
-        logger.error(f"Error in create_match_features_from_api: {str(e)}")
-        raise
+        logger.error(f"Error creating match features: {str(e)}")
+        return None
 
 def adjust_probabilities(home_prob, draw_prob, away_prob, match_data):
     """Adjust probabilities based on odds and team strengths. Input and output are decimals (0-1)"""
-    # Input is already in decimal form (0-1)
-    
-    # Get odds
-    home_odds = float(match_data.get('odds_ft_1', 0))
-    away_odds = float(match_data.get('odds_ft_2', 0))
-    draw_odds = float(match_data.get('odds_ft_x', 0))
-    
-    # Convert odds to probabilities
-    odds_home_prob = 1 / home_odds
-    odds_away_prob = 1 / away_odds
-    odds_draw_prob = 1 / draw_odds
-    
-    # Normalize odds probabilities
-    total_odds_prob = odds_home_prob + odds_away_prob + odds_draw_prob
-    odds_home_prob /= total_odds_prob
-    odds_away_prob /= total_odds_prob
-    odds_draw_prob /= total_odds_prob
-    
-    # Get team strengths
-    home_ppg = float(match_data.get('home_ppg', 0))
-    away_ppg = float(match_data.get('away_ppg', 0))
-    home_overall_ppg = float(match_data.get('pre_match_teamA_overall_ppg', 0))
-    away_overall_ppg = float(match_data.get('pre_match_teamB_overall_ppg', 0))
-    
-    # Calculate form-based probabilities
-    total_ppg = home_overall_ppg + away_overall_ppg
-    if total_ppg > 0:
-        form_home_prob = home_overall_ppg / total_ppg
-        form_away_prob = away_overall_ppg / total_ppg
-    else:
-        form_home_prob = 0.4
-        form_away_prob = 0.4
-    form_draw_prob = 1 - (form_home_prob + form_away_prob)
-    
-    # Weights for different factors
-    model_weight = 0.4
-    odds_weight = 0.4
-    form_weight = 0.2
-    
-    # Calculate final probabilities
-    final_home_prob = (home_prob * model_weight + 
-                      odds_home_prob * odds_weight + 
-                      form_home_prob * form_weight)
-    
-    final_away_prob = (away_prob * model_weight + 
-                      odds_away_prob * odds_weight + 
-                      form_away_prob * form_weight)
-    
-    final_draw_prob = (draw_prob * model_weight + 
-                      odds_draw_prob * odds_weight + 
-                      form_draw_prob * form_weight)
-    
-    # Normalize final probabilities
-    total = final_home_prob + final_away_prob + final_draw_prob
-    final_home_prob /= total
-    final_away_prob /= total
-    final_draw_prob /= total
-    
-    # Apply minimum probability thresholds
-    min_prob = 0.1
-    if final_away_prob < min_prob:
-        final_away_prob = min_prob
-        excess = (1 - min_prob) / 2
-        final_home_prob = excess
-        final_draw_prob = excess
-    
-    # Return probabilities in decimal form (0-1)
-    return final_home_prob, final_draw_prob, final_away_prob
+    try:
+        # Get odds with safe defaults
+        home_odds = float(match_data.get('odds_ft_1', 2.0))
+        away_odds = float(match_data.get('odds_ft_2', 2.0))
+        draw_odds = float(match_data.get('odds_ft_x', 3.0))
+        
+        # Ensure odds are valid positive numbers
+        home_odds = max(1.1, home_odds)
+        away_odds = max(1.1, away_odds)
+        draw_odds = max(1.1, draw_odds)
+        
+        # Convert odds to probabilities
+        odds_home_prob = 1 / home_odds
+        odds_away_prob = 1 / away_odds
+        odds_draw_prob = 1 / draw_odds
+        
+        # Normalize odds probabilities
+        total_odds_prob = odds_home_prob + odds_away_prob + odds_draw_prob
+        if total_odds_prob > 0:
+            odds_home_prob /= total_odds_prob
+            odds_away_prob /= total_odds_prob
+            odds_draw_prob /= total_odds_prob
+        else:
+            odds_home_prob = 0.4
+            odds_draw_prob = 0.25
+            odds_away_prob = 0.35
+        
+        # Get team strengths
+        home_ppg = float(match_data.get('home_ppg', 1.5))
+        away_ppg = float(match_data.get('away_ppg', 1.5))
+        home_overall_ppg = float(match_data.get('pre_match_teamA_overall_ppg', 1.5))
+        away_overall_ppg = float(match_data.get('pre_match_teamB_overall_ppg', 1.5))
+        
+        # Calculate form-based probabilities
+        total_ppg = home_overall_ppg + away_overall_ppg
+        if total_ppg > 0:
+            form_home_prob = home_overall_ppg / total_ppg
+            form_away_prob = away_overall_ppg / total_ppg
+            form_draw_prob = 0.25  # Base draw probability
+            
+            # Normalize form probabilities
+            total_form = form_home_prob + form_away_prob + form_draw_prob
+            form_home_prob /= total_form
+            form_away_prob /= total_form
+            form_draw_prob /= total_form
+        else:
+            form_home_prob = 0.4
+            form_draw_prob = 0.25
+            form_away_prob = 0.35
+        
+        # Weights for different factors
+        model_weight = 0.5  # Increased weight for model predictions
+        odds_weight = 0.3  # Reduced weight for odds since they may be missing
+        form_weight = 0.2
+        
+        # Calculate final probabilities
+        final_home_prob = (home_prob * model_weight + 
+                        odds_home_prob * odds_weight + 
+                        form_home_prob * form_weight)
+        
+        final_away_prob = (away_prob * model_weight + 
+                        odds_away_prob * odds_weight + 
+                        form_away_prob * form_weight)
+        
+        final_draw_prob = (draw_prob * model_weight + 
+                        odds_draw_prob * odds_weight + 
+                        form_draw_prob * form_weight)
+        
+        # Normalize final probabilities
+        total = final_home_prob + final_draw_prob + final_away_prob
+        if total > 0:
+            final_home_prob = float(final_home_prob / total)
+            final_away_prob = float(final_away_prob / total)
+            final_draw_prob = float(final_draw_prob / total)
+        else:
+            final_home_prob = 0.4
+            final_draw_prob = 0.25
+            final_away_prob = 0.35
+        
+        # Apply minimum probability thresholds
+        min_prob = 0.1
+        if final_home_prob < min_prob:
+            final_home_prob = min_prob
+            remaining = 1 - min_prob
+            final_draw_prob = remaining * 0.4
+            final_away_prob = remaining * 0.6
+        elif final_away_prob < min_prob:
+            final_away_prob = min_prob
+            remaining = 1 - min_prob
+            final_home_prob = remaining * 0.6
+            final_draw_prob = remaining * 0.4
+        elif final_draw_prob < min_prob:
+            final_draw_prob = min_prob
+            remaining = 1 - min_prob
+            final_home_prob = remaining * 0.5
+            final_away_prob = remaining * 0.5
+            
+        # Ensure probabilities sum to 1
+        total = final_home_prob + final_draw_prob + final_away_prob
+        final_home_prob = float(final_home_prob / total)
+        final_draw_prob = float(final_draw_prob / total)
+        final_away_prob = float(final_away_prob / total)
+        
+        return final_home_prob, final_draw_prob, final_away_prob
+        
+    except Exception as e:
+        logger.error(f"Error adjusting probabilities: {str(e)}")
+        return 0.4, 0.25, 0.35  # Return reasonable defaults
 
 def calculate_form(recent_matches, team):
     if recent_matches.empty:
@@ -1047,19 +1170,33 @@ def calculate_match_prediction(match):
         home_prob_odds = (1/home_odds) / total_prob
         draw_prob_odds = (1/draw_odds) / total_prob
         away_prob_odds = (1/away_odds) / total_prob
+        
+        # Debug prints
+        print(f"Home - Pred: {home_prob_odds*100:.2f}%, Odds: {home_odds:.2f}")
+        print(f"Draw - Pred: {draw_prob_odds*100:.2f}%, Odds: {draw_odds:.2f}")
+        print(f"Away - Pred: {away_prob_odds*100:.2f}%, Odds: {away_odds:.2f}")
+        
+        home_ev = calculate_ev(home_prob_odds*100, home_odds)
+        draw_ev = calculate_ev(draw_prob_odds*100, draw_odds)
+        away_ev = calculate_ev(away_prob_odds*100, away_odds)
+        
+        # Debug prints
+        print(f"Home EV: {home_ev:.2f}%")
+        print(f"Draw EV: {draw_ev:.2f}%")
+        print(f"Away EV: {away_ev:.2f}%")
     else:
-        home_prob_odds = 0.33
-        draw_prob_odds = 0.33
-        away_prob_odds = 0.33
+        home_prob_odds = draw_prob_odds = away_prob_odds = 0
+        home_ev = draw_ev = away_ev = 0
     
     # Calculate form-based probabilities
-    total_ppg = home_ppg + away_ppg
+    total_ppg = home_overall_ppg + away_overall_ppg
     if total_ppg > 0:
-        home_prob_form = home_ppg / total_ppg
-        away_prob_form = away_ppg / total_ppg
+        home_prob_form = home_overall_ppg / total_ppg
+        away_prob_form = away_overall_ppg / total_ppg
     else:
-        home_prob_form = 0.5
-        away_prob_form = 0.5
+        home_prob_form = 0.4
+        away_prob_form = 0.4
+    form_draw_prob = 1 - (home_prob_form + away_prob_form)
     
     # Calculate xG-based probabilities
     total_xg = home_xg + away_xg
@@ -1305,9 +1442,9 @@ def display_match_odds(match_data):
     if all([home_odds, draw_odds, away_odds]):
         # Convert odds to probabilities
         total_prob = (1/home_odds + 1/draw_odds + 1/away_odds)
-        home_implied = (1/home_odds) / total_prob * 100
-        draw_implied = (1/draw_odds) / total_prob * 100
-        away_implied = (1/away_odds) / total_prob * 100
+        home_implied = (1/home_odds) / total_prob
+        draw_implied = (1/draw_odds) / total_prob
+        away_implied = (1/away_odds) / total_prob
         
         # Debug prints
         print(f"Home - Pred: {home_pred*100:.2f}%, Odds: {home_odds:.2f}")
@@ -1338,7 +1475,7 @@ def display_match_odds(match_data):
                 flex: 1;
                 margin: 0 10px;
                 padding: 0.5rem;
-                border-radius: 8px;
+                border-radius: 6px;
                 box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             }
         </style>
@@ -1417,6 +1554,31 @@ def get_match_prediction(match_data):
         logger.info("Starting prediction calculation")
         logger.info(f"Match data: {match_data}")
         
+        # First check if we already have probabilities from the odds generator
+        home_prob = match_data.get('home_prob')
+        draw_prob = match_data.get('draw_prob')
+        away_prob = match_data.get('away_prob')
+        
+        # If we have valid probabilities from odds generator, use those
+        if (home_prob is not None and draw_prob is not None and away_prob is not None and
+            all(isinstance(p, (int, float)) for p in [home_prob, draw_prob, away_prob]) and
+            all(0 <= p <= 1 for p in [home_prob, draw_prob, away_prob])):
+            
+            # Convert to float and normalize
+            home_prob = float(home_prob)
+            draw_prob = float(draw_prob)
+            away_prob = float(away_prob)
+            
+            total = home_prob + draw_prob + away_prob
+            if total > 0:
+                home_prob /= total
+                draw_prob /= total
+                away_prob /= total
+                
+                logger.info(f"Using probabilities from odds generator: {home_prob}, {draw_prob}, {away_prob}")
+                return home_prob, draw_prob, away_prob
+        
+        # If we don't have valid probabilities, use the model
         if predictor is None:
             logger.error("Model not loaded properly")
             return 0.4, 0.25, 0.35  # Return reasonable defaults
@@ -1444,39 +1606,17 @@ def get_match_prediction(match_data):
         
         # If the model outputs a single probability, convert it to three probabilities
         if len(probabilities.shape) == 1:
-            home_prob = probabilities[0]
-            
-            # Get odds with safe defaults
-            odds_1 = float(match_data.get('odds_ft_1', 2.0))
-            odds_x = float(match_data.get('odds_ft_x', 3.0))
-            odds_2 = float(match_data.get('odds_ft_2', 2.0))
-            
-            # Ensure odds are valid positive numbers
-            odds_1 = max(1.1, odds_1)
-            odds_x = max(1.1, odds_x)
-            odds_2 = max(1.1, odds_2)
-            
-            # Calculate implied probabilities with margin adjustment
-            total_prob = (1/odds_1 + 1/odds_x + 1/odds_2)
-            if total_prob > 0:
-                draw_prob = (1/odds_x) / total_prob
-                away_prob = 1 - home_prob - draw_prob  # Ensure probabilities sum to 1
-                
-                # Validate probabilities
-                if away_prob < 0:
-                    draw_prob = 0.25
-                    away_prob = 1 - home_prob - draw_prob
-            else:
-                draw_prob = 0.25  # Default draw probability
-                away_prob = (1 - home_prob - draw_prob)  # Remaining probability
+            home_prob = float(probabilities[0])
+            draw_prob = 0.25  # Default draw probability
+            away_prob = float(1 - home_prob - draw_prob)  # Remaining probability
         else:
-            home_prob = probabilities[0][0]
-            draw_prob = probabilities[0][1]
-            away_prob = probabilities[0][2]
+            home_prob = float(probabilities[0][0])
+            draw_prob = float(probabilities[0][1])
+            away_prob = float(probabilities[0][2])
         
         # Ensure probabilities are valid
         if not all(0 <= p <= 1 for p in [home_prob, draw_prob, away_prob]):
-            logger.warning("Invalid probability values, using defaults")
+            logger.warning("Invalid probability values from model, using defaults")
             home_prob = 0.4
             draw_prob = 0.25
             away_prob = 0.35
@@ -1484,9 +1624,9 @@ def get_match_prediction(match_data):
         # Normalize probabilities to sum to 1
         total = home_prob + draw_prob + away_prob
         if total > 0:
-            home_prob /= total
-            draw_prob /= total
-            away_prob /= total
+            home_prob = float(home_prob / total)
+            draw_prob = float(draw_prob / total)
+            away_prob = float(away_prob / total)
         else:
             logger.warning("Zero total probability, using defaults")
             home_prob = 0.4
