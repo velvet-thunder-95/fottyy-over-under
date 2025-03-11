@@ -250,12 +250,11 @@ class PredictionHistory:
             # Calculate success rate
             success_rate = (correct_predictions / completed_count * 100) if completed_count > 0 else 0.0
             
-            # Calculate total profit/loss
+            # Calculate total profit/loss and ROI
             total_profit = completed_predictions['profit_loss'].sum()
             
-            # Calculate ROI
-            total_bet_amount = completed_predictions['bet_amount'].sum()
-            roi = (total_profit / total_bet_amount * 100) if total_bet_amount > 0 else 0.0
+            # Calculate ROI using completed bets only (each bet is £1)
+            roi = (total_profit / completed_count * 100) if completed_count > 0 else 0.0
             
             return [total_predictions, correct_predictions, success_rate, total_profit, roi], pending_count
                         
