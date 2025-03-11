@@ -180,11 +180,17 @@ class PredictionHistory:
             logging.error(f"Error getting predictions: {str(e)}")
             return pd.DataFrame()
 
-    def calculate_statistics(self, confidence_levels=None, leagues=None):
+    def calculate_statistics(self, confidence_levels=None, leagues=None, start_date=None, end_date=None):
         """Calculate prediction statistics with optional confidence level and league filters"""
         try:
             # Get predictions from Supabase with filters
             query = self.db.supabase.table('predictions').select('*')
+            
+            # Apply date filters if provided
+            if start_date:
+                query = query.gte('date', start_date)
+            if end_date:
+                query = query.lte('date', end_date)
             
             # Apply confidence level filters
             if confidence_levels and "All" not in confidence_levels:
@@ -197,6 +203,10 @@ class PredictionHistory:
                         .gte('confidence', 50).lt('confidence', 70)
                     if leagues and "All" not in leagues:
                         medium_query = medium_query.in_('league', leagues)
+                    if start_date:
+                        medium_query = medium_query.gte('date', start_date)
+                    if end_date:
+                        medium_query = medium_query.lte('date', end_date)
                     medium_result = medium_query.execute()
                     predictions_list.extend(medium_result.data)
                     
@@ -205,6 +215,10 @@ class PredictionHistory:
                         .gte('confidence', 70)
                     if leagues and "All" not in leagues:
                         high_query = high_query.in_('league', leagues)
+                    if start_date:
+                        high_query = high_query.gte('date', start_date)
+                    if end_date:
+                        high_query = high_query.lte('date', end_date)
                     high_result = high_query.execute()
                     predictions_list.extend(high_result.data)
                     
@@ -213,6 +227,10 @@ class PredictionHistory:
                         .lt('confidence', 50)
                     if leagues and "All" not in leagues:
                         low_query = low_query.in_('league', leagues)
+                    if start_date:
+                        low_query = low_query.gte('date', start_date)
+                    if end_date:
+                        low_query = low_query.lte('date', end_date)
                     low_result = low_query.execute()
                     predictions_list.extend(low_result.data)
                 
@@ -943,7 +961,9 @@ def show_history_page():
             current_leagues = None if "All" in selected_leagues else selected_leagues
             stats, pending_count = history.calculate_statistics(
                 confidence_levels=current_confidence,
-                leagues=current_leagues
+                leagues=current_leagues,
+                start_date=start_date_str,
+                end_date=end_date_str
             )
             
             # Create metrics container
