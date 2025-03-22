@@ -142,22 +142,50 @@ class SupabaseDB:
     def get_predictions(self, start_date=None, end_date=None):
         """Get predictions within a date range"""
         try:
-            query = self.supabase.table('predictions').select("*")
-            
+            # First get total count to know how many pages we need
+            count_query = self.supabase.table('predictions').select('*', count='exact')
             if start_date:
-                query = query.gte('date', start_date)
-                logger.info(f"Added start date filter: {start_date}")
+                count_query = count_query.gte('date', start_date)
             if end_date:
-                query = query.lt('date', end_date)
-                logger.info(f"Added end date filter: {end_date}")
-
-            result = query.order('date.desc').execute()
+                count_query = count_query.lt('date', end_date)
+            count_result = count_query.execute()
+            total_records = count_result.count if hasattr(count_result, 'count') else 0
+            logger.info(f"Total records matching filters: {total_records}")
             
-            # Convert to pandas DataFrame
-            if result.data:
-                return pd.DataFrame(result.data)
+            # Get all records using pagination
+            all_records = []
+            page_size = 1000  # Supabase default page size
+            total_pages = (total_records + page_size - 1) // page_size
+            
+            for page in range(total_pages):
+                start_range = page * page_size
+                end_range = start_range + page_size - 1
+                
+                query = self.supabase.table('predictions').select("*")
+                if start_date:
+                    query = query.gte('date', start_date)
+                if end_date:
+                    query = query.lt('date', end_date)
+                    
+                # Important: Order by date and use range for pagination
+                query = query.order('date').range(start_range, end_range)
+                result = query.execute()
+                
+                if result.data:
+                    all_records.extend(result.data)
+                    logger.info(f"Retrieved page {page + 1}/{total_pages} with {len(result.data)} records. Total so far: {len(all_records)}")
+                else:
+                    break
+            
+            # Convert to DataFrame and sort
+            if all_records:
+                df = pd.DataFrame(all_records)
+                df = df.sort_values('date', ascending=False)  # Sort newest first
+                logger.info(f"Final dataset: {len(df)} records from {df['date'].min()} to {df['date'].max()}")
+                return df
+                
             return pd.DataFrame()
-
+            
         except Exception as e:
             logger.error(f"Error getting predictions: {str(e)}")
             return pd.DataFrame()

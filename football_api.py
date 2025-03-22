@@ -28,10 +28,17 @@ LEAGUE_IDS = {
     'England - FA Womens Super League': 12827,      
     'England - FA Womens Championship': 12802,
 
-    # Unknown leagues
+    # Colombian leagues
 
     'Colombia - Categoria Primera A': 14086,
+    'Colombia - Categoria Primera B':14090,
+
+    # Croatian leagues
     'Croatia - Prva HNL':12121,
+
+    # Unknown leagues
+    'unknown2 - unknown':14125,
+    'unknown3 - unknown':13964,
 
     # European Competitions
     'UEFA Champions League': 12321,

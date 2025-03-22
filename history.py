@@ -78,263 +78,50 @@ class PredictionHistory:
     def get_predictions(self, start_date=None, end_date=None, status=None, confidence_levels=None, leagues=None):
         """Get predictions with optional filters"""
         try:
-            # Start building the query with all columns
-            columns = ['date', 'league', 'home_team', 'away_team', 'predicted_outcome', 
-                      'actual_outcome', 'home_odds', 'draw_odds', 'away_odds', 'confidence', 
-                      'bet_amount', 'profit_loss', 'status', 'match_id', 'home_score', 'away_score']
-            query = self.db.supabase.table('predictions').select(','.join(columns))
+            # Get base predictions from Supabase with date filters
+            predictions = self.db.get_predictions(start_date=start_date, end_date=end_date)
             
-            # Apply filters
-            if start_date:
-                query = query.gte('date', start_date)
-            if end_date:
-                query = query.lte('date', end_date)
+            if predictions.empty:
+                return predictions
+                
+            # Apply additional filters in memory
             if status:
-                query = query.eq('status', status)
+                predictions = predictions[predictions['status'] == status]
                 
-            # Order by date in descending order (newest first)
-            query = query.order('date', desc=True)
-                
-            # Handle confidence levels
             if confidence_levels and "All" not in confidence_levels:
-                # Start with an empty list for our predictions
-                predictions_list = []
+                mask = pd.Series(False, index=predictions.index)
                 
-                # Get predictions for each confidence level
-                if "Medium" in confidence_levels:
-                    medium_query = self.db.supabase.table('predictions').select('*')\
-                        .gte('confidence', 50).lt('confidence', 70)
-                    if leagues and "All" not in leagues:
-                        medium_query = medium_query.in_('league', leagues)
-                    medium_result = medium_query.execute()
-                    predictions_list.extend(medium_result.data)
-                    
-                if "High" in confidence_levels:
-                    high_query = self.db.supabase.table('predictions').select('*')\
-                        .gte('confidence', 70)
-                    if leagues and "All" not in leagues:
-                        high_query = high_query.in_('league', leagues)
-                    high_result = high_query.execute()
-                    predictions_list.extend(high_result.data)
-                    
-                if "Low" in confidence_levels:
-                    low_query = self.db.supabase.table('predictions').select('*')\
-                        .lt('confidence', 50)
-                    if leagues and "All" not in leagues:
-                        low_query = low_query.in_('league', leagues)
-                    low_result = low_query.execute()
-                    predictions_list.extend(low_result.data)
+                for level in confidence_levels:
+                    if level == "High":
+                        mask |= predictions['confidence'] >= 70
+                    elif level == "Medium":
+                        mask |= (predictions['confidence'] >= 50) & (predictions['confidence'] < 70)
+                    elif level == "Low":
+                        mask |= predictions['confidence'] < 50
+                        
+                predictions = predictions[mask]
                 
-                # Convert to DataFrame
-                df = pd.DataFrame(predictions_list)
-            else:
-                # If no confidence levels selected or 'All' is selected
-                if leagues and "All" not in leagues:
-                    query = query.in_('league', leagues)
-                result = query.execute()
-                df = pd.DataFrame(result.data)
+            if leagues and "All" not in leagues:
+                predictions = predictions[predictions['league'].isin(leagues)]
             
-            # Execute query and order by date
-            if not df.empty:
-                # Ensure profit_loss is numeric and has proper default values
-                df['profit_loss'] = pd.to_numeric(df['profit_loss'], errors='coerce').fillna(0.0)
-                
-                # Convert other numeric columns
-                numeric_columns = ['bet_amount', 'confidence', 'home_odds', 'draw_odds', 'away_odds']
-                for col in numeric_columns:
-                    if col in df.columns:
-                        df[col] = pd.to_numeric(df[col], errors='coerce')
-                
-                # Ensure proper profit_loss values based on status
-                df.loc[df['status'] != 'Completed', 'profit_loss'] = 0.0
+            # Ensure numeric columns
+            numeric_columns = ['bet_amount', 'confidence', 'home_odds', 'draw_odds', 'away_odds', 'profit_loss']
+            for col in numeric_columns:
+                if col in predictions.columns:
+                    predictions[col] = pd.to_numeric(predictions[col], errors='coerce')
             
-            return df
-                
-            # Execute query and order by date
-            result = query.order('date.desc').execute()
+            # Ensure proper profit_loss values
+            predictions.loc[predictions['status'] != 'Completed', 'profit_loss'] = 0.0
             
-            # Convert to DataFrame
-            df = pd.DataFrame(result.data)
-            if not df.empty:
-                # Ensure profit_loss is numeric and has proper default values
-                df['profit_loss'] = pd.to_numeric(df['profit_loss'], errors='coerce').fillna(0.0)
-                
-                # Convert other numeric columns
-                numeric_columns = ['bet_amount', 'confidence', 'home_odds', 'draw_odds', 'away_odds']
-                for col in numeric_columns:
-                    if col in df.columns:
-                        df[col] = pd.to_numeric(df[col], errors='coerce')
-                
-                # Ensure proper profit_loss values based on status
-                df.loc[df['status'] != 'Completed', 'profit_loss'] = 0.0
-                
-                # Debug info
-                print("\nDataFrame info after conversion:")
-                print(df.info())
-                print("\nProfit/Loss values:")
-                print(df[['profit_loss', 'status', 'predicted_outcome', 'actual_outcome']].head())
+            # Sort by date (newest first)
+            predictions = predictions.sort_values('date', ascending=False)
             
-            return df
+            logging.info(f"After filtering: {len(predictions)} records from {predictions['date'].min()} to {predictions['date'].max()}")
+            return predictions
             
         except Exception as e:
             logging.error(f"Error getting predictions: {str(e)}")
             return pd.DataFrame()
-
-    def calculate_statistics(self, confidence_levels=None, leagues=None, start_date=None, end_date=None):
-        """Calculate prediction statistics with optional confidence level and league filters"""
-        try:
-            # Get predictions from Supabase with filters
-            query = self.db.supabase.table('predictions').select('*')
-            
-            # Apply date filters if provided
-            if start_date:
-                query = query.gte('date', start_date)
-            if end_date:
-                query = query.lte('date', end_date)
-            
-            # Apply confidence level filters
-            if confidence_levels and "All" not in confidence_levels:
-                # Start with an empty list for our predictions
-                predictions_list = []
-                
-                # Get predictions for each confidence level
-                if "Medium" in confidence_levels:
-                    medium_query = self.db.supabase.table('predictions').select('*')\
-                        .gte('confidence', 50).lt('confidence', 70)
-                    if leagues and "All" not in leagues:
-                        medium_query = medium_query.in_('league', leagues)
-                    if start_date:
-                        medium_query = medium_query.gte('date', start_date)
-                    if end_date:
-                        medium_query = medium_query.lte('date', end_date)
-                    medium_result = medium_query.execute()
-                    predictions_list.extend(medium_result.data)
-                    
-                if "High" in confidence_levels:
-                    high_query = self.db.supabase.table('predictions').select('*')\
-                        .gte('confidence', 70)
-                    if leagues and "All" not in leagues:
-                        high_query = high_query.in_('league', leagues)
-                    if start_date:
-                        high_query = high_query.gte('date', start_date)
-                    if end_date:
-                        high_query = high_query.lte('date', end_date)
-                    high_result = high_query.execute()
-                    predictions_list.extend(high_result.data)
-                    
-                if "Low" in confidence_levels:
-                    low_query = self.db.supabase.table('predictions').select('*')\
-                        .lt('confidence', 50)
-                    if leagues and "All" not in leagues:
-                        low_query = low_query.in_('league', leagues)
-                    if start_date:
-                        low_query = low_query.gte('date', start_date)
-                    if end_date:
-                        low_query = low_query.lte('date', end_date)
-                    low_result = low_query.execute()
-                    predictions_list.extend(low_result.data)
-                
-                # Convert to DataFrame and calculate statistics
-                predictions = pd.DataFrame(predictions_list)
-            else:
-                # If no confidence levels selected or 'All' is selected
-                if leagues and "All" not in leagues:
-                    query = query.in_('league', leagues)
-                result = query.execute()
-                predictions = pd.DataFrame(result.data)
-            
-            if predictions.empty:
-                return [0, 0, 0.0, 0.0, 0.0], 0
-            
-            # Calculate statistics
-            completed_predictions = predictions[predictions['status'] == 'Completed']
-            pending_predictions = predictions[predictions['status'] == 'Pending']
-            
-            total_predictions = len(predictions)
-            completed_count = len(completed_predictions)
-            pending_count = len(pending_predictions)
-            
-            if completed_count == 0:
-                return [total_predictions, 0, 0.0, 0.0, 0.0], pending_count
-            
-            # Calculate correct predictions
-            correct_predictions = len(
-                completed_predictions[
-                    completed_predictions['predicted_outcome'] == 
-                    completed_predictions['actual_outcome']
-                ]
-            )
-            
-            # Calculate success rate
-            success_rate = (correct_predictions / completed_count * 100) if completed_count > 0 else 0.0
-            
-            # Calculate total profit/loss and ROI
-            total_profit = completed_predictions['profit_loss'].sum()
-            
-            # Calculate ROI using completed bets only (each bet is £1)
-            roi = (total_profit / completed_count * 100) if completed_count > 0 else 0.0
-            
-            return [total_predictions, correct_predictions, success_rate, total_profit, roi], pending_count
-                        
-            # Apply league filters
-            if leagues and "All" not in leagues:
-                # For each league, get predictions and combine
-                league_predictions = []
-                for league in leagues:
-                    league_query = self.db.supabase.table('predictions').select('*')\
-                        .eq('league', league)
-                    league_result = league_query.execute()
-                    league_predictions.extend(league_result.data)
-                predictions = pd.DataFrame(league_predictions)
-                
-            # Execute query
-            result = query.execute()
-            predictions = pd.DataFrame(result.data)
-            
-            if predictions.empty:
-                return [0, 0, 0.0, 0.0, 0.0], 0
-            
-            # Calculate statistics
-            completed_predictions = predictions[predictions['status'] == 'Completed']
-            pending_predictions = predictions[predictions['status'] == 'Pending']
-            
-            total_predictions = len(predictions)
-            completed_count = len(completed_predictions)
-            pending_count = len(pending_predictions)
-            
-            # Calculate correct predictions
-            correct_predictions = len(
-                completed_predictions[
-                    completed_predictions['predicted_outcome'] == 
-                    completed_predictions['actual_outcome']
-                ]
-            )
-            
-            # Calculate success rate
-            success_rate = (correct_predictions / completed_count * 100) \
-                if completed_count > 0 else 0.0
-            
-            # Calculate profit and ROI
-            total_profit = completed_predictions['profit_loss'].sum() \
-                if not completed_predictions.empty else 0.0
-            
-            total_bet_amount = completed_count * float(completed_predictions['bet_amount'].iloc[0]) \
-                if not completed_predictions.empty else 0.0
-            
-            roi = (total_profit / total_bet_amount * 100) \
-                if total_bet_amount > 0 else 0.0
-            
-            return [
-                total_predictions,
-                correct_predictions,
-                success_rate,
-                total_profit,
-                roi
-            ], pending_count
-            
-        except Exception as e:
-            logging.error(f"Error calculating statistics: {str(e)}")
-            return [0, 0, 0.0, 0.0, 0.0], 0
 
     def update_match_results(self, match_id, result):
         """Update match results in the database"""
@@ -488,124 +275,134 @@ class PredictionHistory:
         
         logger.info(f"Updated {updated_count} pending matches")
 
-
+    def calculate_statistics(self, confidence_levels=None, leagues=None, start_date=None, end_date=None):
+        """Calculate prediction statistics with optional confidence level and league filters"""
+        try:
+            # Get all predictions first using our paginated get_predictions method
+            predictions = self.get_predictions(
+                start_date=start_date,
+                end_date=end_date,
+                confidence_levels=confidence_levels,
+                leagues=leagues
+            )
+            
+            if predictions.empty:
+                return [0, 0, 0.0, 0.0, 0.0], 0
+            
+            # Calculate statistics
+            completed_predictions = predictions[predictions['status'] == 'Completed']
+            pending_predictions = predictions[predictions['status'] == 'Pending']
+            
+            total_predictions = len(predictions)
+            completed_count = len(completed_predictions)
+            pending_count = len(pending_predictions)
+            
+            if completed_count == 0:
+                return [total_predictions, 0, 0.0, 0.0, 0.0], pending_count
+            
+            # Calculate correct predictions
+            correct_predictions = len(
+                completed_predictions[
+                    completed_predictions['predicted_outcome'] == 
+                    completed_predictions['actual_outcome']
+                ]
+            )
+            
+            # Calculate success rate
+            success_rate = (correct_predictions / completed_count * 100) if completed_count > 0 else 0.0
+            
+            # Calculate total profit/loss and ROI
+            total_profit = completed_predictions['profit_loss'].sum()
+            
+            # Calculate ROI using completed bets only (each bet is £1)
+            roi = (total_profit / completed_count * 100) if completed_count > 0 else 0.0
+            
+            # Debug info
+            logging.info(f"Statistics calculation:")
+            logging.info(f"Total predictions: {total_predictions}")
+            logging.info(f"Completed predictions: {completed_count}")
+            logging.info(f"Pending predictions: {pending_count}")
+            logging.info(f"Correct predictions: {correct_predictions}")
+            logging.info(f"Success rate: {success_rate:.2f}%")
+            logging.info(f"Total profit: £{total_profit:.2f}")
+            logging.info(f"ROI: {roi:.2f}%")
+            logging.info(f"Date range: {predictions['date'].min()} to {predictions['date'].max()}")
+            
+            return [total_predictions, correct_predictions, success_rate, total_profit, roi], pending_count
+            
+        except Exception as e:
+            logging.error(f"Error calculating statistics: {str(e)}")
+            return [0, 0, 0.0, 0.0, 0.0], 0
 
 def style_dataframe(df):
     """Style the predictions dataframe with colors and formatting"""
-    
     def style_row(row):
-        base_style = [
-            'font-size: 14px',
-            'font-weight: 400',
-            'color: #333333',
-            'padding: 12px 15px',
-            'border-bottom: 1px solid #e0e0e0'
-        ]
+        styles = {}
         
-        styles = [base_style.copy() for _ in range(len(row))]
+        # Base style for all cells
+        base_style = 'font-size: 14px; padding: 12px 15px; border-bottom: 1px solid #e0e0e0;'
         
-        # Style row background based on result
-        bg_style = None
-        if row['Status'] == 'Pending' or pd.isna(row.get('Actual Outcome', '')) or row.get('Actual Outcome', '') == '':
-            bg_style = 'background-color: #f5f5f5'
-        elif row.get('Prediction', '') == row.get('Actual Outcome', ''):
-            bg_style = 'background-color: #e8f5e9'  # Lighter green
+        # Background color based on status
+        if row.get('Status') == 'Pending':
+            bg_color = '#f8f9fa'  # Light gray for pending
+        elif row.get('Result') == '✅ Won':
+            bg_color = '#e8f5e9'  # Light green for wins
+        elif row.get('Result') == '❌ Lost':
+            bg_color = '#fce4ec'  # Light red for losses
         else:
-            bg_style = 'background-color: #fce4ec'  # Lighter red
+            bg_color = '#ffffff'  # White for others
+            
+        # Add background color to base style
+        base_style += f' background-color: {bg_color};'
         
-        if bg_style:
-            for style in styles:
-                style.append(bg_style)
-        
-        return [';'.join(style) for style in styles]
-    
-    def style_profit_loss(val):
-        if not isinstance(val, str) or val == '-':
-            return ''
-        if val.startswith('+'):
-            return 'color: #4CAF50; font-weight: 600'
-        elif val.startswith('-'):
-            return 'color: #f44336; font-weight: 600'
-        elif val == '£0.00':
-            return 'color: #6c757d'
-        return ''
-    
-    def style_confidence(val):
-        if 'High' in str(val):
-            return 'background-color: #d4edda; color: #155724; font-weight: bold'
-        elif 'Medium' in str(val):
-            return 'background-color: #fff3cd; color: #856404; font-weight: bold'
-        elif 'Low' in str(val):
-            return 'background-color: #f8d7da; color: #721c24; font-weight: bold'
-        return ''
-    
-    def style_result(val):
-        if '✅' in str(val):  # Won
-            return 'color: #28a745; font-weight: bold'
-        elif '❌' in str(val):  # Lost
-            return 'color: #dc3545; font-weight: bold'
-        return ''
-    
-    # Create the styled DataFrame
-    styled = df.style\
-        .apply(style_row, axis=1)\
-        .map(style_profit_loss, subset=['Profit/Loss'])\
-        .map(style_confidence, subset=['Confidence'])\
-        .map(style_result, subset=['Result'])
-    
-    return styled
-    
-    # Apply styling
-    def style_row(row):
-        base_style = [
-            'font-size: 14px',
-            'font-weight: 400',
-            'color: #333333',
-            'padding: 12px 15px',
-            'border-bottom: 1px solid #e0e0e0'
-        ]
-        
-        styles = [base_style.copy() for _ in range(len(row))]
-        
-        # Get column indices
-        profit_loss_idx = None
+        # Style Result column
+        if row.get('Result') == '✅ Won':
+            styles['Result'] = base_style + 'color: #28a745; font-weight: bold'
+        elif row.get('Result') == '❌ Lost':
+            styles['Result'] = base_style + 'color: #dc3545; font-weight: bold'
+        else:
+            styles['Result'] = base_style + 'color: #6c757d; font-style: italic'
+            
+        # Style Profit/Loss column
         try:
-            profit_loss_idx = display_df.columns.get_loc('Profit/Loss')
-        except KeyError:
-            pass
-        
-        # Style row background
-        bg_style = None
-        if row['Status'] == 'Pending' or pd.isna(row['Actual Outcome']) or row['Actual Outcome'] == '':
-            bg_style = 'background-color: #f5f5f5'
-        elif row['Prediction'] == row['Actual Outcome']:
-            bg_style = 'background-color: #e8f5e9'  # Lighter green
+            if row.get('Profit/Loss') == '-':
+                styles['Profit/Loss'] = base_style + 'color: #6c757d'
+            elif row.get('Profit/Loss', '').startswith('+'):
+                styles['Profit/Loss'] = base_style + 'color: #28a745; font-weight: bold'  # Green for profits
+            elif row.get('Profit/Loss', '').startswith('-'):
+                styles['Profit/Loss'] = base_style + 'color: #dc3545; font-weight: bold'  # Red for losses
+            else:
+                styles['Profit/Loss'] = base_style + 'color: #6c757d'  # Gray for zero/neutral
+        except (AttributeError, TypeError):
+            styles['Profit/Loss'] = base_style + 'color: #6c757d'
+            
+        # Style Confidence column
+        confidence_style = base_style
+        if row.get('Confidence') == 'High':
+            confidence_style += 'background-color: #d4edda; color: #155724; font-weight: bold'
+        elif row.get('Confidence') == 'Medium':
+            confidence_style += 'background-color: #fff3cd; color: #856404; font-weight: bold'
+        elif row.get('Confidence') == 'Low':
+            confidence_style += 'background-color: #f8d7da; color: #721c24; font-weight: bold'
+        styles['Confidence'] = confidence_style
+            
+        # Status column styling
+        if row.get('Status') == 'Completed':
+            styles['Status'] = base_style + 'color: #28a745'
+        elif row.get('Status') == 'Pending':
+            styles['Status'] = base_style + 'color: #ffc107'
         else:
-            bg_style = 'background-color: #fce4ec'  # Lighter red
-        
-        if bg_style:
-            for style in styles:
-                style.append(bg_style)
-        
-        return [';'.join(style) for style in styles]
+            styles['Status'] = base_style + 'color: #6c757d'
+            
+        # Default style for other columns
+        for col in df.columns:
+            if col not in styles:
+                styles[col] = base_style
+                
+        return pd.Series(styles)
     
-    # Function to style profit/loss values
-    def style_profit_loss(val):
-        if not isinstance(val, str):
-            return ''
-        if val.startswith('+'):
-            return 'color: #4CAF50; font-weight: 600'
-        elif val.startswith('-'):
-            return 'color: #f44336; font-weight: 600'
-        return ''
-    
-    # Create the styled DataFrame
-    styled_df = display_df.style\
-        .apply(style_row, axis=1)\
-        .map(style_profit_loss, subset=['Profit/Loss'])
-    
-    # Add table styles
-    styled_df.set_table_styles([
+    # Apply the styles and add table-level styling
+    return df.style.apply(style_row, axis=1).set_table_styles([
         {'selector': 'th', 'props': [
             ('background-color', '#f8f9fa'),
             ('color', '#333333'),
@@ -630,8 +427,6 @@ def style_dataframe(df):
             ('background-color', 'rgba(0,0,0,0.05) !important')
         ]}
     ])
-    
-    return styled_df
 
 def get_confidence_level(confidence):
     """Convert confidence value to display text"""
@@ -665,15 +460,15 @@ def show_history_page():
         }
         .stDataFrame [data-testid="StyledDataFrameDataCell"] {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            padding: 12px 15px !important;
-            color: #333333 !important;
+            padding: 12px 15px;
+            color: #333333;
         }
         .stDataFrame [data-testid="StyledDataFrameHeaderCell"] {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            padding: 12px 15px !important;
-            background-color: #f8f9fa !important;
-            color: #333333 !important;
-            font-weight: 600 !important;
+            padding: 12px 15px;
+            background-color: #f8f9fa;
+            color: #333333;
+            font-weight: 600;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -752,100 +547,6 @@ def show_history_page():
         .negative-value {
             color: #f56565;
         }
-
-        @media (max-width: 768px) {
-            .metrics-grid {
-                flex-wrap: wrap;
-            }
-            .metric-box {
-                min-width: calc(50% - 10px);
-            }
-        }
-        
-        /* Table styling */
-        .dataframe {
-            border-collapse: separate !important;
-            border-spacing: 0;
-            width: 100%;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-        }
-        
-        .dataframe th {
-            background-color: #f8f9fa !important;
-            color: #495057 !important;
-            font-weight: 600 !important;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            padding: 15px !important;
-            border-bottom: 2px solid #dee2e6 !important;
-        }
-        
-        .dataframe td {
-            padding: 12px 15px !important;
-            border-bottom: 1px solid #e9ecef !important;
-            color: #212529 !important;
-            background-color: white !important;
-        }
-        
-        .dataframe tr:hover td {
-            background-color: #f8f9fa !important;
-        }
-        
-        /* Status indicators */
-        .status-pending {
-            color: #6c757d;
-            background-color: #f8f9fa;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-weight: 500;
-        }
-        
-        .status-win {
-            color: #28a745;
-            background-color: #e8f5e9;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-weight: 500;
-        }
-        
-        .status-loss {
-            color: #dc3545;
-            background-color: #fbe9e7;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-weight: 500;
-        }
-        
-        /* Date filter styling */
-        .date-filter {
-            background: white;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-            margin-bottom: 20px;
-        }
-        
-        /* Scrollbar styling */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 4px;
-        }
-        
-        ::-webkit-scrollbar-thumb {
-            background: #888;
-            border-radius: 4px;
-        }
-        
-        ::-webkit-scrollbar-thumb:hover {
-            background: #555;
-        }
         </style>
     """, unsafe_allow_html=True)
 
@@ -860,14 +561,7 @@ def show_history_page():
         # Initialize PredictionHistory
         history = PredictionHistory()
         
-        # Add date filter in sidebar with custom styling
-        st.sidebar.markdown("""
-            <div class="date-filter">
-                <h2 style='color: #1e3c72; font-size: 1.2em; margin-bottom: 15px;'>Filters</h2>
-            </div>
-        """, unsafe_allow_html=True)
-        
-        # Add filters to sidebar
+        # Add date filter in sidebar
         st.sidebar.markdown("## Filters", help="Filter your prediction history")
         
         # Get all predictions first to determine date range
@@ -903,10 +597,9 @@ def show_history_page():
 
         # Format dates for database query
         start_date_str = start_date.strftime("%Y-%m-%d")
-        end_date_str = end_date.strftime("%Y-%m-%d")  # No need to add extra day
+        end_date_str = (end_date + timedelta(days=1)).strftime("%Y-%m-%d")  # Include end date
         
         # Get unique leagues from predictions
-        all_predictions = history.get_predictions()
         available_leagues = ["All"] + sorted(all_predictions['league'].unique().tolist()) if not all_predictions.empty else ["All"]
         
         # League multiselect
@@ -938,6 +631,10 @@ def show_history_page():
             confidence_levels=None if "All" in confidence_levels else confidence_levels,
             leagues=None if "All" in selected_leagues else selected_leagues
         )
+        
+        # Debug info
+        logging.info(f"Date range: {start_date_str} to {end_date_str}")
+        logging.info(f"Total predictions: {len(predictions) if not predictions.empty else 0}")
         
         # If predictions is None or empty, show message
         if predictions is None or predictions.empty:
@@ -981,7 +678,7 @@ def show_history_page():
             
             for metric in metrics:
                 if metric.get("is_currency"):
-                    formatted_value = f"£{metric['value']:.2f}"
+                    formatted_value = f"{metric['value']:.2f}U"
                 elif metric.get("is_percentage"):
                     if metric['label'] == "ROI":
                         formatted_value = f"{metric['value']:.2f}%"
@@ -1045,56 +742,25 @@ def show_history_page():
                         'Confidence': 'Confidence',
                         'actual_outcome': 'Actual Outcome',
                         'Result': 'Result',
-                        'profit_loss': 'Profit/Loss',  # Keep original column name
-                        'status': 'Status'
+                        'profit_loss': 'Profit/Loss',
+                        'status': 'Status'  # Add back status column
                     }
                     
                     # Create final dataframe with explicit column selection
                     final_df = predictions[list(display_columns.keys())].copy()
                     
-                    # Debug print raw values
-                    print("\nRaw profit/loss values from database:")
-                    print(predictions[['profit_loss', 'status', 'predicted_outcome', 'actual_outcome']].to_string())
-                    
-                    # Format Result column
-                    def format_result(row):
-                        if row['status'] == 'SCHEDULED':
-                            return '🗓️ Scheduled'
-                        elif row['status'] == 'Pending':
-                            return '⏳ Pending'
-                        elif pd.isna(row['actual_outcome']) or row['actual_outcome'] == '':
-                            return '⏳ Pending'
-                        elif row['predicted_outcome'] == row['actual_outcome']:
-                            return '✅ Won'
-                        else:
-                            return '❌ Lost'
-                    
-                    # Format Actual Outcome column
-                    def format_actual_outcome(row):
-                        if row['status'] in ['SCHEDULED', 'Pending'] or pd.isna(row['actual_outcome']) or row['actual_outcome'] == '':
-                            return '-'
-                        return row['actual_outcome']
-                    
                     # Format profit/loss values
                     def format_pl(row):
-                        if row['status'] != 'Completed':
+                        if pd.isna(row['profit_loss']) or row['status'] != 'Completed':
                             return '-'
                         try:
                             value = float(row['profit_loss'])
-                            if pd.isna(value):
-                                return '£0.00'
-                            return f'+£{value:.2f}' if value > 0 else f'-£{abs(value):.2f}' if value < 0 else '£0.00'
+                            return f'+{value:.2f}U' if value > 0 else f'-{abs(value):.2f}U' if value < 0 else '0.00U'
                         except (ValueError, TypeError):
-                            return '£0.00'
+                            return '-'
                     
-                    # Apply all formatting
-                    final_df['Result'] = final_df.apply(format_result, axis=1)
-                    final_df['actual_outcome'] = final_df.apply(format_actual_outcome, axis=1)
+                    # Apply formatting
                     final_df['profit_loss'] = final_df.apply(format_pl, axis=1)
-                    
-                    # Print debug info
-                    print("\nFormatted profit/loss values:")
-                    print(final_df[['profit_loss', 'status']].head().to_string())
                     
                     # Rename columns for display
                     final_df = final_df.rename(columns=display_columns)
@@ -1119,31 +785,9 @@ def show_history_page():
         st.error(f"Error displaying predictions table: {str(e)}")
         st.exception(e)
 
-    # Add Navigation JavaScript
-    st.markdown("""
-    <script>
-        function handleLogout() {
-            // Clear session state
-            localStorage.clear();
-            sessionStorage.clear();
-            
-            // Redirect to home page
-            window.location.href = '/';
-        }
-
-        function navigateToHome() {
-            window.location.href = '/';
-        }
-
-        function navigateToHistory() {
-            window.location.href = '/?page=history';
-        }
-    </script>
-    """, unsafe_allow_html=True)
-
     # Add navigation buttons
     def add_navigation_buttons():
-        col1, col2, col3 = st.columns([2, 2, 2])
+        col1, col2 = st.columns([1, 1])
         
         with col1:
             if st.button("🏠 Home", key="home"):
@@ -1151,20 +795,7 @@ def show_history_page():
                 st.rerun()
                 
         with col2:
-            if st.button("📊 History", key="history"):
-                st.query_params["page"] = "history"
+            if st.button("🔄 Refresh", key="refresh"):
                 st.rerun()
-                
-        with col3:
-            if st.button("🚪 Logout", key="logout"):
-                st.session_state.logged_in = False
-                st.query_params.clear()
-                st.rerun()
-
-    # Call the function to add navigation buttons
+        
     add_navigation_buttons()
-
-    # Add back button
-    if st.button("Back to Predictions"):
-        st.query_params["page"] = "main"
-        st.rerun()

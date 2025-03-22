@@ -595,6 +595,37 @@ st.markdown("""
         margin: 2px 0;
         line-height: 1.2;
     }
+    
+    /* Back to Top Button */
+    .back-to-top {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background-color: #1e88e5;
+        color: white;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        transition: all 0.3s ease;
+        z-index: 1000;
+        cursor: pointer;
+    }
+
+    .back-to-top:hover {
+        background-color: #1565c0;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        transform: translateY(-2px);
+    }
+
+    .back-to-top i {
+        font-size: 24px;
+    }
+    
 </style>
 """, unsafe_allow_html=True)
 
@@ -2343,8 +2374,9 @@ def show_main_app():
     # Update results automatically
     update_match_results()
     
-    # Add navigation buttons
+    # Add navigation buttons and back to top button
     add_navigation_buttons()
+    add_back_to_top_button()
     
     st.markdown('<div id="top"></div>', unsafe_allow_html=True)
     
@@ -2510,6 +2542,26 @@ def add_navigation_buttons():
             st.session_state.logged_in = False
             st.query_params.clear()
             st.rerun()
+
+def add_back_to_top_button():
+    """Add a back to top button with arrow icon"""
+    st.markdown("""
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+        <a href="#top" class="back-to-top" title="Back to Top">
+            <i class="fas fa-arrow-up"></i>
+        </a>
+        <script>
+            // Show/hide back to top button based on scroll position
+            window.onscroll = function() {
+                var button = document.querySelector('.back-to-top');
+                if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
+                    button.style.display = 'flex';
+                } else {
+                    button.style.display = 'none';
+                }
+            };
+        </script>
+    """, unsafe_allow_html=True)
 
 def convert_to_cet(kickoff):
     """Convert kickoff time to CET format"""
