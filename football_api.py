@@ -38,12 +38,12 @@ LEAGUE_IDS = {
 
     # Unknown leagues
     'unknown2 - unknown':14125,
-    'unknown3 - unknown':13964,
 
     # European Competitions
     'UEFA Champions League': 12321,
     'UEFA Europa League':12327,
     'UEFA Europa Conference League': 12278,
+    'Europe - World Championship':13964,
     'Europe - UEFA Youth League' :13497,
 
     # Asia uropean Competitions
