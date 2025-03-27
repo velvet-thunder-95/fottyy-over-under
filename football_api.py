@@ -37,7 +37,7 @@ LEAGUE_IDS = {
     'Croatia - Prva HNL':12121,
 
     # Unknown leagues
-    'unknown2 - unknown':14125,
+    'Argentine football league - Primera Nacional':14125,
 
     # European Competitions
     'UEFA Champions League': 12321,
