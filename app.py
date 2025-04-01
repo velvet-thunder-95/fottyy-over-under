@@ -599,31 +599,34 @@ st.markdown("""
     /* Back to Top Button */
     .back-to-top {
         position: fixed;
-        bottom: 20px;
+        bottom: 60px;
         right: 20px;
-        background-color: #1e88e5;
-        color: white;
+        display: flex;
         width: 40px;
         height: 40px;
         border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        background-color: white;
+        color: #000000;
+        text-align: center;
+        font-size: 20px;
         text-decoration: none;
         box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        transition: all 0.3s ease;
         z-index: 1000;
-        cursor: pointer;
+        justify-content: center;
+        align-items: center;
+        transition: all 0.3s ease;
     }
 
     .back-to-top:hover {
-        background-color: #1565c0;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-        transform: translateY(-2px);
+        transform: translateY(-3px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        color: #000000;
     }
 
     .back-to-top i {
-        font-size: 24px;
+        line-height: 40px;
+        display: inline-block;
+        color: #000000;
     }
     
 </style>
