@@ -18,53 +18,116 @@ BASE_URL = "https://api.football-data-api.com"
 
 # Define all league IDs we want to fetch
 LEAGUE_IDS = {
-    # England
 
 
-    'England - Championship': 12451,
-    'England - FA Cup': 13698,
-    'England - EFL League One': 12446,
-    'England - Premier League ': 12325,  
-    'England - FA Womens Super League': 12827,      
-    'England - FA Womens Championship': 12802,
 
-    # Colombian leagues
+    # Uruguay leagues
+    'Uruguay - Primera Division': 11209,
 
-    'Colombia - Categoria Primera A': 14086,
-    'Colombia - Categoria Primera B':14090,
+    # Ukraine leagues
+    'Ukraine - Premier League': 12483,
 
-    # Croatian leagues
-    'Croatia - Prva HNL':12121,
+    # Uganda leagues
+    'Uganda - Premier League': 13320,
 
-    # Argentine leagues
-    'Argentine football league - Primera Nacional':14125,
+    # USA leagues
+    'USA - MLS': 13973,
 
-    # European Competitions
-    'UEFA Champions League': 12321,
-    'UEFA Europa League':12327,
-    'UEFA Europa Conference League': 12278,
-    'Europe - World Championship':13964,
-    'Europe - UEFA Youth League' :13497,
+    # UAE leagues
+    'UAE - Arabian Gulf League': 12584,
 
-    # Asia uropean Competitions
-    'AFC Champions League': 13356,
+    # Turkey leagues
+    'Turkey - 1. Lig': 12928,
+    'Turkey Süper Lig': 12641,
 
+    # Switzerland leagues
+    'Switzerland - Super League': 12326,
+    'Switzerland - Challenge League': 12277,
+
+    # Sweden leagues
+    'Sweden - Allsvenskan': 13963,
+    'Sweden - Superettan': 13975,
+
+    # Spain leagues
+    'Spain - La Liga': 12316,
+    'Spain - Copa del Rey': 13624,
+    'Spain - Segunda División': 12467,
+
+    # South Korea leagues
+    'South Korea - K League 1': 26861,
+
+    # South America leagues
+    'South America - Copa Libertadores': 13974,
+    'South America - Copa Sudamericana': 13965,
+
+    # South Africa leagues
+    'South Africa - Premier Soccer League': 13284,
+
+    # Slovenia leagues
+    'Slovenia - Prva Liga': 12476,
+
+    # Slovakia leagues
+    'Slovakia - Super Liga': 12944,
+
+    # Scotland leagues
+    'Scotland - Premiership': 12455,
+    'Scotland - Championship': 12456,
+
+    # Saudi Arabia leagues
+    'Saudi Arabia - Pro League': 12772,
+    'Saudi Arabia - Professional League': 12772,
+
+    # Romania leagues
+    'Romania - Liga 1': 12782,
+
+    # Qatar leagues
+    'Qatar - Stars League': 12587,
+
+    # Portugal leagues
+    'Portugal - Primeira Liga': 12931,
+    'Portugal - Liga NOS': 12931,
+    'Portugal - Portuguese Super Cup': 12050,
+    'Portugal - LigaPro': 12585,
     
+    # Poland leagues
+    'Poland - Ekstraklasa': 12120,
+
+    # Norway leagues
+    'Norway - Eliteserien': 13987,
+
+    # Netherlands leaguea
+    'Netherlands - Eredivisie': 12322,
+    'Netherlands - KNVB Cup': 12799,
+
+    # Mexico leagues
+    'Mexico - Liga MX': 12136,
+    
+    # Japan
+    'Japan - J-League': 13960,   
+
+    # Italy
+    'Italy - Serie A': 12530,
+    'Italy - Serie B': 12621,
+    'Italy - Coppa Italia': 12579,
+
+    # Israel
+    'Italy - Serie B': 12621,
+
     # International Competitions
     'UEFA Euro Qualifiers': 12308,
     'UEFA Nations League': 13734,
     'Africa Cup of Nations': 12310,
     'WC Qualification Europe': 12311,
-    
 
-    # Spain
-    'Spain - La Liga': 12316,
-    'Spain - Segunda División': 12467,
-    
-    # Italy
-    'Italy - Serie A': 12530,
-    'Italy - Serie B': 12621,
-    'Italy - Coppa Italia': 12579,
+    # Iceland leagues
+    'Iceland - Úrvalsdeild': 10975,
+
+    # Hungary leagues
+    'Hungary - NB I': 12334,
+
+    # Greece
+    'Greece - Super League 1': 12734,
+    'Greece - Super League 2': 13694, 
 
     # Germany
     'Germany - Bundesliga': 12529,
@@ -75,99 +138,108 @@ LEAGUE_IDS = {
     # France
     'France - Ligue 1': 12337, 
     'France - Ligue 2': 12338,
-    
-    # Netherlands
-    'Netherlands - Eredivisie': 12322,
+    'France - Coupe de France': 13729,
+
+    # Finland
+    'Finland - Veikkausliiga': 12397,
+
+    # European Competitions
+    'Europe - UEFA Champions League': 12321,
+    'Europe - UEFA Europa League':12327,
+    'Europe - UEFA Europa Conference League': 12278,
+    'Europe - World Championship':13964,
+    'Europe - UEFA Youth League' :13497,
+
+    # England
+    'England - Championship': 12451,
+    'England - FA Cup': 13698,
+    'England - EFL League One': 12446,
+    'England - EFL League Two': 12422,
+    'England - Premier League ': 12325,  
+    'England - FA Womens Super League': 12827,      
+    'England - FA Womens Championship': 12802,
+
+    # Czech Republic
+    'Czech Republic - First League': 12336, 
+    'Czech Republic - Czech Cup': 12522,
+    'Czech Republic - 1. Liga U19': 12978,
+
+    # Colombian leagues
+    'Colombia - Categoria Primera A': 14086,
+    'Colombia - Categoria Primera B':14090,
 
 
+    # Croatian leagues
+    'Croatia - Prva HNL':12121,
+    'Croatia - Druga HNL':12471,
+
+    # Argentine leagues
+    'Argentine football league - Primera Nacional':14125,
+
+    # Asia uropean Competitions
+    'AFC Champions League': 13356,
 
     # Belgium
     'Belgium Pro League': 12137,
+    'Belgium - First Division B': 12141,
+    'Belgium - Belgian Cup': 13012,
     
-    # Scotland
-    'Scotland - Premiership': 12455,
-    'Scotland - Championship': 12456,
-    
-    # Turkey
-    'Turkey - 1. Lig': 12928,
-    'Turkey Süper Lig': 12641,
+    # Egypt leagues
+    'Egypt - Egyptian Premier League': 13704,
 
 
     # Russia
     'Russia - Premier League': 12335,
     
-    # Portugal
-    'Portugal - Primeira Liga': 12931,
-    
-    # Switzerland
-    'Switzerland - Super League': 12326,
-    
     # Austria
     'Austria - Bundesliga': 12472,
     
-    # Greece
-    'Greece - Super League 1': 12734,
-    'Greece - Super League 2': 13694, 
-
-    # Czech Republic
-    'Czech Republic - First League': 12336, 
-    
-    # Poland
-    'Poland - Ekstraklasa': 12120,
     
     # Denmark
     'Denmark - Superliga': 12132,
     
-    # Sweden
-    'Sweden - Allsvenskan': 13963,
+    #Bulgaria
+    'Bulgaria - First League': 13863,
+
+    # Bolivia leagues
+    'Bolivia - LFPB': 11072,
     
     # Brazil
     'Brazil - Serie A': 11351,
+    'Brazil - Serie B': 11351,
+    
+    # Bosnia and Herzegovina
+    'Bosnia and Herzegovina - Premier League of Bosnia': 12932,
     
     # Argentina
     'Argentina - Primera Division': 11212,
     
+    # Algeria leagues
+    'Algeria - Ligue 1': 12665,
+    
     # Chile
     'Chile - Primera Division': 12364,
     
+    # Armenia
+    'Armenia - Armenian Premier League': 12638,
+
     # Uruguay
     'Uruguay - Primera Division': 12365,
     
     # Colombia
     'Colombia - Primera A': 12366,
     
-    # Mexico
-    'Mexico - Liga MX': 12136,
-    
-    
-    # USA
-    'USA - MLS': 13973,
     
     # China
     'China - Super League': 12506,
     
-    # Japan
-    'Japan - J-League': 13960,   
-    
     # Australia
     'Australia - A-League': 13703,
     
-    # Saudi Arabia
-    'Saudi Arabia - Pro League': 12772,
-    
-    # Ukraine
-    'Ukraine - Premier League': 12483,
-    
-    # Finland
-    'Finland - Veikkausliiga': 12397,
-    
     # Other Continental Competitions
-    'South America - Copa Libertadores': 13974,
     'CONCACAF Champions League': 13925,
     
     
-    # Israel
-    'Italy - Serie B': 12621,
 }
 
 print("Loading football_api.py")
