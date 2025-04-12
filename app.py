@@ -628,6 +628,29 @@ st.markdown("""
         display: inline-block;
         color: #000000;
     }
+
+    /* Slider Styling */
+    .stSlider > div > div > div > div {
+        height: 24px !important;
+    }
+
+    .stSlider > div > div > div > div > div {
+        height: 24px !important;
+        background-color: #2c5282 !important;
+        border-radius: 12px !important;
+    }
+
+    /* Slider Thumb */
+    .stSlider > div > div > div > div > div:nth-child(2) {
+        width: 32px !important;
+        height: 32px !important;
+        background-color: white !important;
+        border: 3px solid #2c5282 !important;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.2) !important;
+        top: -4px !important;
+        border-radius: 50% !important;
+        cursor: pointer !important;
+    }
     
 </style>
 """, unsafe_allow_html=True)

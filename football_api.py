@@ -36,6 +36,9 @@ LEAGUE_IDS = {
     # Honduras leagues
     'Honduras - Liga Nacional de Fútbol Profesional de Honduras': 12650,
 
+    # Wales leagues
+    'Wales - Welsh Premier League': 12339,
+
     # USA leagues
     'USA - MLS': 13973,
 
@@ -168,7 +171,8 @@ LEAGUE_IDS = {
     'Mexico - Liga MX': 12136,
     
     # Japan
-    'Japan - J-League': 13960,   
+    'Japan - J-League': 13960,  
+    'Japan - J1 League': 13960, 
 
     # Italy
     'Italy - Serie A': 12530,
