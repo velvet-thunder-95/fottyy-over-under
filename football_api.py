@@ -20,6 +20,9 @@ BASE_URL = "https://api.football-data-api.com"
 LEAGUE_IDS = {
 
 
+    #Ecuador
+    'Ecuador - Primera Categoría Serie A': 11329,
+    'Ecuador - Primera Categoría Serie B': 11329,
 
     # Uruguay leagues
     'Uruguay - Primera Division': 11209,
@@ -30,19 +33,31 @@ LEAGUE_IDS = {
     # Uganda leagues
     'Uganda - Premier League': 13320,
 
+    # Honduras leagues
+    'Honduras - Liga Nacional de Fútbol Profesional de Honduras': 12650,
+
     # USA leagues
     'USA - MLS': 13973,
 
     # UAE leagues
     'UAE - Arabian Gulf League': 12584,
 
+    # Azerbaijan leagues
+    'Azerbaijan - Premyer Liqası': 12740,
+
+    # Estonia leagues
+    'Estonia - Meistriliiga': 11119,
+
     # Turkey leagues
     'Turkey - 1. Lig': 12928,
     'Turkey Süper Lig': 12641,
+    'Turkey - Turkish Cup': 13549,
 
     # Switzerland leagues
     'Switzerland - Super League': 12326,
     'Switzerland - Challenge League': 12277,
+    'Switzerland - Swiss Cup': 12688,
+    'Switzerland - Nationalliga A Women': 12596,
 
     # Sweden leagues
     'Sweden - Allsvenskan': 13963,
@@ -52,10 +67,20 @@ LEAGUE_IDS = {
     'Spain - La Liga': 12316,
     'Spain - Copa del Rey': 13624,
     'Spain - Segunda División': 12467,
+    'Spain - Primera Division Women': 13336,
 
     # South Korea leagues
     'South Korea - K League 1': 26861,
 
+    # Uzbekistan leagues
+    'Uzbekistan - Uzbekistan Super League': 11210,
+
+    # Venezuela leagues
+    'Venezuela - Primera División': 11063,
+
+    # Vietnam leagues
+    'Vietnam - V.League 1': 13152,
+    
     # South America leagues
     'South America - Copa Libertadores': 13974,
     'South America - Copa Sudamericana': 13965,
@@ -63,11 +88,51 @@ LEAGUE_IDS = {
     # South Africa leagues
     'South Africa - Premier Soccer League': 13284,
 
+    # Singapore leagues
+    'Singapore - S.League': 11495,
+
+    # Thailand leagues
+    'Thailand - Thai League T1': 12475,
+
     # Slovenia leagues
     'Slovenia - Prva Liga': 12476,
 
+    # Paraguay leagues
+    'Paraguay - Division Profesional': 13927,
+
+    # Peru leagues
+    'Peru - Primera División': 11062,
+
+    # Northern Ireland leagues
+    'Northern Ireland - NIFL Premiership': 12417,
+
+    # Morocco leagues
+    'Morocco - Botola Pro': 13286,
+
+    # Nigeria leagues
+    'Nigeria - NPFL': 12762,
+
+    # Panama leagues
+    'Panama - LPF': 13685,
+
     # Slovakia leagues
     'Slovakia - Super Liga': 12944,
+    'Slovakia - Slovakia Cup': 12687,
+
+    # Cyprus leagues
+    'Cyprus - First Division': 12541,
+
+    # Lithuania leagues
+    'Lithuania - A Lyga': 11246,
+
+    # Malta leagues
+    'Malta - Premier League': 12538,
+
+    # Iran leagues
+    'Iran - Persian Gulf Pro League': 12915,
+
+    # Jordan leagues
+    'Jordan - Jordanian Pro League': 12919,
 
     # Scotland leagues
     'Scotland - Premiership': 12455,
@@ -109,6 +174,7 @@ LEAGUE_IDS = {
     'Italy - Serie A': 12530,
     'Italy - Serie B': 12621,
     'Italy - Coppa Italia': 12579,
+    'Italy - Serie A Women': 12586,
 
     # Israel
     'Italy - Serie B': 12621,
@@ -134,11 +200,13 @@ LEAGUE_IDS = {
     'Germany 2. Bundesliga': 12528,
     'Germany - DFB-Pokal': 12057,
     'Germany - 3. Liga': 12623,
+    'Germany - Frauen Bundesliga': 12934,
     
     # France
     'France - Ligue 1': 12337, 
     'France - Ligue 2': 12338,
     'France - Coupe de France': 13729,
+    'France - Feminine Division 1': 12789,
 
     # Finland
     'Finland - Veikkausliiga': 12397,
@@ -149,6 +217,11 @@ LEAGUE_IDS = {
     'Europe - UEFA Europa Conference League': 12278,
     'Europe - World Championship':13964,
     'Europe - UEFA Youth League' :13497,
+    'Europe - UEFA Womens Champions League': 12536,
+    'Europe - UEFA Womens Nations League': 10812,
+
+    # Georgia leagues
+    'Georgia - Erovnuli Liga': 11233,
 
     # England
     'England - Championship': 12451,
@@ -156,13 +229,14 @@ LEAGUE_IDS = {
     'England - EFL League One': 12446,
     'England - EFL League Two': 12422,
     'England - Premier League ': 12325,  
-    'England - FA Womens Super League': 12827,      
+    'England - FA Womens Super League': 12827,   
     'England - FA Womens Championship': 12802,
 
     # Czech Republic
     'Czech Republic - First League': 12336, 
     'Czech Republic - Czech Cup': 12522,
     'Czech Republic - 1. Liga U19': 12978,
+    'Czech Republic - FNL': 12349,
 
     # Colombian leagues
     'Colombia - Categoria Primera A': 14086,
@@ -226,9 +300,11 @@ LEAGUE_IDS = {
     # Uruguay
     'Uruguay - Primera Division': 12365,
     
-    # Colombia
+    # Colombia leagues
     'Colombia - Primera A': 12366,
     
+    # Indonesia leagues
+    'Indonesia - Liga 1': 13046,
     
     # China
     'China - Super League': 12506,
