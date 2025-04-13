@@ -22,11 +22,95 @@ class TransfermarktAPI:
         self.search_cache = TransfermarktAPI.search_cache
         self.max_workers = max_workers
         self.request_times = []  # Track API request times
-        self.max_requests_per_second = 2  # Maximum requests per second (reduced from 5)
-        self.min_delay = 0.5  # Minimum delay between requests in seconds
+        self.max_requests_per_second = 5  # Maximum requests per second
+        self.min_delay = 0.2  # Minimum delay between requests in seconds
         
-        # Common abbreviations and their full names
+        # Common abbreviations and their full names with standardized formats
         self.abbreviations = {
+            # English Teams
+            "manchester city": "manchester city",
+            "man city": "manchester city",
+            "arsenal": "arsenal fc",
+            "liverpool": "liverpool fc",
+            "manchester united": "manchester united",
+            "man utd": "manchester united",
+            "chelsea": "chelsea fc",
+            "tottenham": "tottenham hotspur",
+            "newcastle": "newcastle united",
+            "brighton": "brighton & hove albion",
+            
+            # German Teams
+            "bayern munich": "fc bayern munchen",
+            "bayern": "fc bayern munchen",
+            "dortmund": "borussia dortmund",
+            "bvb": "borussia dortmund",
+            "leipzig": "rb leipzig",
+            "leverkusen": "bayer leverkusen",
+            
+            # Spanish Teams
+            "real madrid": "real madrid cf",  # Important: use CF suffix
+            "barcelona": "fc barcelona",
+            "atletico madrid": "atletico de madrid",  # Use ASCII version
+            "atletico": "atletico de madrid",
+            "sevilla": "sevilla fc",
+            "valencia": "valencia cf",
+            
+            # Italian Teams
+            "juventus": "juventus",  # Just Juventus, no Turin
+            "juve": "juventus",
+            "inter milan": "inter",  # Just Inter
+            "inter": "inter",
+            "ac milan": "ac milan",
+            "milan": "ac milan",
+            "napoli": "ssc napoli",
+            
+            # French Teams
+            "psg": "paris saint-germain",
+            "paris": "paris saint-germain",
+            "lyon": "olympique lyon",  # Not lyonnais
+            "marseille": "olympique marseille",
+            "monaco": "as monaco",
+            "lille": "lille osc",
+            "feyenoord": "feyenoord rotterdam",
+            "az": "az alkmaar",
+            
+            # Scottish Teams
+            "celtic": "celtic glasgow",
+            "rangers": "rangers fc",
+            "hearts": "heart of midlothian",
+            "hibs": "hibernian fc",
+            
+            # Greek Teams
+            "olympiakos": "olympiakos piraeus",
+            "panathinaikos": "panathinaikos fc",
+            "aek": "aek athens",
+            "paok": "paok thessaloniki",
+            
+            # Turkish Teams
+            "galatasaray": "galatasaray sk",
+            "fenerbahce": "fenerbahçe sk",
+            "besiktas": "beşiktaş jk",
+            "basaksehir": "istanbul başakşehir",
+            
+            # Common prefixes/suffixes to standardize
+            
+            # Common prefixes/suffixes to standardize
+            "fc": "",
+            "cf": "",
+            "ac": "",
+            "as": "",
+            "sv": "",
+            "sc": "",
+            "rc": "",
+            "afc": "",
+            "fk": "",
+            "fsv": "",
+            "vfb": "",
+            "vfl": "",
+            "tsg": "",
+            "spvgg": "",
+            
+            # Common team name variations
             # English Teams
             "celtic": "celtic glasgow",
             "celtic fc": "celtic glasgow",
@@ -509,46 +593,157 @@ class TransfermarktAPI:
         self.exact_match_threshold = 0.90  # Slightly reduced for better matching
         self.fuzzy_match_threshold = 0.65  # Slightly reduced for better matching
         
+    def get_search_domain(self, team_name):
+        """Get appropriate domain for team search based on team name"""
+        team_lower = team_name.lower()
+        
+        # Common team keywords to domain mapping
+        domain_keywords = {
+            "gb": [
+                "united", "city", "arsenal", "chelsea", "liverpool", "tottenham", "everton", "leeds", "newcastle",
+                "man", "manchester", "forest", "villa", "wolves", "albion", "rovers", "wednesday", "county",
+                "town", "rangers", "celtic", "hearts", "dundee", "aberdeen", "motherwell", "hibernian"
+            ],
+            "de": [
+                "bayern", "dortmund", "leipzig", "leverkusen", "gladbach", "frankfurt", "münchen", "munchen",
+                "hoffenheim", "bvb", "schalke", "werder", "hertha", "köln", "mainz", "wolfsburg", "hannover",
+                "nurnberg", "stuttgart", "bochum", "freiburg", "augsburg", "hamburg"
+            ],
+            "es": [
+                "barcelona", "madrid", "sevilla", "valencia", "bilbao", "sociedad", "real", "atletico",
+                "villarreal", "betis", "espanyol", "getafe", "celta", "mallorca", "cadiz", "osasuna",
+                "granada", "levante", "alaves", "valladolid"
+            ],
+            "it": [
+                "milan", "inter", "juventus", "juve", "roma", "napoli", "lazio", "turin", "torino",
+                "fiorentina", "atalanta", "sassuolo", "sampdoria", "genoa", "cagliari", "verona",
+                "udinese", "bologna", "empoli", "venezia"
+            ],
+            "fr": [
+                "paris", "lyon", "marseille", "monaco", "lille", "rennes", "psg", "nice", "montpellier",
+                "strasbourg", "lens", "nantes", "bordeaux", "saint-etienne", "toulouse", "lorient"
+            ],
+            "pt": [
+                "porto", "benfica", "sporting", "braga", "guimaraes", "boavista", "maritimo", "setubal",
+                "belenenses", "vitoria"
+            ],
+            "nl": [
+                "ajax", "psv", "feyenoord", "az", "utrecht", "vitesse", "twente", "groningen", "heerenveen",
+                "willem"
+            ],
+            "tr": [
+                "galatasaray", "fenerbahce", "besiktas", "trabzonspor", "basaksehir", "antalyaspor",
+                "konyaspor", "alanyaspor", "gaziantep", "sivasspor"
+            ],
+            "gr": [
+                "olympiakos", "panathinaikos", "aek", "paok", "aris", "ofi", "atromitos", "asteras",
+                "larissa", "panionios"
+            ]
+        }
+        
+        # First try exact matches in team name variations
+        for domain, keywords in domain_keywords.items():
+            if any(keyword == team_lower for keyword in keywords):
+                return domain
+                
+        # Then try partial matches
+        for domain, keywords in domain_keywords.items():
+            if any(keyword in team_lower for keyword in keywords):
+                return domain
+        
+        # For teams with multiple possible domains, check specific patterns
+        if "celtic" in team_lower or "rangers" in team_lower:
+            return "gb"  # Scottish teams
+        elif "ajax" in team_lower or "psv" in team_lower:
+            return "nl"  # Dutch teams
+        elif "porto" in team_lower or "benfica" in team_lower:
+            return "pt"  # Portuguese teams
+        elif "olympiakos" in team_lower or "paok" in team_lower:
+            return "gr"  # Greek teams
+        elif "galatasaray" in team_lower or "fenerbahce" in team_lower:
+            return "tr"  # Turkish teams
+                
+        return "de"  # default to German domain
+
     def clean_team_name(self, team_name, domain="de"):
         """Clean team name by removing common prefixes/suffixes and standardizing format"""
         if not team_name:
-            return ""
+            return team_name
             
         if isinstance(team_name, dict):
             return team_name
             
         # Convert to lowercase for consistent processing
-        name = team_name.lower().strip()
+        cleaned = team_name.lower().strip()
         
-        # Log original name
-        logger.debug(f"Cleaning team name: {name}")
+        # First check for direct matches in abbreviations
+        if cleaned in self.abbreviations:
+            return self.abbreviations[cleaned]
         
-        # Check for abbreviations first (check original and cleaned versions)
-        if name in self.abbreviations:
-            name = self.abbreviations[name]
-            logger.debug(f"Found abbreviation match: {name}")
+        # Special handling for German teams
+        if domain == "de":
+            # Handle Bayern Munich variations
+            if any(name in cleaned for name in ["bayern", "munich", "münchen"]):
+                return "fc bayern münchen"
+            # Handle Dortmund variations
+            if any(name in cleaned for name in ["dortmund", "bvb", "borussia"]):
+                return "borussia dortmund"
+                
+        # Special handling for Spanish teams
+        elif domain == "es":
+            # Handle Real Madrid variations
+            if "real madrid" in cleaned:
+                return "real madrid cf"  # Add CF to get correct market value
+            # Handle Barcelona variations
+            if "barcelona" in cleaned:
+                return "fc barcelona"
+            # Handle Atletico Madrid variations
+            if any(name in cleaned for name in ["atletico", "atlético", "atleti"]):
+                return "atletico de madrid"  # Use standard ASCII characters
+                
+        # Special handling for Italian teams
+        elif domain == "it":
+            # Handle Juventus variations
+            if any(name in cleaned for name in ["juventus", "juve"]):
+                return "juventus"  # Remove 'turin' as it's not used in API
+            # Handle Inter variations
+            if "inter" in cleaned:
+                return "inter"  # API uses just 'inter', not 'inter milan'
         
-        # Try to find in abbreviations first (case-insensitive)
-        team_lower = team_name.lower().strip()
+        # Special handling for numbered clubs
+        if "1860 munich" in cleaned:
+            return "tsv 1860 münchen"
+        if "1899 hoffenheim" in cleaned:
+            return "tsg hoffenheim"
         
-        # Try direct match with abbreviations
-        if team_lower in self.abbreviations:
-            team_name = self.abbreviations[team_lower]
-            logger.debug(f"Using abbreviated name: {team_name}")
+        # Special handling for French teams
+        elif domain == "fr":
+            # Handle Lyon variations
+            if "lyon" in cleaned:
+                return "olympique lyon"  # Not lyonnais
+            # Handle PSG variations
+            if any(name in cleaned for name in ["psg", "paris"]):
+                return "paris saint-germain"
+            # Handle Monaco variations
+            if "monaco" in cleaned:
+                return "as monaco"
+                
+        # Standard replacements for special characters
+        replacements = {
+            'ue': 'u',  # Use standard ASCII instead of umlauts
+            'ae': 'a',
+            'oe': 'o',
+            'ss': 'ss'
+        }
+        for old, new in replacements.items():
+            cleaned = cleaned.replace(old, new)
         
-        if isinstance(team_name, str):
-            # Remove special characters and extra spaces
-            team_name = re.sub(r'[^\w\s-]', '', team_name)
-            team_name = ' '.join(team_name.split())
-            
-            # Convert to title case for consistent formatting
-            team_name = team_name.title()
-            
-            logger.debug(f"Cleaned team name: {team_name}")
-            return team_name
-        else:
-            # If team_name is a dict (from abbreviations), return it as is
-            return team_name
+        # Remove common prefixes if they're standalone words
+        prefixes_to_remove = ["fc", "ac", "as", "sv", "vfb", "vfl"]
+        for prefix in prefixes_to_remove:
+            cleaned = re.sub(f"^{prefix}\s+|\s+{prefix}$", "", cleaned)
+        
+        return cleaned
 
     def get_multiple_teams_market_value(self, teams, domain="de"):
         """Get market values for multiple teams in parallel with batching"""
@@ -618,6 +813,21 @@ class TransfermarktAPI:
             "away_market_value": values.get(away_team, 0)
         }
 
+    def validate_market_value(self, value, team_name):
+        """Validate market value is within reasonable range"""
+        if value is None or value == 0:
+            return None
+        
+        # Reasonable ranges in euros
+        MIN_VALUE = 1_000_000  # 1M
+        MAX_VALUE = 2_000_000_000  # 2B
+        
+        if not MIN_VALUE <= value <= MAX_VALUE:
+            logger.warning(f"Suspicious market value {value} for {team_name}")
+            return None
+        
+        return value
+
     def _generate_search_variations(self, team_name, domain="de"):
         """Generate different variations of the team name for searching"""
         variations = [
@@ -683,60 +893,39 @@ class TransfermarktAPI:
         return sum(1 for a, b in zip(str1, str2) if a == b) / max(len(str1), len(str2))
         
     def _rate_limit(self):
-        """Implement rate limiting for API requests"""
+        """Implement minimal rate limiting for API requests"""
         current_time = time.time()
         
-        # Remove old requests from tracking
+        # Keep only recent requests in tracking
         self.request_times = [t for t in self.request_times if current_time - t < 1.0]
         
-        # If we've made too many requests recently, wait
+        # If we've made too many requests recently, just wait minimum delay
         if len(self.request_times) >= self.max_requests_per_second:
-            sleep_time = max(
-                1.0 - (current_time - self.request_times[0]),  # Wait until a second has passed
-                self.min_delay  # Minimum delay between requests
-            )
-            if sleep_time > 0:
-                time.sleep(sleep_time)
-            self.request_times = self.request_times[1:]  # Remove oldest request
-        
-        # Ensure minimum delay between requests
-        if self.request_times and (current_time - self.request_times[-1]) < self.min_delay:
             time.sleep(self.min_delay)
+            self.request_times = self.request_times[1:]  # Remove oldest request
         
         self.request_times.append(current_time)
 
     def _make_api_request(self, url, params):
-        """Make an API request with rate limiting and retries"""
-        max_retries = 3
-        retry_delay = 1.0
-        
-        for attempt in range(max_retries):
-            try:
-                self._rate_limit()  # Apply rate limiting
-                response = requests.get(url, headers=self.headers, params=params)
-                
-                if response.status_code == 429:  # Too Many Requests
-                    if attempt < max_retries - 1:  # Don't sleep on last attempt
-                        sleep_time = retry_delay * (2 ** attempt)  # Exponential backoff
-                        logger.warning(f"Rate limit hit, waiting {sleep_time} seconds...")
-                        time.sleep(sleep_time)
-                        continue
-                
-                response.raise_for_status()
-                return response.json()  # Return JSON data instead of response object
-                
-            except requests.exceptions.RequestException as e:
-                if attempt < max_retries - 1:
-                    sleep_time = retry_delay * (2 ** attempt)
-                    logger.warning(f"Request failed, retrying in {sleep_time} seconds... Error: {str(e)}")
-                    time.sleep(sleep_time)
-                else:
-                    logger.error(f"Request failed after {max_retries} attempts: {str(e)}")
-                    raise
+        """Make an API request with minimal rate limiting and no retries"""
+        try:
+            self._rate_limit()  # Apply rate limiting
+            response = requests.get(url, headers=self.headers, params=params)
+            
+            if response.status_code == 429:  # Too Many Requests
+                logger.warning("Rate limit hit, returning None")
+                return None
+            
+            response.raise_for_status()
+            return response.json()  # Return JSON data instead of response object
+            
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Request failed: {str(e)}")
+            return None
         
     @lru_cache(maxsize=128)
     def get_team_squad(self, team_id, domain="de"):
-        """Get all players in a team's squad with caching"""
+        """Get all players in a team's squad with caching and validation"""
         if not team_id:
             return []
             
@@ -754,8 +943,22 @@ class TransfermarktAPI:
                 return []
             
             squad = data.get("squad", [])
-            logger.debug(f"Found {len(squad)} players in squad")
             
+            # Validate squad size
+            if len(squad) < 15:
+                logger.warning(f"Squad size suspiciously small ({len(squad)}) for team {team_id}")
+                # Try to get cached value if available
+                cached_key = f"squad_{team_id}_{domain}"
+                if hasattr(self, cached_key):
+                    cached_squad = getattr(self, cached_key)
+                    if len(cached_squad) > len(squad):
+                        return cached_squad
+            
+            # Cache valid squad
+            if len(squad) >= 15:
+                setattr(self, f"squad_{team_id}_{domain}", squad)
+            
+            logger.debug(f"Found {len(squad)} players in squad")
             time.sleep(0.1)  # Reduced delay for faster processing
             
             return squad
@@ -832,11 +1035,23 @@ class TransfermarktAPI:
                                 self.search_cache[cache_key] = result
                                 return result
                         
-                        # If no exact match, return first result
-                        club = clubs[0]
-                        result = {"id": str(club["id"]), "name": club["name"]}
-                        self.search_cache[cache_key] = result
-                        return result
+                        # If no exact match, use fuzzy matching
+                        best_match = None
+                        highest_similarity = 0
+                        
+                        for club in clubs:
+                            similarity = self._calculate_similarity(club.get("name", "").lower(), variation.lower())
+                            if similarity > highest_similarity and similarity > 0.8:  # 80% similarity threshold
+                                highest_similarity = similarity
+                                best_match = club
+                        
+                        if best_match:
+                            result = {"id": str(best_match["id"]), "name": best_match["name"]}
+                            self.search_cache[cache_key] = result
+                            return result
+                        
+                        # If no good match found, try next variation
+                        continue
                 
                 except Exception as e:
                     logger.error(f"Error searching for variation {variation}: {str(e)}")
@@ -849,38 +1064,91 @@ class TransfermarktAPI:
             logger.error(f"Error searching for team {team_name}: {str(e)}")
             return None
 
-    def get_team_market_value(self, team_name, domain="de"):
-        """Get market value for a team"""
+    def get_team_market_value(self, team_name, search_domain=None):
+        """Get market value for a team with validation"""
         logger.info(f"Getting market value for team: {team_name}")
         
         try:
+            # Use appropriate domain based on team name if not provided
+            if search_domain is None:
+                search_domain = self.get_search_domain(team_name)
+            
+            # Clean and standardize team name
+            cleaned_name = self.clean_team_name(team_name)
+            
             # Search for the team first
-            search_result = self.search_team(team_name, domain)
+            search_result = self.search_team(cleaned_name, search_domain)
             if not search_result:
-                logger.warning(f"No search results found for team: {team_name}")
-                return None
-                
+                # Try alternate domains if first search fails
+                alternate_domains = ["de", "gb", "es", "it"] if search_domain != "de" else ["gb", "es", "it", "fr"]
+                for alt_domain in alternate_domains:
+                    search_result = self.search_team(cleaned_name, alt_domain)
+                    if search_result:
+                        search_domain = alt_domain
+                        break
+                        
+                if not search_result:
+                    logger.warning(f"No search results found for team: {team_name}")
+                    return None
+            
             # Get team ID from search result
             team_id = search_result.get('id')
             if not team_id:
                 logger.warning(f"No team ID found in search result for {team_name}")
                 return None
-                
+            
             # Get squad data to calculate total market value
-            squad = self.get_team_squad(team_id, domain)
+            squad = self.get_team_squad(team_id, search_domain)
             if not squad:
                 logger.warning(f"No squad data found for team ID {team_id}")
                 return None
-                
-            # Calculate total market value from squad
-            total_value = sum(player.get('marketValue', {}).get('value', 0) for player in squad)
+            
+            # Validate squad size
+            if len(squad) < 15:
+                logger.warning(f"Squad size suspiciously small ({len(squad)}) for team {team_id}")
+                # Try alternate domain for squad data
+                for alt_domain in ["de", "gb", "es", "it"]:
+                    if alt_domain != search_domain:
+                        alt_squad = self.get_team_squad(team_id, alt_domain)
+                        if alt_squad and len(alt_squad) >= 15:
+                            squad = alt_squad
+                            break
+            
+            # Calculate total market value from squad with validation
+            valid_values = []
+            for player in squad:
+                market_value = player.get('marketValue', {}).get('value', 0)
+                # Validate individual player values
+                if isinstance(market_value, (int, float)) and market_value > 0:
+                    valid_values.append(market_value)
+            
+            # Validate total value
+            if not valid_values:
+                logger.warning(f"No valid market values found for {team_name}")
+                return None
+            
+            total_value = sum(valid_values)
+            
+            # Validate total value is reasonable
+            total_value = self.validate_market_value(total_value, team_name)
+            if total_value is None:
+                return None
             
             logger.info(f"Total market value for {team_name}: {total_value}")
-            return total_value
+            return {
+                'market_value': total_value,
+                'currency': 'EUR',
+                'last_updated': None
+            }
             
         except Exception as e:
             logger.error(f"Error getting market value for {team_name}: {str(e)}")
-            return None
+            return {
+                'market_value': 0,
+                'currency': 'EUR',
+                'last_updated': None
+            }
+
 
     def get_both_teams_market_value(self, home_team, away_team, domain="de"):
         """Get market values for both teams in a match"""
