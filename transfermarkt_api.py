@@ -648,6 +648,11 @@ class TransfermarktAPI:
             "gr": [
                 "olympiakos", "panathinaikos", "aek", "paok", "aris", "ofi", "atromitos", "asteras",
                 "larissa", "panionios"
+            ],
+            "cz": [
+                "slavia praha", "sparta praha", "viktoria plzen", "banik ostrava", "sigma olomouc",
+                "slovan liberec", "zbrojovka brno", "jihlava", "Příbram", "karviná", "mladá boleslav",
+                "slovácko", "jablonec", "bohemians 1905", "dynamo č. budějovice", "teplice"
             ]
         }
         
@@ -680,6 +685,24 @@ class TransfermarktAPI:
         if not team_name:
             return ""
             
+        # Special handling for Czech characters
+        czech_chars = {
+            'ě': 'e',
+            'š': 's',
+            'č': 'c',
+            'ř': 'r',
+            'ž': 'z',
+            'ý': 'y',
+            'á': 'a',
+            'í': 'i',
+            'é': 'e',
+            'ů': 'u',
+            'ú': 'u',
+            'ň': 'n',
+            'ť': 't',
+            'ď': 'd'
+        }
+        
         # First check unified mappings
         for league in self.unified_data.values():
             if isinstance(league, dict) and "teams" in league:
@@ -688,15 +711,27 @@ class TransfermarktAPI:
                         logger.info(f"Found exact Transfermarkt name for {team_name}: {team['transfermarkt_name']}")
                         return team["transfermarkt_name"]
         
-        # If no exact match in unified data, try normalized search
-        normalized_input = team_name.lower().strip()
-        for league in self.unified_data.values():
-            if isinstance(league, dict) and "teams" in league:
-                for team in league["teams"]:
-                    if (self._normalize_for_comparison(team["name"]) == self._normalize_for_comparison(normalized_input) 
-                        and team["transfermarkt_name"]):
-                        logger.info(f"Found normalized Transfermarkt name for {team_name}: {team['transfermarkt_name']}")
-                        return team["transfermarkt_name"]
+        # Handle special Czech teams
+        czech_teams_map = {
+            "prostejov": "1. SK Prostějov",
+            "prostějov": "1. SK Prostějov",
+            "opava": "SFC Opava",
+            "sparta prague": "Sparta Praha",
+            "slavia prague": "Slavia Praha",
+            "viktoria plzen": "Viktoria Plzeň",
+            "plzen": "Viktoria Plzeň",
+            "banik ostrava": "Baník Ostrava",
+            "sigma olomouc": "Sigma Olomouc",
+            "zbrojovka brno": "FC Zbrojovka Brno"
+        }
+        
+        normalized = team_name.lower().strip()
+        if normalized in czech_teams_map:
+            return czech_teams_map[normalized]
+            
+        # Apply Czech character normalization
+        for czech, latin in czech_chars.items():
+            normalized = normalized.replace(czech, latin)
         
         # Fallback to existing abbreviations
         normalized = team_name.lower().strip()
@@ -990,6 +1025,22 @@ class TransfermarktAPI:
                     # If mapped_name is a dict with id and name, cache and return it
                     self.search_cache[cache_key] = mapped_name
                     return mapped_name
+            
+            # Special handling for Czech teams
+            if domain == "cz":
+                czech_teams_ids = {
+                    "1. SK Prostějov": "24138",
+                    "SFC Opava": "5545",
+                    "Sparta Praha": "197",
+                    "Slavia Praha": "62",
+                    "Viktoria Plzeň": "941",
+                    "Baník Ostrava": "422",
+                    "Sigma Olomouc": "412",
+                    "FC Zbrojovka Brno": "5546"
+                }
+                cleaned_name = self.clean_team_name(team_name, domain)
+                if cleaned_name in czech_teams_ids:
+                    return {"id": czech_teams_ids[cleaned_name], "name": cleaned_name}
             
             # Generate search variations
             search_variations = self._generate_search_variations(team_name, domain)
