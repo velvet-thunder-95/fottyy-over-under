@@ -1,0 +1,7325 @@
+{
+  "AFC Champions League": {
+    "id": "AFC",
+    "teams": [
+      {
+        "name": "Arsenal FC",
+        "id": "11",
+        "country": null,
+        "league_id": "AFC"
+      },
+      {
+        "name": "AFC Bournemouth",
+        "id": "989",
+        "country": null,
+        "league_id": "AFC"
+      },
+      {
+        "name": "Ajax Amsterdam",
+        "id": "610",
+        "country": null,
+        "league_id": "AFC"
+      },
+      {
+        "name": "Sunderland AFC",
+        "id": "289",
+        "country": null,
+        "league_id": "AFC"
+      },
+      {
+        "name": "Royal Antwerp FC",
+        "id": "1096",
+        "country": null,
+        "league_id": "AFC"
+      },
+      {
+        "name": "Los Angeles FC",
+        "id": "51828",
+        "country": null,
+        "league_id": "AFC"
+      },
+      {
+        "name": "Swansea City",
+        "id": "2288",
+        "country": null,
+        "league_id": "AFC"
+      },
+      {
+        "name": "Rio Ave FC",
+        "id": "2425",
+        "country": null,
+        "league_id": "AFC"
+      },
+      {
+        "name": "Al Ahly FC",
+        "id": "7",
+        "country": null,
+        "league_id": "AFC"
+      },
+      {
+        "name": "Aberdeen FC",
+        "id": "370",
+        "country": null,
+        "league_id": "AFC"
+      }
+    ]
+  },
+  "Algeria - Ligue 1": {
+    "id": "ALG1",
+    "teams": [
+      {
+        "name": "SC Salgueiros U19",
+        "id": "19275",
+        "country": null,
+        "league_id": "ALG1"
+      },
+      {
+        "name": "SC Salgueiros Y17",
+        "id": "92997",
+        "country": null,
+        "league_id": "ALG1"
+      },
+      {
+        "name": "SC Salgueiros Y15",
+        "id": "92998",
+        "country": null,
+        "league_id": "ALG1"
+      },
+      {
+        "name": "Algeria",
+        "id": "3614",
+        "country": null,
+        "league_id": "ALG1"
+      },
+      {
+        "name": "Equatorial Guinea",
+        "id": "13485",
+        "country": null,
+        "league_id": "ALG1"
+      },
+      {
+        "name": "Estonia",
+        "id": "6133",
+        "country": null,
+        "league_id": "ALG1"
+      },
+      {
+        "name": "USM Alger",
+        "id": "6772",
+        "country": null,
+        "league_id": "ALG1"
+      },
+      {
+        "name": "MC Algiers",
+        "id": "8850",
+        "country": null,
+        "league_id": "ALG1"
+      },
+      {
+        "name": "FK Kauno Žalgiris",
+        "id": "40090",
+        "country": null,
+        "league_id": "ALG1"
+      },
+      {
+        "name": "FK Žalgiris Vilnius",
+        "id": "602",
+        "country": null,
+        "league_id": "ALG1"
+      },
+      {
+        "name": "Algeciras CF",
+        "id": "3705",
+        "country": null,
+        "league_id": "ALG1"
+      },
+      {
+        "name": "FC Flora Tallinn",
+        "id": "1002",
+        "country": null,
+        "league_id": "ALG1"
+      },
+      {
+        "name": "Algeria U20",
+        "id": "32344",
+        "country": null,
+        "league_id": "ALG1"
+      }
+    ]
+  },
+  "Argentina - Primera Division": {
+    "id": "AR1N",
+    "teams": [
+      {
+        "name": "Hungary",
+        "id": "3468",
+        "country": null,
+        "league_id": "AR1N"
+      },
+      {
+        "name": "Albania",
+        "id": "3561",
+        "country": null,
+        "league_id": "AR1N"
+      },
+      {
+        "name": "Montenegro",
+        "id": "11953",
+        "country": null,
+        "league_id": "AR1N"
+      },
+      {
+        "name": "FK Partizan Belgrade",
+        "id": "669",
+        "country": null,
+        "league_id": "AR1N"
+      },
+      {
+        "name": "Djurgårdens IF",
+        "id": "1044",
+        "country": null,
+        "league_id": "AR1N"
+      },
+      {
+        "name": "Barnsley FC",
+        "id": "349",
+        "country": null,
+        "league_id": "AR1N"
+      },
+      {
+        "name": "AEK Larnaca",
+        "id": "2156",
+        "country": null,
+        "league_id": "AR1N"
+      },
+      {
+        "name": "Kilmarnock FC",
+        "id": "2553",
+        "country": null,
+        "league_id": "AR1N"
+      },
+      {
+        "name": "IF Brommapojkarna",
+        "id": "1092",
+        "country": null,
+        "league_id": "AR1N"
+      },
+      {
+        "name": "IFK Värnamo",
+        "id": "3622",
+        "country": null,
+        "league_id": "AR1N"
+      }
+    ]
+  },
+  "Argentine football league - Primera Nacional": {
+    "id": "AR2",
+    "teams": [
+      {
+        "name": "Karpaty-2 Lviv",
+        "id": "102042",
+        "country": null,
+        "league_id": "AR2"
+      },
+      {
+        "name": "SV Eintracht Alt Ruppin II",
+        "id": "112817",
+        "country": null,
+        "league_id": "AR2"
+      },
+      {
+        "name": "CS Herediano Reserves",
+        "id": "24834",
+        "country": null,
+        "league_id": "AR2"
+      },
+      {
+        "name": "Omonia Aradippou U19",
+        "id": "129557",
+        "country": null,
+        "league_id": "AR2"
+      },
+      {
+        "name": "Alto Rendimiento JVM",
+        "id": "127847",
+        "country": null,
+        "league_id": "AR2"
+      },
+      {
+        "name": "Club Argentino FBC Humberto ",
+        "id": "118730",
+        "country": null,
+        "league_id": "AR2"
+      },
+      {
+        "name": "Atletico Roma Juniores",
+        "id": "97890",
+        "country": null,
+        "league_id": "AR2"
+      },
+      {
+        "name": "TuS Altenrath Jugend",
+        "id": "99404",
+        "country": null,
+        "league_id": "AR2"
+      },
+      {
+        "name": "VV Amstenrade Jugend",
+        "id": "99889",
+        "country": null,
+        "league_id": "AR2"
+      },
+      {
+        "name": "SSV Leverkusen-Alkenrath II ",
+        "id": "109908",
+        "country": null,
+        "league_id": "AR2"
+      },
+      {
+        "name": "Club Argentino (Lincoln) U20",
+        "id": "118815",
+        "country": null,
+        "league_id": "AR2"
+      }
+    ]
+  },
+  "Armenia - Armenian Premier League": {
+    "id": "ARM1",
+    "teams": [
+      {
+        "name": "Armenia U14 B",
+        "id": "108766",
+        "country": null,
+        "league_id": "ARM1"
+      },
+      {
+        "name": "PSV Eindhoven",
+        "id": "383",
+        "country": null,
+        "league_id": "ARM1"
+      },
+      {
+        "name": "Parma Calcio 1913",
+        "id": "130",
+        "country": null,
+        "league_id": "ARM1"
+      },
+      {
+        "name": "Watford FC",
+        "id": "1010",
+        "country": null,
+        "league_id": "ARM1"
+      },
+      {
+        "name": "Bristol City",
+        "id": "698",
+        "country": null,
+        "league_id": "ARM1"
+      },
+      {
+        "name": "SV Darmstadt 98",
+        "id": "105",
+        "country": null,
+        "league_id": "ARM1"
+      },
+      {
+        "name": "NAC Breda",
+        "id": "132",
+        "country": null,
+        "league_id": "ARM1"
+      },
+      {
+        "name": "Armenia",
+        "id": "6219",
+        "country": null,
+        "league_id": "ARM1"
+      },
+      {
+        "name": "Persepolis FC",
+        "id": "6079",
+        "country": null,
+        "league_id": "ARM1"
+      },
+      {
+        "name": "AS FAR Rabat",
+        "id": "9099",
+        "country": null,
+        "league_id": "ARM1"
+      },
+      {
+        "name": "CA Sarmiento (Junin)",
+        "id": "12454",
+        "country": null,
+        "league_id": "ARM1"
+      }
+    ]
+  },
+  "Australia - A-League": {
+    "id": "AUS1",
+    "teams": [
+      {
+        "name": "GDR Amigos de Urgeses Sub-19",
+        "id": "110559",
+        "country": null,
+        "league_id": "AUS1"
+      },
+      {
+        "name": "GDR Amigos de Urgeses Sub-17",
+        "id": "110560",
+        "country": null,
+        "league_id": "AUS1"
+      },
+      {
+        "name": "GDR Amigos de Urgeses Sub-15",
+        "id": "110561",
+        "country": null,
+        "league_id": "AUS1"
+      },
+      {
+        "name": "Austin FC",
+        "id": "72309",
+        "country": null,
+        "league_id": "AUS1"
+      },
+      {
+        "name": "FC Lausanne-Sport",
+        "id": "527",
+        "country": null,
+        "league_id": "AUS1"
+      },
+      {
+        "name": "Australia",
+        "id": "3433",
+        "country": null,
+        "league_id": "AUS1"
+      },
+      {
+        "name": "Austria Vienna",
+        "id": "14",
+        "country": null,
+        "league_id": "AUS1"
+      },
+      {
+        "name": "SK Austria Klagenfurt",
+        "id": "28760",
+        "country": null,
+        "league_id": "AUS1"
+      },
+      {
+        "name": "SV Sandhausen",
+        "id": "254",
+        "country": null,
+        "league_id": "AUS1"
+      },
+      {
+        "name": "Australia U23",
+        "id": "32270",
+        "country": null,
+        "league_id": "AUS1"
+      },
+      {
+        "name": "FC Stade-Lausanne-Ouchy",
+        "id": "5499",
+        "country": null,
+        "league_id": "AUS1"
+      },
+      {
+        "name": "FC Schaffhausen",
+        "id": "1277",
+        "country": null,
+        "league_id": "AUS1"
+      },
+      {
+        "name": "Australia U20",
+        "id": "22976",
+        "country": null,
+        "league_id": "AUS1"
+      }
+    ]
+  },
+  "Azerbaijan - Premyer Liqası": {
+    "id": "AZ1",
+    "teams": [
+      {
+        "name": "AZ Alkmaar",
+        "id": "1090",
+        "country": null,
+        "league_id": "AZ1"
+      },
+      {
+        "name": "Azerbaijan",
+        "id": "8605",
+        "country": null,
+        "league_id": "AZ1"
+      },
+      {
+        "name": "AZ Alkmaar U21",
+        "id": "11368",
+        "country": null,
+        "league_id": "AZ1"
+      },
+      {
+        "name": "AZ Alkmaar U19",
+        "id": "7460",
+        "country": null,
+        "league_id": "AZ1"
+      },
+      {
+        "name": "AZ Alkmaar Youth",
+        "id": "32793",
+        "country": null,
+        "league_id": "AZ1"
+      },
+      {
+        "name": "FC Aktobe-Zhas",
+        "id": "65802",
+        "country": null,
+        "league_id": "AZ1"
+      }
+    ]
+  },
+  "Belgium - Belgian Cup": {
+    "id": "BEC",
+    "teams": [
+      {
+        "name": "Becamex Binh Duong FC",
+        "id": "10756",
+        "country": null,
+        "league_id": "BEC"
+      },
+      {
+        "name": "VfB Lübeck",
+        "id": "78",
+        "country": null,
+        "league_id": "BEC"
+      },
+      {
+        "name": "Berekum Chelsea FC",
+        "id": "35137",
+        "country": null,
+        "league_id": "BEC"
+      },
+      {
+        "name": "1.FC Phönix Lübeck",
+        "id": "2773",
+        "country": null,
+        "league_id": "BEC"
+      },
+      {
+        "name": "Bechem United FC",
+        "id": "25065",
+        "country": null,
+        "league_id": "BEC"
+      },
+      {
+        "name": "Police Tero FC",
+        "id": "6726",
+        "country": null,
+        "league_id": "BEC"
+      },
+      {
+        "name": "Shabab Baalbeck SC",
+        "id": "46845",
+        "country": null,
+        "league_id": "BEC"
+      },
+      {
+        "name": "VfB Lübeck II",
+        "id": "3322",
+        "country": null,
+        "league_id": "BEC"
+      },
+      {
+        "name": "1.FC Phönix Lübeck II",
+        "id": "48987",
+        "country": null,
+        "league_id": "BEC"
+      },
+      {
+        "name": "Bechem United FC II",
+        "id": "89849",
+        "country": null,
+        "league_id": "BEC"
+      }
+    ]
+  },
+  "Belgium - First Division B": {
+    "id": "BE2",
+    "teams": [
+      {
+        "name": "FC Italia Oberhausen 2021 II",
+        "id": "118368",
+        "country": null,
+        "league_id": "BE2"
+      },
+      {
+        "name": "FC Prishtina Bern",
+        "id": "37851",
+        "country": null,
+        "league_id": "BE2"
+      },
+      {
+        "name": "FC Weissenstein Bern",
+        "id": "37861",
+        "country": null,
+        "league_id": "BE2"
+      },
+      {
+        "name": "SSV 1968 Berghausen U17",
+        "id": "88439",
+        "country": null,
+        "league_id": "BE2"
+      },
+      {
+        "name": "SSV Berzdorf U17",
+        "id": "89954",
+        "country": null,
+        "league_id": "BE2"
+      },
+      {
+        "name": "SG 06 Betzdorf U17",
+        "id": "97620",
+        "country": null,
+        "league_id": "BE2"
+      },
+      {
+        "name": "SSV Berzdorf Jugend",
+        "id": "98179",
+        "country": null,
+        "league_id": "BE2"
+      },
+      {
+        "name": "SV Bergfried Leverkusen U17",
+        "id": "101443",
+        "country": null,
+        "league_id": "BE2"
+      },
+      {
+        "name": "Bensberger FV (1910-2002)",
+        "id": "101530",
+        "country": null,
+        "league_id": "BE2"
+      },
+      {
+        "name": "Sportfreunde Rot-Weiß Beuel Jugend",
+        "id": "101926",
+        "country": null,
+        "league_id": "BE2"
+      },
+      {
+        "name": "Bnei Eilat U19",
+        "id": "127693",
+        "country": null,
+        "league_id": "BE2"
+      }
+    ]
+  },
+  "Belgium Pro League": {
+    "id": "BE1",
+    "teams": [
+      {
+        "name": "FK BE1 Jonava",
+        "id": "28972",
+        "country": null,
+        "league_id": "BE1"
+      },
+      {
+        "name": "BE1 National Football Academy ",
+        "id": "98844",
+        "country": null,
+        "league_id": "BE1"
+      },
+      {
+        "name": "FC Prishtina Bern",
+        "id": "37851",
+        "country": null,
+        "league_id": "BE1"
+      },
+      {
+        "name": "FC Weissenstein Bern",
+        "id": "37861",
+        "country": null,
+        "league_id": "BE1"
+      },
+      {
+        "name": "SSV 1968 Berghausen U17",
+        "id": "88439",
+        "country": null,
+        "league_id": "BE1"
+      },
+      {
+        "name": "SSV Berzdorf U17",
+        "id": "89954",
+        "country": null,
+        "league_id": "BE1"
+      },
+      {
+        "name": "SG 06 Betzdorf U17",
+        "id": "97620",
+        "country": null,
+        "league_id": "BE1"
+      },
+      {
+        "name": "SSV Berzdorf Jugend",
+        "id": "98179",
+        "country": null,
+        "league_id": "BE1"
+      },
+      {
+        "name": "SV Bergfried Leverkusen U17",
+        "id": "101443",
+        "country": null,
+        "league_id": "BE1"
+      },
+      {
+        "name": "Bensberger FV (1910-2002)",
+        "id": "101530",
+        "country": null,
+        "league_id": "BE1"
+      },
+      {
+        "name": "Sportfreunde Rot-Weiß Beuel Jugend",
+        "id": "101926",
+        "country": null,
+        "league_id": "BE1"
+      },
+      {
+        "name": "Bnei Eilat U19",
+        "id": "127693",
+        "country": null,
+        "league_id": "BE1"
+      }
+    ]
+  },
+  "Bolivia - LFPB": {
+    "id": "BOL1",
+    "teams": [
+      {
+        "name": "Bologna FC 1909",
+        "id": "1025",
+        "country": null,
+        "league_id": "BOL1"
+      },
+      {
+        "name": "Botafogo de Futebol e Regatas",
+        "id": "537",
+        "country": null,
+        "league_id": "BOL1"
+      },
+      {
+        "name": "São Paulo Futebol Clube",
+        "id": "585",
+        "country": null,
+        "league_id": "BOL1"
+      },
+      {
+        "name": "Avs Futebol",
+        "id": "110302",
+        "country": null,
+        "league_id": "BOL1"
+      },
+      {
+        "name": "Mirassol Futebol Clube (SP)",
+        "id": "3876",
+        "country": null,
+        "league_id": "BOL1"
+      },
+      {
+        "name": "América Futebol Clube (MG)",
+        "id": "2863",
+        "country": null,
+        "league_id": "BOL1"
+      },
+      {
+        "name": "Bolivia",
+        "id": "5233",
+        "country": null,
+        "league_id": "BOL1"
+      },
+      {
+        "name": "Bolton Wanderers",
+        "id": "355",
+        "country": null,
+        "league_id": "BOL1"
+      },
+      {
+        "name": "Odense Boldklub",
+        "id": "173",
+        "country": null,
+        "league_id": "BOL1"
+      },
+      {
+        "name": "Vejle Boldklub",
+        "id": "443",
+        "country": null,
+        "league_id": "BOL1"
+      }
+    ]
+  },
+  "Bosnia and Herzegovina - Premier League of Bosnia": {
+    "id": "BOS1",
+    "teams": [
+      {
+        "name": "Bosnia-Herzegovina",
+        "id": "3446",
+        "country": null,
+        "league_id": "BOS1"
+      },
+      {
+        "name": "Heart of Midlothian FC",
+        "id": "43",
+        "country": null,
+        "league_id": "BOS1"
+      },
+      {
+        "name": "Club Nacional",
+        "id": "866",
+        "country": null,
+        "league_id": "BOS1"
+      },
+      {
+        "name": "Stellenbosch FC",
+        "id": "23287",
+        "country": null,
+        "league_id": "BOS1"
+      },
+      {
+        "name": "CA Boston River",
+        "id": "18074",
+        "country": null,
+        "league_id": "BOS1"
+      },
+      {
+        "name": "FC Den Bosch",
+        "id": "404",
+        "country": null,
+        "league_id": "BOS1"
+      },
+      {
+        "name": "Bosnia-Herzegovina U21",
+        "id": "11941",
+        "country": null,
+        "league_id": "BOS1"
+      },
+      {
+        "name": "Perak FC",
+        "id": "15826",
+        "country": null,
+        "league_id": "BOS1"
+      },
+      {
+        "name": "Quy Nhon Binh Dinh FC",
+        "id": "14256",
+        "country": null,
+        "league_id": "BOS1"
+      },
+      {
+        "name": "Lobos de la UPNFM",
+        "id": "46019",
+        "country": null,
+        "league_id": "BOS1"
+      }
+    ]
+  },
+  "Brazil - Serie A": {
+    "id": "BRA1",
+    "teams": [
+      {
+        "name": "Brazil",
+        "id": "3439",
+        "country": null,
+        "league_id": "BRA1"
+      },
+      {
+        "name": "SC Freiburg",
+        "id": "60",
+        "country": null,
+        "league_id": "BRA1"
+      },
+      {
+        "name": "SC Braga",
+        "id": "1075",
+        "country": null,
+        "league_id": "BRA1"
+      },
+      {
+        "name": "Brazil U20",
+        "id": "7658",
+        "country": null,
+        "league_id": "BRA1"
+      },
+      {
+        "name": "Red Bull Bragantino",
+        "id": "8793",
+        "country": null,
+        "league_id": "BRA1"
+      },
+      {
+        "name": "FC Juárez",
+        "id": "49283",
+        "country": null,
+        "league_id": "BRA1"
+      },
+      {
+        "name": "Mamelodi Sundowns FC",
+        "id": "6356",
+        "country": null,
+        "league_id": "BRA1"
+      },
+      {
+        "name": "Slovan Bratislava",
+        "id": "540",
+        "country": null,
+        "league_id": "BRA1"
+      },
+      {
+        "name": "SK Brann",
+        "id": "1100",
+        "country": null,
+        "league_id": "BRA1"
+      },
+      {
+        "name": "Eintracht Braunschweig",
+        "id": "23",
+        "country": null,
+        "league_id": "BRA1"
+      }
+    ]
+  },
+  "Brazil - Serie B": {
+    "id": "BRA2",
+    "teams": [
+      {
+        "name": "Brazil",
+        "id": "3439",
+        "country": null,
+        "league_id": "BRA2"
+      },
+      {
+        "name": "SC Freiburg",
+        "id": "60",
+        "country": null,
+        "league_id": "BRA2"
+      },
+      {
+        "name": "SC Braga",
+        "id": "1075",
+        "country": null,
+        "league_id": "BRA2"
+      },
+      {
+        "name": "Brazil U20",
+        "id": "7658",
+        "country": null,
+        "league_id": "BRA2"
+      },
+      {
+        "name": "Red Bull Bragantino",
+        "id": "8793",
+        "country": null,
+        "league_id": "BRA2"
+      },
+      {
+        "name": "FC Juárez",
+        "id": "49283",
+        "country": null,
+        "league_id": "BRA2"
+      },
+      {
+        "name": "Mamelodi Sundowns FC",
+        "id": "6356",
+        "country": null,
+        "league_id": "BRA2"
+      },
+      {
+        "name": "Slovan Bratislava",
+        "id": "540",
+        "country": null,
+        "league_id": "BRA2"
+      },
+      {
+        "name": "SK Brann",
+        "id": "1100",
+        "country": null,
+        "league_id": "BRA2"
+      },
+      {
+        "name": "Eintracht Braunschweig",
+        "id": "23",
+        "country": null,
+        "league_id": "BRA2"
+      }
+    ]
+  },
+  "Bulgaria - First League": {
+    "id": "BU1",
+    "teams": [
+      {
+        "name": "FC Barcelona UEFA U19",
+        "id": "41584",
+        "country": null,
+        "league_id": "BU1"
+      },
+      {
+        "name": "FC Basel 1893 U19",
+        "id": "110149",
+        "country": null,
+        "league_id": "BU1"
+      },
+      {
+        "name": "NK Brinje Grosuplje U19",
+        "id": "100153",
+        "country": null,
+        "league_id": "BU1"
+      },
+      {
+        "name": "NK Bravo U19",
+        "id": "30051",
+        "country": null,
+        "league_id": "BU1"
+      },
+      {
+        "name": "Roskilde B.1906 U19",
+        "id": "16109",
+        "country": null,
+        "league_id": "BU1"
+      },
+      {
+        "name": "FC Basel 1893 U17",
+        "id": "32337",
+        "country": null,
+        "league_id": "BU1"
+      },
+      {
+        "name": "Tennis Borussia Berlin U17",
+        "id": "21080",
+        "country": null,
+        "league_id": "BU1"
+      },
+      {
+        "name": "FC Barcelona U18",
+        "id": "39813",
+        "country": null,
+        "league_id": "BU1"
+      },
+      {
+        "name": "FC Barcelona U16",
+        "id": "14321",
+        "country": null,
+        "league_id": "BU1"
+      },
+      {
+        "name": "FC Barcelona U19",
+        "id": "2470",
+        "country": null,
+        "league_id": "BU1"
+      }
+    ]
+  },
+  "Colombia - Categoria Primera A": {
+    "id": "COL1",
+    "teams": [
+      {
+        "name": "FC Barcelona",
+        "id": "131",
+        "country": null,
+        "league_id": "COL1"
+      },
+      {
+        "name": "Atlético de Madrid",
+        "id": "13",
+        "country": null,
+        "league_id": "COL1"
+      },
+      {
+        "name": "Colombia",
+        "id": "3816",
+        "country": null,
+        "league_id": "COL1"
+      },
+      {
+        "name": "Without Club",
+        "id": "515",
+        "country": null,
+        "league_id": "COL1"
+      },
+      {
+        "name": "RCD Espanyol Barcelona",
+        "id": "714",
+        "country": null,
+        "league_id": "COL1"
+      },
+      {
+        "name": "Clube de Regatas Vasco da Gama",
+        "id": "978",
+        "country": null,
+        "league_id": "COL1"
+      },
+      {
+        "name": "1.FC Köln",
+        "id": "3",
+        "country": null,
+        "league_id": "COL1"
+      },
+      {
+        "name": "Columbus Crew",
+        "id": "813",
+        "country": null,
+        "league_id": "COL1"
+      },
+      {
+        "name": "Colorado Rapids",
+        "id": "1247",
+        "country": null,
+        "league_id": "COL1"
+      },
+      {
+        "name": "CSD Colo-Colo",
+        "id": "2433",
+        "country": null,
+        "league_id": "COL1"
+      }
+    ]
+  },
+  "Colombia - Categoria Primera B": {
+    "id": "COL2",
+    "teams": [
+      {
+        "name": "FC Barcelona",
+        "id": "131",
+        "country": null,
+        "league_id": "COL2"
+      },
+      {
+        "name": "Atlético de Madrid",
+        "id": "13",
+        "country": null,
+        "league_id": "COL2"
+      },
+      {
+        "name": "Colombia",
+        "id": "3816",
+        "country": null,
+        "league_id": "COL2"
+      },
+      {
+        "name": "Without Club",
+        "id": "515",
+        "country": null,
+        "league_id": "COL2"
+      },
+      {
+        "name": "RCD Espanyol Barcelona",
+        "id": "714",
+        "country": null,
+        "league_id": "COL2"
+      },
+      {
+        "name": "Clube de Regatas Vasco da Gama",
+        "id": "978",
+        "country": null,
+        "league_id": "COL2"
+      },
+      {
+        "name": "1.FC Köln",
+        "id": "3",
+        "country": null,
+        "league_id": "COL2"
+      },
+      {
+        "name": "Columbus Crew",
+        "id": "813",
+        "country": null,
+        "league_id": "COL2"
+      },
+      {
+        "name": "Colorado Rapids",
+        "id": "1247",
+        "country": null,
+        "league_id": "COL2"
+      },
+      {
+        "name": "CSD Colo-Colo",
+        "id": "2433",
+        "country": null,
+        "league_id": "COL2"
+      }
+    ]
+  },
+  "Croatia - Prva HNL": {
+    "id": "KR1",
+    "teams": [
+      {
+        "name": "FK Ekranas Panevezys U19 (- 2014)",
+        "id": "19933",
+        "country": null,
+        "league_id": "KR1"
+      },
+      {
+        "name": "KR Reykjavík",
+        "id": "3237",
+        "country": null,
+        "league_id": "KR1"
+      },
+      {
+        "name": "TSV Kronshagen",
+        "id": "6952",
+        "country": null,
+        "league_id": "KR1"
+      },
+      {
+        "name": "VfB 1921 Krieschow II",
+        "id": "58984",
+        "country": null,
+        "league_id": "KR1"
+      },
+      {
+        "name": "SV Kriegsdorf II",
+        "id": "101824",
+        "country": null,
+        "league_id": "KR1"
+      },
+      {
+        "name": "Kijang Rangers FC",
+        "id": "97491",
+        "country": null,
+        "league_id": "KR1"
+      },
+      {
+        "name": "VPS Kramatorsk (- 1998)",
+        "id": "117181",
+        "country": null,
+        "league_id": "KR1"
+      },
+      {
+        "name": "JFG Region Krumbach JGD (2004-2019)",
+        "id": "123390",
+        "country": null,
+        "league_id": "KR1"
+      },
+      {
+        "name": "FC Kray Jugend",
+        "id": "124431",
+        "country": null,
+        "league_id": "KR1"
+      }
+    ]
+  },
+  "Cyprus - First Division": {
+    "id": "CYP1",
+    "teams": [
+      {
+        "name": "Cyprus",
+        "id": "3668",
+        "country": null,
+        "league_id": "CYP1"
+      },
+      {
+        "name": "Cyprus U21",
+        "id": "24967",
+        "country": null,
+        "league_id": "CYP1"
+      },
+      {
+        "name": "Cyprus U19",
+        "id": "28434",
+        "country": null,
+        "league_id": "CYP1"
+      },
+      {
+        "name": "Cyprus U17",
+        "id": "25962",
+        "country": null,
+        "league_id": "CYP1"
+      },
+      {
+        "name": "New York Pancyprian Freedoms",
+        "id": "28705",
+        "country": null,
+        "league_id": "CYP1"
+      },
+      {
+        "name": "Cyprus U16",
+        "id": "28166",
+        "country": null,
+        "league_id": "CYP1"
+      },
+      {
+        "name": "Cyprus U18",
+        "id": "28167",
+        "country": null,
+        "league_id": "CYP1"
+      },
+      {
+        "name": "Cyprus U15",
+        "id": "35747",
+        "country": null,
+        "league_id": "CYP1"
+      }
+    ]
+  },
+  "Czech Republic - Czech Cup": {
+    "id": "TSC",
+    "teams": [
+      {
+        "name": "Germany",
+        "id": "3262",
+        "country": null,
+        "league_id": "TSC"
+      },
+      {
+        "name": "Germany U21",
+        "id": "3817",
+        "country": null,
+        "league_id": "TSC"
+      },
+      {
+        "name": "Czech Republic",
+        "id": "3445",
+        "country": null,
+        "league_id": "TSC"
+      },
+      {
+        "name": "Germany U20",
+        "id": "5709",
+        "country": null,
+        "league_id": "TSC"
+      },
+      {
+        "name": "Germany U19",
+        "id": "5710",
+        "country": null,
+        "league_id": "TSC"
+      },
+      {
+        "name": "Czech Republic U21",
+        "id": "8771",
+        "country": null,
+        "league_id": "TSC"
+      },
+      {
+        "name": "FK TSC Backa Topola",
+        "id": "3137",
+        "country": null,
+        "league_id": "TSC"
+      },
+      {
+        "name": "Dinamo Makhachkala",
+        "id": "75231",
+        "country": null,
+        "league_id": "TSC"
+      },
+      {
+        "name": "Czech Republic U20",
+        "id": "22987",
+        "country": null,
+        "league_id": "TSC"
+      },
+      {
+        "name": "Arminia Bielefeld",
+        "id": "10",
+        "country": null,
+        "league_id": "TSC"
+      }
+    ]
+  },
+  "Czech Republic - First League": {
+    "id": "TS1",
+    "teams": [
+      {
+        "name": "CD Trofense U19",
+        "id": "16519",
+        "country": null,
+        "league_id": "TS1"
+      },
+      {
+        "name": "CF Trafaria Sub-19",
+        "id": "109575",
+        "country": null,
+        "league_id": "TS1"
+      },
+      {
+        "name": "GD Torralta Sub-17",
+        "id": "107223",
+        "country": null,
+        "league_id": "TS1"
+      },
+      {
+        "name": "GD Torralta Sub-15",
+        "id": "107224",
+        "country": null,
+        "league_id": "TS1"
+      },
+      {
+        "name": "FC Tirsense Sub-15",
+        "id": "108737",
+        "country": null,
+        "league_id": "TS1"
+      },
+      {
+        "name": "FC Tirsense Sub-17",
+        "id": "108742",
+        "country": null,
+        "league_id": "TS1"
+      },
+      {
+        "name": "AR Tuías Sub-17",
+        "id": "114582",
+        "country": null,
+        "league_id": "TS1"
+      },
+      {
+        "name": "AR Tuías Sub-15",
+        "id": "114586",
+        "country": null,
+        "league_id": "TS1"
+      },
+      {
+        "name": "AR Tuías Sub-19",
+        "id": "114585",
+        "country": null,
+        "league_id": "TS1"
+      },
+      {
+        "name": "União Tomar Sub-15",
+        "id": "106462",
+        "country": null,
+        "league_id": "TS1"
+      }
+    ]
+  },
+  "Czech Republic - FNL": {
+    "id": "TS2",
+    "teams": [
+      {
+        "name": "Sportief Rotselaar U21",
+        "id": "123817",
+        "country": null,
+        "league_id": "TS2"
+      },
+      {
+        "name": "FC Tirsense U23",
+        "id": "113336",
+        "country": null,
+        "league_id": "TS2"
+      },
+      {
+        "name": "Trabzonspor",
+        "id": "449",
+        "country": null,
+        "league_id": "TS2"
+      },
+      {
+        "name": "Trabzonspor UEFA U19",
+        "id": "92277",
+        "country": null,
+        "league_id": "TS2"
+      },
+      {
+        "name": "Trabzonspor U19",
+        "id": "41798",
+        "country": null,
+        "league_id": "TS2"
+      },
+      {
+        "name": "SC Telstar U19",
+        "id": "14954",
+        "country": null,
+        "league_id": "TS2"
+      },
+      {
+        "name": "Trabzonspor Youth",
+        "id": "42698",
+        "country": null,
+        "league_id": "TS2"
+      },
+      {
+        "name": "Taramene Sport",
+        "id": "58591",
+        "country": null,
+        "league_id": "TS2"
+      },
+      {
+        "name": "Turbostroitel Kaluga (- 1996)",
+        "id": "83129",
+        "country": null,
+        "league_id": "TS2"
+      },
+      {
+        "name": "Tasburunspor",
+        "id": "124021",
+        "country": null,
+        "league_id": "TS2"
+      },
+      {
+        "name": "Trabzonspor II (- 1990)",
+        "id": "124062",
+        "country": null,
+        "league_id": "TS2"
+      },
+      {
+        "name": "Tinja Sport",
+        "id": "128558",
+        "country": null,
+        "league_id": "TS2"
+      }
+    ]
+  },
+  "Denmark - Superliga": {
+    "id": "DK1",
+    "teams": [
+      {
+        "name": "Dinamo Kutaisi (-1956)",
+        "id": "116621",
+        "country": null,
+        "league_id": "DK1"
+      }
+    ]
+  },
+  "Ecuador - Primera Categoría Serie A": {
+    "id": "EC1",
+    "teams": [
+      {
+        "name": "Team Servette/Etoile Carouge U18",
+        "id": "122665",
+        "country": null,
+        "league_id": "EC1"
+      },
+      {
+        "name": "RC Épernay Champagne U18",
+        "id": "129993",
+        "country": null,
+        "league_id": "EC1"
+      },
+      {
+        "name": "RC Épernay Champagne U17",
+        "id": "129994",
+        "country": null,
+        "league_id": "EC1"
+      },
+      {
+        "name": "Eastern Company SC",
+        "id": "30122",
+        "country": null,
+        "league_id": "EC1"
+      },
+      {
+        "name": "Erie Commodores FC",
+        "id": "41411",
+        "country": null,
+        "league_id": "EC1"
+      },
+      {
+        "name": "Caxias Esporte Clube (EC)",
+        "id": "54245",
+        "country": null,
+        "league_id": "EC1"
+      },
+      {
+        "name": "Etoile Clisson ",
+        "id": "79746",
+        "country": null,
+        "league_id": "EC1"
+      },
+      {
+        "name": "SG Echtz/Hoven II",
+        "id": "95759",
+        "country": null,
+        "league_id": "EC1"
+      }
+    ]
+  },
+  "Ecuador - Primera Categoría Serie B": {
+    "id": "EC2",
+    "teams": [
+      {
+        "name": "Universidad de Concepción U21",
+        "id": "22637",
+        "country": null,
+        "league_id": "EC2"
+      },
+      {
+        "name": "Eastern Company SC",
+        "id": "30122",
+        "country": null,
+        "league_id": "EC2"
+      },
+      {
+        "name": "Erie Commodores FC",
+        "id": "41411",
+        "country": null,
+        "league_id": "EC2"
+      },
+      {
+        "name": "Caxias Esporte Clube (EC)",
+        "id": "54245",
+        "country": null,
+        "league_id": "EC2"
+      },
+      {
+        "name": "Etoile Clisson ",
+        "id": "79746",
+        "country": null,
+        "league_id": "EC2"
+      },
+      {
+        "name": "SG Echtz/Hoven II",
+        "id": "95759",
+        "country": null,
+        "league_id": "EC2"
+      }
+    ]
+  },
+  "Egypt - Egyptian Premier League": {
+    "id": "EGY1",
+    "teams": [
+      {
+        "name": "Egypt",
+        "id": "3672",
+        "country": null,
+        "league_id": "EGY1"
+      },
+      {
+        "name": "Nyíregyháza Spartacus",
+        "id": "6058",
+        "country": null,
+        "league_id": "EGY1"
+      },
+      {
+        "name": "ETO FC Győr ",
+        "id": "6055",
+        "country": null,
+        "league_id": "EGY1"
+      },
+      {
+        "name": "Kecskeméti TE",
+        "id": "12423",
+        "country": null,
+        "league_id": "EGY1"
+      },
+      {
+        "name": "Egypt U23",
+        "id": "30951",
+        "country": null,
+        "league_id": "EGY1"
+      },
+      {
+        "name": "Zalaegerszegi TE FC",
+        "id": "1391",
+        "country": null,
+        "league_id": "EGY1"
+      },
+      {
+        "name": "Egypt Olympic Team",
+        "id": "53825",
+        "country": null,
+        "league_id": "EGY1"
+      },
+      {
+        "name": "Mezőkövesd Zsóry FC",
+        "id": "24032",
+        "country": null,
+        "league_id": "EGY1"
+      },
+      {
+        "name": "Szentlőrinc SE",
+        "id": "30624",
+        "country": null,
+        "league_id": "EGY1"
+      },
+      {
+        "name": "Egypt B",
+        "id": "128360",
+        "country": null,
+        "league_id": "EGY1"
+      }
+    ]
+  },
+  "England - Championship": {
+    "id": "GB2",
+    "teams": [
+      {
+        "name": "DJK Gebenbach II",
+        "id": "55831",
+        "country": null,
+        "league_id": "GB2"
+      },
+      {
+        "name": "TOGB Berkel U23",
+        "id": "92876",
+        "country": null,
+        "league_id": "GB2"
+      },
+      {
+        "name": "Genclerbirligi Ankara",
+        "id": "820",
+        "country": null,
+        "league_id": "GB2"
+      },
+      {
+        "name": "Gebze Birlik Futbol Kulübü",
+        "id": "127095",
+        "country": null,
+        "league_id": "GB2"
+      },
+      {
+        "name": "Club Social y Atlético Guillermo Brown II",
+        "id": "61445",
+        "country": null,
+        "league_id": "GB2"
+      },
+      {
+        "name": "Graasten Boldklub",
+        "id": "77478",
+        "country": null,
+        "league_id": "GB2"
+      },
+      {
+        "name": "SC Gresaubach U19",
+        "id": "129076",
+        "country": null,
+        "league_id": "GB2"
+      },
+      {
+        "name": "1.FC Godesberg U17",
+        "id": "98963",
+        "country": null,
+        "league_id": "GB2"
+      },
+      {
+        "name": "Club Atlético Ferro Carril (GB)",
+        "id": "119177",
+        "country": null,
+        "league_id": "GB2"
+      },
+      {
+        "name": "Ganjlik Baku",
+        "id": "115559",
+        "country": null,
+        "league_id": "GB2"
+      },
+      {
+        "name": "1.FC Ringsdorff Godesberg U19(1919-2021)",
+        "id": "110440",
+        "country": null,
+        "league_id": "GB2"
+      },
+      {
+        "name": "1.FC Ringsdorff Godesberg II (1919-2021)",
+        "id": "104085",
+        "country": null,
+        "league_id": "GB2"
+      }
+    ]
+  },
+  "England - Premier League": {
+    "id": "GB1",
+    "teams": [
+      {
+        "name": "FC Girondins Bordeaux U18",
+        "id": "129726",
+        "country": null,
+        "league_id": "GB1"
+      },
+      {
+        "name": "FC Girondins Bordeaux U17",
+        "id": "62344",
+        "country": null,
+        "league_id": "GB1"
+      },
+      {
+        "name": "Genclerbirligi Ankara",
+        "id": "820",
+        "country": null,
+        "league_id": "GB1"
+      },
+      {
+        "name": "Gebze Birlik Futbol Kulübü",
+        "id": "127095",
+        "country": null,
+        "league_id": "GB1"
+      },
+      {
+        "name": "Club Social y Atlético Guillermo Brown II",
+        "id": "61445",
+        "country": null,
+        "league_id": "GB1"
+      },
+      {
+        "name": "Graasten Boldklub",
+        "id": "77478",
+        "country": null,
+        "league_id": "GB1"
+      },
+      {
+        "name": "SC Gresaubach U19",
+        "id": "129076",
+        "country": null,
+        "league_id": "GB1"
+      },
+      {
+        "name": "1.FC Godesberg U17",
+        "id": "98963",
+        "country": null,
+        "league_id": "GB1"
+      },
+      {
+        "name": "Club Atlético Ferro Carril (GB)",
+        "id": "119177",
+        "country": null,
+        "league_id": "GB1"
+      },
+      {
+        "name": "Ganjlik Baku",
+        "id": "115559",
+        "country": null,
+        "league_id": "GB1"
+      },
+      {
+        "name": "1.FC Ringsdorff Godesberg U19(1919-2021)",
+        "id": "110440",
+        "country": null,
+        "league_id": "GB1"
+      },
+      {
+        "name": "1.FC Ringsdorff Godesberg II (1919-2021)",
+        "id": "104085",
+        "country": null,
+        "league_id": "GB1"
+      }
+    ]
+  },
+  "Estonia - Meistriliiga": {
+    "id": "EST1",
+    "teams": [
+      {
+        "name": "KVC Westerlo",
+        "id": "968",
+        "country": null,
+        "league_id": "EST1"
+      },
+      {
+        "name": "CF Estrela Amadora",
+        "id": "2431",
+        "country": null,
+        "league_id": "EST1"
+      },
+      {
+        "name": "Újpest FC",
+        "id": "708",
+        "country": null,
+        "league_id": "EST1"
+      },
+      {
+        "name": "Esteghlal FC",
+        "id": "1076",
+        "country": null,
+        "league_id": "EST1"
+      },
+      {
+        "name": "Estonia",
+        "id": "6133",
+        "country": null,
+        "league_id": "EST1"
+      },
+      {
+        "name": "CD Palestino",
+        "id": "6536",
+        "country": null,
+        "league_id": "EST1"
+      },
+      {
+        "name": "Club Deportivo Riestra",
+        "id": "19775",
+        "country": null,
+        "league_id": "EST1"
+      },
+      {
+        "name": "US Triestina",
+        "id": "4271",
+        "country": null,
+        "league_id": "EST1"
+      },
+      {
+        "name": "Dynamo Brest",
+        "id": "6131",
+        "country": null,
+        "league_id": "EST1"
+      },
+      {
+        "name": "Esteghlal Khuzestan",
+        "id": "40472",
+        "country": null,
+        "league_id": "EST1"
+      }
+    ]
+  },
+  "Europe - UEFA Champions League": {
+    "id": "CL",
+    "teams": [
+      {
+        "name": "Cerro Largo FC",
+        "id": "20189",
+        "country": null,
+        "league_id": "CL"
+      },
+      {
+        "name": "Clube Laguna (RN)",
+        "id": "108000",
+        "country": null,
+        "league_id": "CL"
+      },
+      {
+        "name": "Crystal Lake FC",
+        "id": "117552",
+        "country": null,
+        "league_id": "CL"
+      },
+      {
+        "name": "Cultural Deportiva Beluso",
+        "id": "114332",
+        "country": null,
+        "league_id": "CL"
+      }
+    ]
+  },
+  "Europe - UEFA Europa League": {
+    "id": "EL",
+    "teams": [
+      {
+        "name": "Eintracht Lokstedt",
+        "id": "25341",
+        "country": null,
+        "league_id": "EL"
+      },
+      {
+        "name": "Dinamo St. Petersburg",
+        "id": "55591",
+        "country": null,
+        "league_id": "EL"
+      },
+      {
+        "name": "Elpida Liopetri",
+        "id": "123895",
+        "country": null,
+        "league_id": "EL"
+      },
+      {
+        "name": "Eintracht Lokstedt U19",
+        "id": "67027",
+        "country": null,
+        "league_id": "EL"
+      },
+      {
+        "name": "Eintracht Lemgo",
+        "id": "120041",
+        "country": null,
+        "league_id": "EL"
+      },
+      {
+        "name": "Eintracht Lokstedt V",
+        "id": "117249",
+        "country": null,
+        "league_id": "EL"
+      },
+      {
+        "name": "CD El Campello",
+        "id": "38711",
+        "country": null,
+        "league_id": "EL"
+      }
+    ]
+  },
+  "Europe - UEFA Youth League": {
+    "id": "UYL",
+    "teams": [
+      {
+        "name": "Borussia Mönchengladbach UEFA U19",
+        "id": "50629",
+        "country": null,
+        "league_id": "UYL"
+      },
+      {
+        "name": "FK Liepaja UEFA U19",
+        "id": "62118",
+        "country": null,
+        "league_id": "UYL"
+      },
+      {
+        "name": "Hertha BSC UEFA U19",
+        "id": "69413",
+        "country": null,
+        "league_id": "UYL"
+      }
+    ]
+  },
+  "Europe - World Championship": {
+    "id": "CL",
+    "teams": [
+      {
+        "name": "Cerro Largo FC",
+        "id": "20189",
+        "country": null,
+        "league_id": "CL"
+      },
+      {
+        "name": "Clube Laguna (RN)",
+        "id": "108000",
+        "country": null,
+        "league_id": "CL"
+      },
+      {
+        "name": "Crystal Lake FC",
+        "id": "117552",
+        "country": null,
+        "league_id": "CL"
+      },
+      {
+        "name": "Cultural Deportiva Beluso",
+        "id": "114332",
+        "country": null,
+        "league_id": "CL"
+      }
+    ]
+  },
+  "France - Coupe de France": {
+    "id": "FRC",
+    "teams": [
+      {
+        "name": "CFR Craiova",
+        "id": "25780",
+        "country": null,
+        "league_id": "FRC"
+      },
+      {
+        "name": "ÉF Reims-Champagne",
+        "id": "61100",
+        "country": null,
+        "league_id": "FRC"
+      }
+    ]
+  },
+  "France - Feminine Division 1": {
+    "id": "FR1F",
+    "teams": [
+      {
+        "name": "Fleetwood Rangers FC (- 1899)",
+        "id": "119548",
+        "country": null,
+        "league_id": "FR1F"
+      }
+    ]
+  },
+  "France - Ligue 1": {
+    "id": "FR1",
+    "teams": [
+      {
+        "name": "FC Richemond FR",
+        "id": "36781",
+        "country": null,
+        "league_id": "FR1"
+      },
+      {
+        "name": "SpVg Frechen 20 III",
+        "id": "85653",
+        "country": null,
+        "league_id": "FR1"
+      },
+      {
+        "name": "Furia Roja Jesús María FC",
+        "id": "83062",
+        "country": null,
+        "league_id": "FR1"
+      },
+      {
+        "name": "Furia Roja Jesús María FC II",
+        "id": "83063",
+        "country": null,
+        "league_id": "FR1"
+      },
+      {
+        "name": "Furia Roja Jesús María FC U20",
+        "id": "83064",
+        "country": null,
+        "league_id": "FR1"
+      },
+      {
+        "name": "Fall River FC",
+        "id": "90572",
+        "country": null,
+        "league_id": "FR1"
+      },
+      {
+        "name": "SpVg Frechen 20 U17",
+        "id": "98523",
+        "country": null,
+        "league_id": "FR1"
+      },
+      {
+        "name": "FC Germania Freund II",
+        "id": "99568",
+        "country": null,
+        "league_id": "FR1"
+      },
+      {
+        "name": "SpVg Frechen 20 Jugend",
+        "id": "102311",
+        "country": null,
+        "league_id": "FR1"
+      },
+      {
+        "name": "SC Borussia Freialdenhoven U17",
+        "id": "102819",
+        "country": null,
+        "league_id": "FR1"
+      }
+    ]
+  },
+  "France - Ligue 2": {
+    "id": "FR2",
+    "teams": [
+      {
+        "name": "CD Mafra U23",
+        "id": "100335",
+        "country": null,
+        "league_id": "FR2"
+      },
+      {
+        "name": "FC Richemond FR",
+        "id": "36781",
+        "country": null,
+        "league_id": "FR2"
+      },
+      {
+        "name": "SpVg Frechen 20 III",
+        "id": "85653",
+        "country": null,
+        "league_id": "FR2"
+      },
+      {
+        "name": "Furia Roja Jesús María FC",
+        "id": "83062",
+        "country": null,
+        "league_id": "FR2"
+      },
+      {
+        "name": "Furia Roja Jesús María FC II",
+        "id": "83063",
+        "country": null,
+        "league_id": "FR2"
+      },
+      {
+        "name": "Furia Roja Jesús María FC U20",
+        "id": "83064",
+        "country": null,
+        "league_id": "FR2"
+      },
+      {
+        "name": "Fall River FC",
+        "id": "90572",
+        "country": null,
+        "league_id": "FR2"
+      },
+      {
+        "name": "SpVg Frechen 20 U17",
+        "id": "98523",
+        "country": null,
+        "league_id": "FR2"
+      },
+      {
+        "name": "FC Germania Freund II",
+        "id": "99568",
+        "country": null,
+        "league_id": "FR2"
+      },
+      {
+        "name": "SpVg Frechen 20 Jugend",
+        "id": "102311",
+        "country": null,
+        "league_id": "FR2"
+      },
+      {
+        "name": "SC Borussia Freialdenhoven U17",
+        "id": "102819",
+        "country": null,
+        "league_id": "FR2"
+      }
+    ]
+  },
+  "Georgia - Erovnuli Liga": {
+    "id": "GEO1",
+    "teams": [
+      {
+        "name": "Georgia",
+        "id": "3669",
+        "country": null,
+        "league_id": "GEO1"
+      },
+      {
+        "name": "Georgia U21",
+        "id": "12148",
+        "country": null,
+        "league_id": "GEO1"
+      },
+      {
+        "name": "Georgia U19",
+        "id": "25740",
+        "country": null,
+        "league_id": "GEO1"
+      },
+      {
+        "name": "South Georgia Tormenta FC",
+        "id": "58894",
+        "country": null,
+        "league_id": "GEO1"
+      },
+      {
+        "name": "Geoje Citizen",
+        "id": "86382",
+        "country": null,
+        "league_id": "GEO1"
+      },
+      {
+        "name": "RRC Stockay Saint-Georges S/M",
+        "id": "53804",
+        "country": null,
+        "league_id": "GEO1"
+      },
+      {
+        "name": "Georgia U18",
+        "id": "48174",
+        "country": null,
+        "league_id": "GEO1"
+      },
+      {
+        "name": "Georgia U17",
+        "id": "25787",
+        "country": null,
+        "league_id": "GEO1"
+      },
+      {
+        "name": "Kidus Giorgis SA",
+        "id": "14120",
+        "country": null,
+        "league_id": "GEO1"
+      },
+      {
+        "name": "CS Entité Manageoise",
+        "id": "57094",
+        "country": null,
+        "league_id": "GEO1"
+      }
+    ]
+  },
+  "Germany - DFB-Pokal": {
+    "id": "DFB",
+    "teams": [
+      {
+        "name": "Germany",
+        "id": "3262",
+        "country": null,
+        "league_id": "DFB"
+      },
+      {
+        "name": "Germany U19",
+        "id": "5710",
+        "country": null,
+        "league_id": "DFB"
+      },
+      {
+        "name": "Germany U17",
+        "id": "17662",
+        "country": null,
+        "league_id": "DFB"
+      },
+      {
+        "name": "Fußball-Lehrer-Ausbildung des DFB",
+        "id": "13256",
+        "country": null,
+        "league_id": "DFB"
+      },
+      {
+        "name": "DFB-Stützpunkt",
+        "id": "36796",
+        "country": null,
+        "league_id": "DFB"
+      },
+      {
+        "name": "DFB-Jugend",
+        "id": "50422",
+        "country": null,
+        "league_id": "DFB"
+      },
+      {
+        "name": "CDFB L'Eliana",
+        "id": "85434",
+        "country": null,
+        "league_id": "DFB"
+      },
+      {
+        "name": "GD Fabril Barreiro U19",
+        "id": "92617",
+        "country": null,
+        "league_id": "DFB"
+      },
+      {
+        "name": "GD Fabril do Barreiro Under 15",
+        "id": "103980",
+        "country": null,
+        "league_id": "DFB"
+      },
+      {
+        "name": "GD Fabril do Barreiro Under 17",
+        "id": "103983",
+        "country": null,
+        "league_id": "DFB"
+      }
+    ]
+  },
+  "Greece - Super League 1": {
+    "id": "GR1",
+    "teams": [
+      {
+        "name": "NSF Gropiusstadt II",
+        "id": "58780",
+        "country": null,
+        "league_id": "GR1"
+      },
+      {
+        "name": "FC Bonaduz",
+        "id": "37835",
+        "country": null,
+        "league_id": "GR1"
+      },
+      {
+        "name": "LZS Gronowice",
+        "id": "62031",
+        "country": null,
+        "league_id": "GR1"
+      },
+      {
+        "name": "Avantul Floresti (GR)",
+        "id": "37183",
+        "country": null,
+        "league_id": "GR1"
+      },
+      {
+        "name": "FV Gröditz 1911 Jugend",
+        "id": "102939",
+        "country": null,
+        "league_id": "GR1"
+      },
+      {
+        "name": "SC Reusrath Jugend",
+        "id": "103069",
+        "country": null,
+        "league_id": "GR1"
+      },
+      {
+        "name": "Gorey Rangers Youth",
+        "id": "122476",
+        "country": null,
+        "league_id": "GR1"
+      }
+    ]
+  },
+  "Honduras - Liga Nacional de Fútbol Profesional de Honduras": {
+    "id": "HON1",
+    "teams": [
+      {
+        "name": "Brighton & Hove Albion",
+        "id": "1237",
+        "country": null,
+        "league_id": "HON1"
+      },
+      {
+        "name": "Atlético de Madrid",
+        "id": "13",
+        "country": null,
+        "league_id": "HON1"
+      },
+      {
+        "name": "Hungary",
+        "id": "3468",
+        "country": null,
+        "league_id": "HON1"
+      },
+      {
+        "name": "Jagiellonia Bialystok",
+        "id": "2300",
+        "country": null,
+        "league_id": "HON1"
+      },
+      {
+        "name": "Karlsruher SC",
+        "id": "48",
+        "country": null,
+        "league_id": "HON1"
+      },
+      {
+        "name": "Curaçao",
+        "id": "32364",
+        "country": null,
+        "league_id": "HON1"
+      },
+      {
+        "name": "Honduras",
+        "id": "3590",
+        "country": null,
+        "league_id": "HON1"
+      },
+      {
+        "name": "Shonan Bellmare",
+        "id": "8457",
+        "country": null,
+        "league_id": "HON1"
+      },
+      {
+        "name": "Hungary U21",
+        "id": "22514",
+        "country": null,
+        "league_id": "HON1"
+      },
+      {
+        "name": "FC Andijon",
+        "id": "20099",
+        "country": null,
+        "league_id": "HON1"
+      }
+    ]
+  },
+  "Hungary - NB I": {
+    "id": "HUN1",
+    "teams": [
+      {
+        "name": "Hungary",
+        "id": "3468",
+        "country": null,
+        "league_id": "HUN1"
+      },
+      {
+        "name": "Buriram United",
+        "id": "25449",
+        "country": null,
+        "league_id": "HUN1"
+      },
+      {
+        "name": "Chungnam Asan",
+        "id": "78388",
+        "country": null,
+        "league_id": "HUN1"
+      },
+      {
+        "name": "FC Thun",
+        "id": "938",
+        "country": null,
+        "league_id": "HUN1"
+      },
+      {
+        "name": "Jeonnam Dragons",
+        "id": "6503",
+        "country": null,
+        "league_id": "HUN1"
+      },
+      {
+        "name": "Mohun Bagan Super Giant",
+        "id": "83266",
+        "country": null,
+        "league_id": "HUN1"
+      },
+      {
+        "name": "Sekhukhune United FC",
+        "id": "85501",
+        "country": null,
+        "league_id": "HUN1"
+      },
+      {
+        "name": "Hungary U21",
+        "id": "22514",
+        "country": null,
+        "league_id": "HUN1"
+      },
+      {
+        "name": "Changchun Yatai",
+        "id": "4768",
+        "country": null,
+        "league_id": "HUN1"
+      },
+      {
+        "name": "Chungbuk Cheongju FC",
+        "id": "39418",
+        "country": null,
+        "league_id": "HUN1"
+      }
+    ]
+  },
+  "Iceland - Úrvalsdeild": {
+    "id": "IS1",
+    "teams": [
+      {
+        "name": "GAIS U19",
+        "id": "14289",
+        "country": null,
+        "league_id": "IS1"
+      },
+      {
+        "name": "FC Infesta U19",
+        "id": "21458",
+        "country": null,
+        "league_id": "IS1"
+      },
+      {
+        "name": "GAIS U17",
+        "id": "39146",
+        "country": null,
+        "league_id": "IS1"
+      },
+      {
+        "name": "FC Infesta Sub-17",
+        "id": "94294",
+        "country": null,
+        "league_id": "IS1"
+      },
+      {
+        "name": "FC Infesta Sub-15",
+        "id": "94295",
+        "country": null,
+        "league_id": "IS1"
+      },
+      {
+        "name": "Comércio e Indústria U19",
+        "id": "102564",
+        "country": null,
+        "league_id": "IS1"
+      },
+      {
+        "name": "UF Comércio e Indústria S15",
+        "id": "129752",
+        "country": null,
+        "league_id": "IS1"
+      },
+      {
+        "name": "UF Comércio e Indústria S13",
+        "id": "129753",
+        "country": null,
+        "league_id": "IS1"
+      },
+      {
+        "name": "Soissons IFC",
+        "id": "79567",
+        "country": null,
+        "league_id": "IS1"
+      },
+      {
+        "name": "ACS USV Iași",
+        "id": "124184",
+        "country": null,
+        "league_id": "IS1"
+      },
+      {
+        "name": "Pambigci Neftacala (-1997)",
+        "id": "115561",
+        "country": null,
+        "league_id": "IS1"
+      },
+      {
+        "name": "İnsaatcı Sabirabad (-1994)",
+        "id": "115564",
+        "country": null,
+        "league_id": "IS1"
+      }
+    ]
+  },
+  "Indonesia - Liga 1": {
+    "id": "IN1",
+    "teams": [
+      {
+        "name": "FK Internacional",
+        "id": "92313",
+        "country": null,
+        "league_id": "IN1"
+      },
+      {
+        "name": "Infinity FC Vilvoorde",
+        "id": "122339",
+        "country": null,
+        "league_id": "IN1"
+      },
+      {
+        "name": "Inter Boyarka (-2007)",
+        "id": "124492",
+        "country": null,
+        "league_id": "IN1"
+      }
+    ]
+  },
+  "Iran - Persian Gulf Pro League": {
+    "id": "IR1",
+    "teams": [
+      {
+        "name": "WSG Tirol 1c",
+        "id": "69759",
+        "country": null,
+        "league_id": "IR1"
+      },
+      {
+        "name": "ÍR Reykjavík",
+        "id": "21859",
+        "country": null,
+        "league_id": "IR1"
+      },
+      {
+        "name": "DJK Irchenrieth",
+        "id": "85578",
+        "country": null,
+        "league_id": "IR1"
+      },
+      {
+        "name": "Iran Johnderee Arak",
+        "id": "124763",
+        "country": null,
+        "league_id": "IR1"
+      }
+    ]
+  },
+  "Italy - Coppa Italia": {
+    "id": "CIT",
+    "teams": [
+      {
+        "name": "Manchester City",
+        "id": "281",
+        "country": null,
+        "league_id": "CIT"
+      },
+      {
+        "name": "Leicester City",
+        "id": "1003",
+        "country": null,
+        "league_id": "CIT"
+      },
+      {
+        "name": "Norwich City",
+        "id": "1123",
+        "country": null,
+        "league_id": "CIT"
+      },
+      {
+        "name": "Coventry City",
+        "id": "990",
+        "country": null,
+        "league_id": "CIT"
+      },
+      {
+        "name": "Hull City",
+        "id": "3008",
+        "country": null,
+        "league_id": "CIT"
+      },
+      {
+        "name": "Stoke City",
+        "id": "512",
+        "country": null,
+        "league_id": "CIT"
+      },
+      {
+        "name": "Cardiff City",
+        "id": "603",
+        "country": null,
+        "league_id": "CIT"
+      },
+      {
+        "name": "Bristol City",
+        "id": "698",
+        "country": null,
+        "league_id": "CIT"
+      },
+      {
+        "name": "Birmingham City",
+        "id": "337",
+        "country": null,
+        "league_id": "CIT"
+      },
+      {
+        "name": "Swansea City",
+        "id": "2288",
+        "country": null,
+        "league_id": "CIT"
+      }
+    ]
+  },
+  "Italy - Serie A": {
+    "id": "IT1",
+    "teams": [
+      {
+        "name": "Haïti U16",
+        "id": "78953",
+        "country": null,
+        "league_id": "IT1"
+      },
+      {
+        "name": "Jeunesse Sportive Ittroise",
+        "id": "119552",
+        "country": null,
+        "league_id": "IT1"
+      },
+      {
+        "name": "It’s Just Football Academy",
+        "id": "59453",
+        "country": null,
+        "league_id": "IT1"
+      }
+    ]
+  },
+  "Italy - Serie A Women": {
+    "id": "IT1F",
+    "teams": [
+      {
+        "name": "Ipswich Town U21",
+        "id": "26117",
+        "country": null,
+        "league_id": "IT1F"
+      },
+      {
+        "name": "Ipswich Town U18",
+        "id": "10006",
+        "country": null,
+        "league_id": "IT1F"
+      },
+      {
+        "name": "Jeppiar Institute of Technology FC",
+        "id": "113369",
+        "country": null,
+        "league_id": "IT1F"
+      },
+      {
+        "name": "SV Fortuna Ditfurt",
+        "id": "67504",
+        "country": null,
+        "league_id": "IT1F"
+      },
+      {
+        "name": "Club Deportivo I.T.F.I.P.",
+        "id": "112992",
+        "country": null,
+        "league_id": "IT1F"
+      },
+      {
+        "name": "Irthlingborough Town FC (- 19XX)",
+        "id": "119287",
+        "country": null,
+        "league_id": "IT1F"
+      }
+    ]
+  },
+  "Italy - Serie B": {
+    "id": "IT2",
+    "teams": [
+      {
+        "name": "Zenit 2 St. Petersburg",
+        "id": "16950",
+        "country": null,
+        "league_id": "IT2"
+      },
+      {
+        "name": "Vitesse '22 Castricum",
+        "id": "69254",
+        "country": null,
+        "league_id": "IT2"
+      },
+      {
+        "name": "Jeunesse Sportive Ittroise",
+        "id": "119552",
+        "country": null,
+        "league_id": "IT2"
+      },
+      {
+        "name": "It’s Just Football Academy",
+        "id": "59453",
+        "country": null,
+        "league_id": "IT2"
+      }
+    ]
+  },
+  "Jordan - Jordanian Pro League": {
+    "id": "JOR1",
+    "teams": [
+      {
+        "name": "Shakhtar Donetsk",
+        "id": "660",
+        "country": null,
+        "league_id": "JOR1"
+      },
+      {
+        "name": "Jordan",
+        "id": "15737",
+        "country": null,
+        "league_id": "JOR1"
+      },
+      {
+        "name": "Sandefjord Fotball",
+        "id": "6399",
+        "country": null,
+        "league_id": "JOR1"
+      },
+      {
+        "name": "Chornomorets Odesa",
+        "id": "6992",
+        "country": null,
+        "league_id": "JOR1"
+      },
+      {
+        "name": "Club Jorge Wilstermann ",
+        "id": "4862",
+        "country": null,
+        "league_id": "JOR1"
+      },
+      {
+        "name": "Vestri Ísafjördur",
+        "id": "29224",
+        "country": null,
+        "league_id": "JOR1"
+      },
+      {
+        "name": "FH Hafnarfjördur",
+        "id": "1185",
+        "country": null,
+        "league_id": "JOR1"
+      },
+      {
+        "name": "Shakhter Karaganda",
+        "id": "10480",
+        "country": null,
+        "league_id": "JOR1"
+      },
+      {
+        "name": "Sandefjord Fotball II",
+        "id": "55475",
+        "country": null,
+        "league_id": "JOR1"
+      },
+      {
+        "name": "Shakhtar Donetsk U19",
+        "id": "14300",
+        "country": null,
+        "league_id": "JOR1"
+      }
+    ]
+  },
+  "Lithuania - A Lyga": {
+    "id": "LT1",
+    "teams": [
+      {
+        "name": "FK Leotar Trebinje U17",
+        "id": "91165",
+        "country": null,
+        "league_id": "LT1"
+      },
+      {
+        "name": "AS Libertas Trieste",
+        "id": "120020",
+        "country": null,
+        "league_id": "LT1"
+      },
+      {
+        "name": "Louisville Thunder (indoor)",
+        "id": "128798",
+        "country": null,
+        "league_id": "LT1"
+      },
+      {
+        "name": "ASD La Torre",
+        "id": "129119",
+        "country": null,
+        "league_id": "LT1"
+      }
+    ]
+  },
+  "Malta - Premier League": {
+    "id": "MAL1",
+    "teams": [
+      {
+        "name": "Mali",
+        "id": "3674",
+        "country": null,
+        "league_id": "MAL1"
+      },
+      {
+        "name": "RCD Mallorca",
+        "id": "237",
+        "country": null,
+        "league_id": "MAL1"
+      },
+      {
+        "name": "FC Famalicão",
+        "id": "3329",
+        "country": null,
+        "league_id": "MAL1"
+      },
+      {
+        "name": "Birmingham City",
+        "id": "337",
+        "country": null,
+        "league_id": "MAL1"
+      },
+      {
+        "name": "Malmö FF",
+        "id": "496",
+        "country": null,
+        "league_id": "MAL1"
+      },
+      {
+        "name": "SM Caen",
+        "id": "1162",
+        "country": null,
+        "league_id": "MAL1"
+      },
+      {
+        "name": "Zamalek SC",
+        "id": "664",
+        "country": null,
+        "league_id": "MAL1"
+      },
+      {
+        "name": "Malta",
+        "id": "3587",
+        "country": null,
+        "league_id": "MAL1"
+      },
+      {
+        "name": "AS FAR Rabat",
+        "id": "9099",
+        "country": null,
+        "league_id": "MAL1"
+      },
+      {
+        "name": "Al-Shamal SC",
+        "id": "10775",
+        "country": null,
+        "league_id": "MAL1"
+      }
+    ]
+  },
+  "Mexico - Liga MX": {
+    "id": "MEX1",
+    "teams": [
+      {
+        "name": "Mexico",
+        "id": "6303",
+        "country": null,
+        "league_id": "MEX1"
+      },
+      {
+        "name": "Mexico U23",
+        "id": "16418",
+        "country": null,
+        "league_id": "MEX1"
+      },
+      {
+        "name": "Mexico U20",
+        "id": "26092",
+        "country": null,
+        "league_id": "MEX1"
+      },
+      {
+        "name": "New Mexico United",
+        "id": "70056",
+        "country": null,
+        "league_id": "MEX1"
+      },
+      {
+        "name": "Becamex Binh Duong FC",
+        "id": "10756",
+        "country": null,
+        "league_id": "MEX1"
+      },
+      {
+        "name": "Mexico U17",
+        "id": "23134",
+        "country": null,
+        "league_id": "MEX1"
+      },
+      {
+        "name": "México FC",
+        "id": "82851",
+        "country": null,
+        "league_id": "MEX1"
+      },
+      {
+        "name": "Mexico U18",
+        "id": "51023",
+        "country": null,
+        "league_id": "MEX1"
+      },
+      {
+        "name": "Mexico U15",
+        "id": "48724",
+        "country": null,
+        "league_id": "MEX1"
+      },
+      {
+        "name": "Mexico U16",
+        "id": "47231",
+        "country": null,
+        "league_id": "MEX1"
+      }
+    ]
+  },
+  "Morocco - Botola Pro": {
+    "id": "MAR1",
+    "teams": [
+      {
+        "name": "SC Beira-Mar Sub-17",
+        "id": "94717",
+        "country": null,
+        "league_id": "MAR1"
+      },
+      {
+        "name": "SC Beira-Mar U15",
+        "id": "94721",
+        "country": null,
+        "league_id": "MAR1"
+      },
+      {
+        "name": "Morocco",
+        "id": "3575",
+        "country": null,
+        "league_id": "MAR1"
+      },
+      {
+        "name": "Morocco U23",
+        "id": "34903",
+        "country": null,
+        "league_id": "MAR1"
+      },
+      {
+        "name": "NK Maribor",
+        "id": "790",
+        "country": null,
+        "league_id": "MAR1"
+      },
+      {
+        "name": "CA San Martín (San Juan)",
+        "id": "10511",
+        "country": null,
+        "league_id": "MAR1"
+      },
+      {
+        "name": "Al-Markhiya SC",
+        "id": "26629",
+        "country": null,
+        "league_id": "MAR1"
+      },
+      {
+        "name": "Morocco U20",
+        "id": "37630",
+        "country": null,
+        "league_id": "MAR1"
+      },
+      {
+        "name": "Marbella FC",
+        "id": "12361",
+        "country": null,
+        "league_id": "MAR1"
+      },
+      {
+        "name": "San Marcos de Arica",
+        "id": "23162",
+        "country": null,
+        "league_id": "MAR1"
+      },
+      {
+        "name": "CD Marathón",
+        "id": "4523",
+        "country": null,
+        "league_id": "MAR1"
+      },
+      {
+        "name": "Marumo Gallants FC",
+        "id": "61852",
+        "country": null,
+        "league_id": "MAR1"
+      }
+    ]
+  },
+  "Netherlands - Eredivisie": {
+    "id": "NL1",
+    "teams": [
+      {
+        "name": "Sanliurfaspor U19",
+        "id": "111067",
+        "country": null,
+        "league_id": "NL1"
+      },
+      {
+        "name": "TSV Nellmersbach",
+        "id": "48942",
+        "country": null,
+        "league_id": "NL1"
+      }
+    ]
+  },
+  "Nigeria - NPFL": {
+    "id": "NGA1",
+    "teams": [
+      {
+        "name": "Nigeria",
+        "id": "3444",
+        "country": null,
+        "league_id": "NGA1"
+      },
+      {
+        "name": "Hungary",
+        "id": "3468",
+        "country": null,
+        "league_id": "NGA1"
+      },
+      {
+        "name": "Democratic Republic of the Congo",
+        "id": "3854",
+        "country": null,
+        "league_id": "NGA1"
+      },
+      {
+        "name": "FC Copenhagen",
+        "id": "190",
+        "country": null,
+        "league_id": "NGA1"
+      },
+      {
+        "name": "EA Guingamp",
+        "id": "855",
+        "country": null,
+        "league_id": "NGA1"
+      },
+      {
+        "name": "Shanghai Port",
+        "id": "27190",
+        "country": null,
+        "league_id": "NGA1"
+      },
+      {
+        "name": "Vålerenga Fotball Elite",
+        "id": "76",
+        "country": null,
+        "league_id": "NGA1"
+      },
+      {
+        "name": "Kyoto Sanga",
+        "id": "593",
+        "country": null,
+        "league_id": "NGA1"
+      },
+      {
+        "name": "Shanghai Shenhua",
+        "id": "3183",
+        "country": null,
+        "league_id": "NGA1"
+      },
+      {
+        "name": "Cape Town City FC ",
+        "id": "2303",
+        "country": null,
+        "league_id": "NGA1"
+      }
+    ]
+  },
+  "Northern Ireland - NIFL Premiership": {
+    "id": "NIR1",
+    "teams": [
+      {
+        "name": "Northern Ireland",
+        "id": "5674",
+        "country": null,
+        "league_id": "NIR1"
+      },
+      {
+        "name": "Northern Ireland U21",
+        "id": "17621",
+        "country": null,
+        "league_id": "NIR1"
+      },
+      {
+        "name": "AFC Unirea 04 Slobozia",
+        "id": "29700",
+        "country": null,
+        "league_id": "NIR1"
+      },
+      {
+        "name": "AS Soliman",
+        "id": "52128",
+        "country": null,
+        "league_id": "NIR1"
+      },
+      {
+        "name": "Avenir Sportif de Gabès",
+        "id": "22812",
+        "country": null,
+        "league_id": "NIR1"
+      },
+      {
+        "name": "Niroye Zamini FC",
+        "id": "42191",
+        "country": null,
+        "league_id": "NIR1"
+      },
+      {
+        "name": "Hapoel Ramat haSharon",
+        "id": "31134",
+        "country": null,
+        "league_id": "NIR1"
+      },
+      {
+        "name": "CS Unirea Ungheni",
+        "id": "86099",
+        "country": null,
+        "league_id": "NIR1"
+      },
+      {
+        "name": "Fjölnir Reykjavík",
+        "id": "21855",
+        "country": null,
+        "league_id": "NIR1"
+      },
+      {
+        "name": "Leiknir Reykjavík",
+        "id": "21860",
+        "country": null,
+        "league_id": "NIR1"
+      }
+    ]
+  },
+  "Norway - Eliteserien": {
+    "id": "NO1",
+    "teams": [
+      {
+        "name": "FK Buducnost Banovici U19",
+        "id": "29524",
+        "country": null,
+        "league_id": "NO1"
+      },
+      {
+        "name": "AD Nogueirense Sub-19",
+        "id": "68085",
+        "country": null,
+        "league_id": "NO1"
+      },
+      {
+        "name": "AD Nogueirense Sub-17",
+        "id": "68086",
+        "country": null,
+        "league_id": "NO1"
+      },
+      {
+        "name": "AD Nogueirense Sub-15",
+        "id": "68087",
+        "country": null,
+        "league_id": "NO1"
+      },
+      {
+        "name": "GD Nazarenos U19",
+        "id": "81878",
+        "country": null,
+        "league_id": "NO1"
+      },
+      {
+        "name": "Estrela Vendas Novas U19",
+        "id": "92491",
+        "country": null,
+        "league_id": "NO1"
+      },
+      {
+        "name": "AD Ninense U19",
+        "id": "99510",
+        "country": null,
+        "league_id": "NO1"
+      },
+      {
+        "name": "GD Nazarenos Sub-17",
+        "id": "103193",
+        "country": null,
+        "league_id": "NO1"
+      },
+      {
+        "name": "GD Nazarenos Sub-15",
+        "id": "103194",
+        "country": null,
+        "league_id": "NO1"
+      },
+      {
+        "name": "Estrela Vendas Novas Sub-17",
+        "id": "110231",
+        "country": null,
+        "league_id": "NO1"
+      }
+    ]
+  },
+  "Panama - LPF": {
+    "id": "PAN1",
+    "teams": [
+      {
+        "name": "SK Panerys Vilnius U19 (-1998)",
+        "id": "50960",
+        "country": null,
+        "league_id": "PAN1"
+      },
+      {
+        "name": "Spain",
+        "id": "3375",
+        "country": null,
+        "league_id": "PAN1"
+      },
+      {
+        "name": "SSC Napoli",
+        "id": "6195",
+        "country": null,
+        "league_id": "PAN1"
+      },
+      {
+        "name": "Spain U21",
+        "id": "9567",
+        "country": null,
+        "league_id": "PAN1"
+      },
+      {
+        "name": "Japan",
+        "id": "3435",
+        "country": null,
+        "league_id": "PAN1"
+      },
+      {
+        "name": "Panathinaikos FC",
+        "id": "265",
+        "country": null,
+        "league_id": "PAN1"
+      },
+      {
+        "name": "PAOK Thessaloniki",
+        "id": "1091",
+        "country": null,
+        "league_id": "PAN1"
+      },
+      {
+        "name": "RCD Espanyol Barcelona",
+        "id": "714",
+        "country": null,
+        "league_id": "PAN1"
+      },
+      {
+        "name": "CF Monterrey",
+        "id": "2407",
+        "country": null,
+        "league_id": "PAN1"
+      },
+      {
+        "name": "Club León FC",
+        "id": "4941",
+        "country": null,
+        "league_id": "PAN1"
+      },
+      {
+        "name": "Panama",
+        "id": "3577",
+        "country": null,
+        "league_id": "PAN1"
+      }
+    ]
+  },
+  "Paraguay - Division Profesional": {
+    "id": "PAR1",
+    "teams": [
+      {
+        "name": "Paris Saint-Germain",
+        "id": "583",
+        "country": null,
+        "league_id": "PAR1"
+      },
+      {
+        "name": "Parma Calcio 1913",
+        "id": "130",
+        "country": null,
+        "league_id": "PAR1"
+      },
+      {
+        "name": "Paraguay",
+        "id": "3581",
+        "country": null,
+        "league_id": "PAR1"
+      },
+      {
+        "name": "Spartak Moscow",
+        "id": "232",
+        "country": null,
+        "league_id": "PAR1"
+      },
+      {
+        "name": "AC Sparta Prague",
+        "id": "197",
+        "country": null,
+        "league_id": "PAR1"
+      },
+      {
+        "name": "Paraguay Olympia",
+        "id": "53853",
+        "country": null,
+        "league_id": "PAR1"
+      },
+      {
+        "name": "Sparta Rotterdam",
+        "id": "468",
+        "country": null,
+        "league_id": "PAR1"
+      },
+      {
+        "name": "Paris FC",
+        "id": "10004",
+        "country": null,
+        "league_id": "PAR1"
+      },
+      {
+        "name": "Paraguay U23",
+        "id": "78275",
+        "country": null,
+        "league_id": "PAR1"
+      },
+      {
+        "name": "FK Partizan Belgrade",
+        "id": "669",
+        "country": null,
+        "league_id": "PAR1"
+      }
+    ]
+  },
+  "Peru - Primera División": {
+    "id": "PE1",
+    "teams": [
+      {
+        "name": "Penya Encarnada d'Andorra",
+        "id": "62573",
+        "country": null,
+        "league_id": "PE1"
+      },
+      {
+        "name": "Santa Cruz FC (PE) U20",
+        "id": "87502",
+        "country": null,
+        "league_id": "PE1"
+      },
+      {
+        "name": "Retrô FC Brasil U20",
+        "id": "96917",
+        "country": null,
+        "league_id": "PE1"
+      },
+      {
+        "name": "Central SC",
+        "id": "21409",
+        "country": null,
+        "league_id": "PE1"
+      },
+      {
+        "name": "Santa Cruz FC (PE)",
+        "id": "1785",
+        "country": null,
+        "league_id": "PE1"
+      },
+      {
+        "name": "Retrô FC Brasil",
+        "id": "76156",
+        "country": null,
+        "league_id": "PE1"
+      },
+      {
+        "name": "Sete de Setembro EC (PE)",
+        "id": "23921",
+        "country": null,
+        "league_id": "PE1"
+      },
+      {
+        "name": "Petrolina Social Futebol Clube (PE)",
+        "id": "31988",
+        "country": null,
+        "league_id": "PE1"
+      },
+      {
+        "name": "AD Jaguar (PE)",
+        "id": "103699",
+        "country": null,
+        "league_id": "PE1"
+      },
+      {
+        "name": "Associação Desportiva Cabense (PE)",
+        "id": "31987",
+        "country": null,
+        "league_id": "PE1"
+      }
+    ]
+  },
+  "Poland - Ekstraklasa": {
+    "id": "PL1",
+    "teams": [
+      {
+        "name": "CEP Lorient U17",
+        "id": "125253",
+        "country": null,
+        "league_id": "PL1"
+      },
+      {
+        "name": "CEP Lorient U19",
+        "id": "125256",
+        "country": null,
+        "league_id": "PL1"
+      },
+      {
+        "name": "CEP Lorient U18",
+        "id": "125257",
+        "country": null,
+        "league_id": "PL1"
+      },
+      {
+        "name": "Persela Lamongan Youth",
+        "id": "79849",
+        "country": null,
+        "league_id": "PL1"
+      },
+      {
+        "name": "FC Platinum U19",
+        "id": "99126",
+        "country": null,
+        "league_id": "PL1"
+      },
+      {
+        "name": "Yednist-2 Plysky (-2018)",
+        "id": "106130",
+        "country": null,
+        "league_id": "PL1"
+      }
+    ]
+  },
+  "Portugal - Liga NOS": {
+    "id": "PO1",
+    "teams": [
+      {
+        "name": "FC Porto U15",
+        "id": "56765",
+        "country": null,
+        "league_id": "PO1"
+      },
+      {
+        "name": "Atlético CP U19",
+        "id": "20107",
+        "country": null,
+        "league_id": "PO1"
+      },
+      {
+        "name": "SC Pombal U19",
+        "id": "35122",
+        "country": null,
+        "league_id": "PO1"
+      },
+      {
+        "name": "SC Praiense U19",
+        "id": "85335",
+        "country": null,
+        "league_id": "PO1"
+      },
+      {
+        "name": "GD Peniche U19",
+        "id": "72394",
+        "country": null,
+        "league_id": "PO1"
+      },
+      {
+        "name": "SC Paivense Under 19",
+        "id": "103405",
+        "country": null,
+        "league_id": "PO1"
+      },
+      {
+        "name": "UA Povoense Sub-17",
+        "id": "106828",
+        "country": null,
+        "league_id": "PO1"
+      },
+      {
+        "name": "SC Pombal Sub-15",
+        "id": "99438",
+        "country": null,
+        "league_id": "PO1"
+      },
+      {
+        "name": "AD Portomosense U19",
+        "id": "102655",
+        "country": null,
+        "league_id": "PO1"
+      },
+      {
+        "name": "UA Povoense Sub-15",
+        "id": "106829",
+        "country": null,
+        "league_id": "PO1"
+      }
+    ]
+  },
+  "Portugal - LigaPro": {
+    "id": "PO2",
+    "teams": [
+      {
+        "name": "Tai Po",
+        "id": "34329",
+        "country": null,
+        "league_id": "PO2"
+      },
+      {
+        "name": "SpVg Porz II",
+        "id": "119929",
+        "country": null,
+        "league_id": "PO2"
+      },
+      {
+        "name": "Pardies Olympique ",
+        "id": "79607",
+        "country": null,
+        "league_id": "PO2"
+      },
+      {
+        "name": "Petrolofisi",
+        "id": "23766",
+        "country": null,
+        "league_id": "PO2"
+      },
+      {
+        "name": "TSV Pöllau II (-2024)",
+        "id": "61484",
+        "country": null,
+        "league_id": "PO2"
+      },
+      {
+        "name": "NK Pobrezje",
+        "id": "117801",
+        "country": null,
+        "league_id": "PO2"
+      },
+      {
+        "name": "Pro Orlandina",
+        "id": "122325",
+        "country": null,
+        "league_id": "PO2"
+      },
+      {
+        "name": "Lech Posen U17",
+        "id": "123771",
+        "country": null,
+        "league_id": "PO2"
+      },
+      {
+        "name": "Ponte delle Origini",
+        "id": "129147",
+        "country": null,
+        "league_id": "PO2"
+      }
+    ]
+  },
+  "Portugal - Primeira Liga": {
+    "id": "PO1",
+    "teams": [
+      {
+        "name": "FC Porto U15",
+        "id": "56765",
+        "country": null,
+        "league_id": "PO1"
+      },
+      {
+        "name": "Atlético CP U19",
+        "id": "20107",
+        "country": null,
+        "league_id": "PO1"
+      },
+      {
+        "name": "SC Pombal U19",
+        "id": "35122",
+        "country": null,
+        "league_id": "PO1"
+      },
+      {
+        "name": "SC Praiense U19",
+        "id": "85335",
+        "country": null,
+        "league_id": "PO1"
+      },
+      {
+        "name": "GD Peniche U19",
+        "id": "72394",
+        "country": null,
+        "league_id": "PO1"
+      },
+      {
+        "name": "SC Paivense Under 19",
+        "id": "103405",
+        "country": null,
+        "league_id": "PO1"
+      },
+      {
+        "name": "UA Povoense Sub-17",
+        "id": "106828",
+        "country": null,
+        "league_id": "PO1"
+      },
+      {
+        "name": "SC Pombal Sub-15",
+        "id": "99438",
+        "country": null,
+        "league_id": "PO1"
+      },
+      {
+        "name": "AD Portomosense U19",
+        "id": "102655",
+        "country": null,
+        "league_id": "PO1"
+      },
+      {
+        "name": "UA Povoense Sub-15",
+        "id": "106829",
+        "country": null,
+        "league_id": "PO1"
+      }
+    ]
+  },
+  "Qatar - Stars League": {
+    "id": "QAT1",
+    "teams": [
+      {
+        "name": "Al-Arabi SC",
+        "id": "1230",
+        "country": null,
+        "league_id": "QAT1"
+      },
+      {
+        "name": "Qatar",
+        "id": "14162",
+        "country": null,
+        "league_id": "QAT1"
+      },
+      {
+        "name": "Qatar SC",
+        "id": "965",
+        "country": null,
+        "league_id": "QAT1"
+      },
+      {
+        "name": "Qatar U23",
+        "id": "10830",
+        "country": null,
+        "league_id": "QAT1"
+      },
+      {
+        "name": "Qatar U20",
+        "id": "23659",
+        "country": null,
+        "league_id": "QAT1"
+      },
+      {
+        "name": "Qatar U18",
+        "id": "70284",
+        "country": null,
+        "league_id": "QAT1"
+      },
+      {
+        "name": "Qatar U17",
+        "id": "28553",
+        "country": null,
+        "league_id": "QAT1"
+      },
+      {
+        "name": "Qatar SC Olympic",
+        "id": "39334",
+        "country": null,
+        "league_id": "QAT1"
+      },
+      {
+        "name": "PFK Zaqatala ",
+        "id": "62681",
+        "country": null,
+        "league_id": "QAT1"
+      },
+      {
+        "name": "Al-Shirqat FC",
+        "id": "88442",
+        "country": null,
+        "league_id": "QAT1"
+      }
+    ]
+  },
+  "Saudi Arabia - Pro League": {
+    "id": "SA1",
+    "teams": [
+      {
+        "name": "Brothers Sports Association U17",
+        "id": "114782",
+        "country": null,
+        "league_id": "SA1"
+      },
+      {
+        "name": "Namdhari Sports Academy U17",
+        "id": "114796",
+        "country": null,
+        "league_id": "SA1"
+      },
+      {
+        "name": "UCSA Tarasivka U17",
+        "id": "121310",
+        "country": null,
+        "league_id": "SA1"
+      },
+      {
+        "name": "FC Cesarense U19",
+        "id": "75070",
+        "country": null,
+        "league_id": "SA1"
+      },
+      {
+        "name": "GD Salão U19",
+        "id": "103404",
+        "country": null,
+        "league_id": "SA1"
+      },
+      {
+        "name": "Académica Santarém U19",
+        "id": "103671",
+        "country": null,
+        "league_id": "SA1"
+      },
+      {
+        "name": "FC Cesarense U17",
+        "id": "105475",
+        "country": null,
+        "league_id": "SA1"
+      },
+      {
+        "name": "FC Cesarense U15",
+        "id": "105476",
+        "country": null,
+        "league_id": "SA1"
+      },
+      {
+        "name": "Bidhannagar Muncipal Sports Academy U17",
+        "id": "127269",
+        "country": null,
+        "league_id": "SA1"
+      },
+      {
+        "name": "Adamas United Sports Academy U17",
+        "id": "127271",
+        "country": null,
+        "league_id": "SA1"
+      }
+    ]
+  },
+  "Saudi Arabia - Professional League": {
+    "id": "SA1",
+    "teams": [
+      {
+        "name": "Brothers Sports Association U17",
+        "id": "114782",
+        "country": null,
+        "league_id": "SA1"
+      },
+      {
+        "name": "Namdhari Sports Academy U17",
+        "id": "114796",
+        "country": null,
+        "league_id": "SA1"
+      },
+      {
+        "name": "UCSA Tarasivka U17",
+        "id": "121310",
+        "country": null,
+        "league_id": "SA1"
+      },
+      {
+        "name": "FC Cesarense U19",
+        "id": "75070",
+        "country": null,
+        "league_id": "SA1"
+      },
+      {
+        "name": "GD Salão U19",
+        "id": "103404",
+        "country": null,
+        "league_id": "SA1"
+      },
+      {
+        "name": "Académica Santarém U19",
+        "id": "103671",
+        "country": null,
+        "league_id": "SA1"
+      },
+      {
+        "name": "FC Cesarense U17",
+        "id": "105475",
+        "country": null,
+        "league_id": "SA1"
+      },
+      {
+        "name": "FC Cesarense U15",
+        "id": "105476",
+        "country": null,
+        "league_id": "SA1"
+      },
+      {
+        "name": "Bidhannagar Muncipal Sports Academy U17",
+        "id": "127269",
+        "country": null,
+        "league_id": "SA1"
+      },
+      {
+        "name": "Adamas United Sports Academy U17",
+        "id": "127271",
+        "country": null,
+        "league_id": "SA1"
+      }
+    ]
+  },
+  "Scotland - Premiership": {
+    "id": "SC1",
+    "teams": [
+      {
+        "name": "Montpellier HSC U19",
+        "id": "10852",
+        "country": null,
+        "league_id": "SC1"
+      },
+      {
+        "name": "United SC U17 ",
+        "id": "114806",
+        "country": null,
+        "league_id": "SC1"
+      },
+      {
+        "name": "Mohammedan SC (Kolkata) U17",
+        "id": "114823",
+        "country": null,
+        "league_id": "SC1"
+      },
+      {
+        "name": "Montpellier HSC U17",
+        "id": "107729",
+        "country": null,
+        "league_id": "SC1"
+      },
+      {
+        "name": "Düsseldorfer SC 99",
+        "id": "33318",
+        "country": null,
+        "league_id": "SC1"
+      },
+      {
+        "name": "CD Santa Clara U19",
+        "id": "15595",
+        "country": null,
+        "league_id": "SC1"
+      },
+      {
+        "name": "Real SC U17",
+        "id": "61165",
+        "country": null,
+        "league_id": "SC1"
+      },
+      {
+        "name": "Mem Martins SC U19",
+        "id": "103527",
+        "country": null,
+        "league_id": "SC1"
+      },
+      {
+        "name": "Real SC U15",
+        "id": "61166",
+        "country": null,
+        "league_id": "SC1"
+      },
+      {
+        "name": "Sinnai Calcio A 11",
+        "id": "125099",
+        "country": null,
+        "league_id": "SC1"
+      }
+    ]
+  },
+  "Singapore - S.League": {
+    "id": "SIN1",
+    "teams": [
+      {
+        "name": "Bologna FC 1909",
+        "id": "1025",
+        "country": null,
+        "league_id": "SIN1"
+      },
+      {
+        "name": "Without Club",
+        "id": "515",
+        "country": null,
+        "league_id": "SIN1"
+      },
+      {
+        "name": "Zenit St. Petersburg",
+        "id": "964",
+        "country": null,
+        "league_id": "SIN1"
+      },
+      {
+        "name": "Red Bull Salzburg",
+        "id": "409",
+        "country": null,
+        "league_id": "SIN1"
+      },
+      {
+        "name": "Coventry City",
+        "id": "990",
+        "country": null,
+        "league_id": "SIN1"
+      },
+      {
+        "name": "Tigres UANL",
+        "id": "7055",
+        "country": null,
+        "league_id": "SIN1"
+      },
+      {
+        "name": "Sint-Truidense VV",
+        "id": "475",
+        "country": null,
+        "league_id": "SIN1"
+      },
+      {
+        "name": "FC Rapid 1923",
+        "id": "455",
+        "country": null,
+        "league_id": "SIN1"
+      },
+      {
+        "name": "Frosinone Calcio",
+        "id": "8970",
+        "country": null,
+        "league_id": "SIN1"
+      },
+      {
+        "name": "FC Südtirol",
+        "id": "4554",
+        "country": null,
+        "league_id": "SIN1"
+      }
+    ]
+  },
+  "Slovakia - Slovakia Cup": {
+    "id": "SKC",
+    "teams": [
+      {
+        "name": "Sporting Kansas City",
+        "id": "4284",
+        "country": null,
+        "league_id": "SKC"
+      },
+      {
+        "name": "PSKC Cimahi",
+        "id": "72750",
+        "country": null,
+        "league_id": "SKC"
+      },
+      {
+        "name": "Sporting Kansas City II",
+        "id": "51604",
+        "country": null,
+        "league_id": "SKC"
+      },
+      {
+        "name": "SKC Barbaros Mainz",
+        "id": "58873",
+        "country": null,
+        "league_id": "SKC"
+      },
+      {
+        "name": "Sporting Kansas City Academy",
+        "id": "29824",
+        "country": null,
+        "league_id": "SKC"
+      },
+      {
+        "name": "SK Cernolice",
+        "id": "64613",
+        "country": null,
+        "league_id": "SKC"
+      },
+      {
+        "name": "SKC Munzur Wiesbaden",
+        "id": "78813",
+        "country": null,
+        "league_id": "SKC"
+      },
+      {
+        "name": "JS Kemexhe Crisnée",
+        "id": "65226",
+        "country": null,
+        "league_id": "SKC"
+      },
+      {
+        "name": "KSCT Menen Jugend",
+        "id": "78489",
+        "country": null,
+        "league_id": "SKC"
+      },
+      {
+        "name": "Sporting Kansas City Reserves",
+        "id": "79526",
+        "country": null,
+        "league_id": "SKC"
+      }
+    ]
+  },
+  "Slovakia - Super Liga": {
+    "id": "SK1",
+    "teams": [
+      {
+        "name": "NK GOSK Gabela U17",
+        "id": "61571",
+        "country": null,
+        "league_id": "SK1"
+      },
+      {
+        "name": "Basaksehir FK U17",
+        "id": "123434",
+        "country": null,
+        "league_id": "SK1"
+      },
+      {
+        "name": "Basaksehir FK U16",
+        "id": "123435",
+        "country": null,
+        "league_id": "SK1"
+      },
+      {
+        "name": "DSG SK10/Monfalcone (-2023)",
+        "id": "47385",
+        "country": null,
+        "league_id": "SK1"
+      },
+      {
+        "name": "SK Fünfhaus 15",
+        "id": "117768",
+        "country": null,
+        "league_id": "SK1"
+      },
+      {
+        "name": "Basaksehir FK U18",
+        "id": "123436",
+        "country": null,
+        "league_id": "SK1"
+      },
+      {
+        "name": "Örebro SK",
+        "id": "1056",
+        "country": null,
+        "league_id": "SK1"
+      },
+      {
+        "name": "SK Trygg/Lade",
+        "id": "53407",
+        "country": null,
+        "league_id": "SK1"
+      },
+      {
+        "name": "Bulanik Kop Spor Kulübü",
+        "id": "129220",
+        "country": null,
+        "league_id": "SK1"
+      },
+      {
+        "name": "Loenhout SK",
+        "id": "64223",
+        "country": null,
+        "league_id": "SK1"
+      },
+      {
+        "name": "DYuSSh Shakhter Karaganda",
+        "id": "120365",
+        "country": null,
+        "league_id": "SK1"
+      },
+      {
+        "name": "LZS Skorogoszcz",
+        "id": "82059",
+        "country": null,
+        "league_id": "SK1"
+      },
+      {
+        "name": "Skaerbaek BK",
+        "id": "84102",
+        "country": null,
+        "league_id": "SK1"
+      },
+      {
+        "name": "DJK Südwest Köln U19",
+        "id": "95436",
+        "country": null,
+        "league_id": "SK1"
+      }
+    ]
+  },
+  "Slovenia - Prva Liga": {
+    "id": "SV1",
+    "teams": [
+      {
+        "name": "TSV 1860 Munich",
+        "id": "72",
+        "country": null,
+        "league_id": "SV1"
+      },
+      {
+        "name": "SV Alsenborn",
+        "id": "22449",
+        "country": null,
+        "league_id": "SV1"
+      },
+      {
+        "name": "SV Lauderbach 1931",
+        "id": "28345",
+        "country": null,
+        "league_id": "SV1"
+      },
+      {
+        "name": "SSV 2013",
+        "id": "93291",
+        "country": null,
+        "league_id": "SV1"
+      },
+      {
+        "name": "Hamburger SV",
+        "id": "41",
+        "country": null,
+        "league_id": "SV1"
+      },
+      {
+        "name": "Wuppertaler SV",
+        "id": "299",
+        "country": null,
+        "league_id": "SV1"
+      },
+      {
+        "name": "Bremer SV",
+        "id": "1328",
+        "country": null,
+        "league_id": "SV1"
+      },
+      {
+        "name": "SV Buchonia Flieden",
+        "id": "1394",
+        "country": null,
+        "league_id": "SV1"
+      },
+      {
+        "name": "SV Zeilsheim",
+        "id": "11543",
+        "country": null,
+        "league_id": "SV1"
+      },
+      {
+        "name": "Heider SV",
+        "id": "1297",
+        "country": null,
+        "league_id": "SV1"
+      },
+      {
+        "name": "SV Lengede",
+        "id": "8580",
+        "country": null,
+        "league_id": "SV1"
+      },
+      {
+        "name": "SV 1910 Breinig Breinigerberg",
+        "id": "10251",
+        "country": null,
+        "league_id": "SV1"
+      },
+      {
+        "name": "SV Schaffhausen",
+        "id": "5708",
+        "country": null,
+        "league_id": "SV1"
+      },
+      {
+        "name": "Hansa Friesoythe",
+        "id": "5297",
+        "country": null,
+        "league_id": "SV1"
+      }
+    ]
+  },
+  "South Africa - Premier Soccer League": {
+    "id": "RSA1",
+    "teams": [
+      {
+        "name": "Royal Antwerp FC",
+        "id": "1096",
+        "country": null,
+        "league_id": "RSA1"
+      },
+      {
+        "name": "Legia Warszawa",
+        "id": "255",
+        "country": null,
+        "league_id": "RSA1"
+      },
+      {
+        "name": "South Africa",
+        "id": "3806",
+        "country": null,
+        "league_id": "RSA1"
+      },
+      {
+        "name": "South Africa U23",
+        "id": "28649",
+        "country": null,
+        "league_id": "RSA1"
+      },
+      {
+        "name": "FC Versailles 78",
+        "id": "13466",
+        "country": null,
+        "league_id": "RSA1"
+      },
+      {
+        "name": "PERSIB Bandung",
+        "id": "14105",
+        "country": null,
+        "league_id": "RSA1"
+      },
+      {
+        "name": "Persebaya Surabaya",
+        "id": "31444",
+        "country": null,
+        "league_id": "RSA1"
+      },
+      {
+        "name": "Persija Jakarta",
+        "id": "14107",
+        "country": null,
+        "league_id": "RSA1"
+      },
+      {
+        "name": "PSM Makassar",
+        "id": "14104",
+        "country": null,
+        "league_id": "RSA1"
+      },
+      {
+        "name": "Polonia Warsaw",
+        "id": "2745",
+        "country": null,
+        "league_id": "RSA1"
+      }
+    ]
+  },
+  "South America - Copa Libertadores": {
+    "id": "LIBER",
+    "teams": [
+      {
+        "name": "Liverpool FC",
+        "id": "31",
+        "country": null,
+        "league_id": "LIBER"
+      },
+      {
+        "name": "Liberia",
+        "id": "9172",
+        "country": null,
+        "league_id": "LIBER"
+      },
+      {
+        "name": "Club Libertad Asunción",
+        "id": "9875",
+        "country": null,
+        "league_id": "LIBER"
+      },
+      {
+        "name": "FC Slovan Liberec",
+        "id": "697",
+        "country": null,
+        "league_id": "LIBER"
+      },
+      {
+        "name": "Libertad FC",
+        "id": "87068",
+        "country": null,
+        "league_id": "LIBER"
+      },
+      {
+        "name": "AD Municipal Liberia",
+        "id": "18579",
+        "country": null,
+        "league_id": "LIBER"
+      },
+      {
+        "name": "FC Slovan Liberec B",
+        "id": "7133",
+        "country": null,
+        "league_id": "LIBER"
+      },
+      {
+        "name": "AC Libertas",
+        "id": "10616",
+        "country": null,
+        "league_id": "LIBER"
+      },
+      {
+        "name": "Club Libertad Asunción U19",
+        "id": "24816",
+        "country": null,
+        "league_id": "LIBER"
+      },
+      {
+        "name": "Liberia U20",
+        "id": "85940",
+        "country": null,
+        "league_id": "LIBER"
+      }
+    ]
+  },
+  "South America - Copa Sudamericana": {
+    "id": "SUDA",
+    "teams": [
+      {
+        "name": "South Africa",
+        "id": "3806",
+        "country": null,
+        "league_id": "SUDA"
+      },
+      {
+        "name": "South Africa U23",
+        "id": "28649",
+        "country": null,
+        "league_id": "SUDA"
+      },
+      {
+        "name": "Sudan",
+        "id": "13313",
+        "country": null,
+        "league_id": "SUDA"
+      },
+      {
+        "name": "South Africa U17",
+        "id": "32648",
+        "country": null,
+        "league_id": "SUDA"
+      },
+      {
+        "name": "South Sudan",
+        "id": "33192",
+        "country": null,
+        "league_id": "SUDA"
+      },
+      {
+        "name": "South Africa U20",
+        "id": "22984",
+        "country": null,
+        "league_id": "SUDA"
+      },
+      {
+        "name": "South Sudan U20",
+        "id": "75394",
+        "country": null,
+        "league_id": "SUDA"
+      },
+      {
+        "name": "Sudan U20",
+        "id": "56031",
+        "country": null,
+        "league_id": "SUDA"
+      },
+      {
+        "name": "Hilal Al-Sahil SC",
+        "id": "101315",
+        "country": null,
+        "league_id": "SUDA"
+      },
+      {
+        "name": "Hay Al-Arab SC",
+        "id": "71000",
+        "country": null,
+        "league_id": "SUDA"
+      }
+    ]
+  },
+  "Spain - Copa del Rey": {
+    "id": "CDR",
+    "teams": [
+      {
+        "name": "Club Deportivo Riestra",
+        "id": "19775",
+        "country": null,
+        "league_id": "CDR"
+      },
+      {
+        "name": "Chengdu Rongcheng B",
+        "id": "125740",
+        "country": null,
+        "league_id": "CDR"
+      },
+      {
+        "name": "Club Deportivo Riestra II",
+        "id": "61810",
+        "country": null,
+        "league_id": "CDR"
+      },
+      {
+        "name": "Quarteirense Futebol SAD",
+        "id": "25819",
+        "country": null,
+        "league_id": "CDR"
+      },
+      {
+        "name": "CCDR Vila Cortez",
+        "id": "41780",
+        "country": null,
+        "league_id": "CDR"
+      },
+      {
+        "name": "ACDR Lamelas",
+        "id": "67660",
+        "country": null,
+        "league_id": "CDR"
+      },
+      {
+        "name": "ASD Atletic Cdr Mutina",
+        "id": "82920",
+        "country": null,
+        "league_id": "CDR"
+      },
+      {
+        "name": "Kowloon City District Recreation & Sports Council",
+        "id": "85943",
+        "country": null,
+        "league_id": "CDR"
+      },
+      {
+        "name": "CD Rabo de Peixe",
+        "id": "20804",
+        "country": null,
+        "league_id": "CDR"
+      },
+      {
+        "name": "CD Revilla",
+        "id": "55903",
+        "country": null,
+        "league_id": "CDR"
+      }
+    ]
+  },
+  "Spain - La Liga": {
+    "id": "ES1",
+    "teams": [
+      {
+        "name": "CD Estarreja U19",
+        "id": "92345",
+        "country": null,
+        "league_id": "ES1"
+      },
+      {
+        "name": "AD Estação Sub-15",
+        "id": "117382",
+        "country": null,
+        "league_id": "ES1"
+      },
+      {
+        "name": "SC Esmoriz Sub-17",
+        "id": "110223",
+        "country": null,
+        "league_id": "ES1"
+      },
+      {
+        "name": "UC Eirense Sub-15",
+        "id": "127961",
+        "country": null,
+        "league_id": "ES1"
+      },
+      {
+        "name": "AD Esposende Sub-17",
+        "id": "107374",
+        "country": null,
+        "league_id": "ES1"
+      },
+      {
+        "name": "SC Espinho Sub-15",
+        "id": "64334",
+        "country": null,
+        "league_id": "ES1"
+      },
+      {
+        "name": "UC Eirense Sub-17",
+        "id": "127967",
+        "country": null,
+        "league_id": "ES1"
+      },
+      {
+        "name": "GD Eixense Sub-15",
+        "id": "114385",
+        "country": null,
+        "league_id": "ES1"
+      },
+      {
+        "name": "SC Esmoriz Sub-15",
+        "id": "110224",
+        "country": null,
+        "league_id": "ES1"
+      },
+      {
+        "name": "GD Eixense Sub-19",
+        "id": "114384",
+        "country": null,
+        "league_id": "ES1"
+      }
+    ]
+  },
+  "Sweden - Superettan": {
+    "id": "SE2",
+    "teams": [
+      {
+        "name": "AD Confiança",
+        "id": "3280",
+        "country": null,
+        "league_id": "SE2"
+      },
+      {
+        "name": "CS Sergipe",
+        "id": "7816",
+        "country": null,
+        "league_id": "SE2"
+      },
+      {
+        "name": "Dorense FC",
+        "id": "56342",
+        "country": null,
+        "league_id": "SE2"
+      },
+      {
+        "name": "Associação Olímpica de Itabaiana (SE)",
+        "id": "8547",
+        "country": null,
+        "league_id": "SE2"
+      },
+      {
+        "name": "AD Barra (SE)",
+        "id": "98798",
+        "country": null,
+        "league_id": "SE2"
+      },
+      {
+        "name": "AA Guarany (SE)",
+        "id": "82391",
+        "country": null,
+        "league_id": "SE2"
+      },
+      {
+        "name": "América FC",
+        "id": "19956",
+        "country": null,
+        "league_id": "SE2"
+      },
+      {
+        "name": "América de Pedrinhas FC (SE) U20",
+        "id": "126840",
+        "country": null,
+        "league_id": "SE2"
+      },
+      {
+        "name": "Sociedade Boca Júnior FC (SE)",
+        "id": "21845",
+        "country": null,
+        "league_id": "SE2"
+      },
+      {
+        "name": "Falcon Futebol Clube (SE) U20",
+        "id": "96905",
+        "country": null,
+        "league_id": "SE2"
+      }
+    ]
+  },
+  "Switzerland - Nationalliga A Women": {
+    "id": "C1F",
+    "teams": [
+      {
+        "name": "Córdoba CF",
+        "id": "993",
+        "country": null,
+        "league_id": "C1F"
+      },
+      {
+        "name": "Trival Valderas Alcorcón",
+        "id": "29198",
+        "country": null,
+        "league_id": "C1F"
+      },
+      {
+        "name": "Estrella CF",
+        "id": "44565",
+        "country": null,
+        "league_id": "C1F"
+      },
+      {
+        "name": "C'Chartres Football U19 ",
+        "id": "100688",
+        "country": null,
+        "league_id": "C1F"
+      },
+      {
+        "name": "Clermont Foot 63 U18",
+        "id": "128766",
+        "country": null,
+        "league_id": "C1F"
+      },
+      {
+        "name": "Club français",
+        "id": "61109",
+        "country": null,
+        "league_id": "C1F"
+      },
+      {
+        "name": "Chantilly Forever FC",
+        "id": "117391",
+        "country": null,
+        "league_id": "C1F"
+      },
+      {
+        "name": "CF Organyà",
+        "id": "117630",
+        "country": null,
+        "league_id": "C1F"
+      },
+      {
+        "name": "Centre Fédéral de Formation de Football",
+        "id": "120516",
+        "country": null,
+        "league_id": "C1F"
+      },
+      {
+        "name": "Cava Friends",
+        "id": "129279",
+        "country": null,
+        "league_id": "C1F"
+      }
+    ]
+  },
+  "Switzerland - Swiss Cup": {
+    "id": "SC",
+    "teams": [
+      {
+        "name": "SC Freiburg",
+        "id": "60",
+        "country": null,
+        "league_id": "SC"
+      },
+      {
+        "name": "Columbus Crew",
+        "id": "813",
+        "country": null,
+        "league_id": "SC"
+      },
+      {
+        "name": "St. Louis CITY SC",
+        "id": "82686",
+        "country": null,
+        "league_id": "SC"
+      },
+      {
+        "name": "Ceará Sporting Club",
+        "id": "2029",
+        "country": null,
+        "league_id": "SC"
+      },
+      {
+        "name": "Club Sporting Cristal",
+        "id": "1450",
+        "country": null,
+        "league_id": "SC"
+      },
+      {
+        "name": "Avaí FC",
+        "id": "2035",
+        "country": null,
+        "league_id": "SC"
+      },
+      {
+        "name": "Al-Riffa SC",
+        "id": "12561",
+        "country": null,
+        "league_id": "SC"
+      },
+      {
+        "name": "Al-Faisaly SC",
+        "id": "13592",
+        "country": null,
+        "league_id": "SC"
+      },
+      {
+        "name": "Chabab Ghazieh SC",
+        "id": "22844",
+        "country": null,
+        "league_id": "SC"
+      },
+      {
+        "name": "Bahlinger SC",
+        "id": "1193",
+        "country": null,
+        "league_id": "SC"
+      }
+    ]
+  },
+  "Turkey - Turkish Cup": {
+    "id": "TRC",
+    "teams": [
+      {
+        "name": "Tractor FC",
+        "id": "12935",
+        "country": null,
+        "league_id": "TRC"
+      },
+      {
+        "name": "ND Bistrc",
+        "id": "105678",
+        "country": null,
+        "league_id": "TRC"
+      },
+      {
+        "name": "NK Ostrc Zlatar",
+        "id": "50865",
+        "country": null,
+        "league_id": "TRC"
+      },
+      {
+        "name": "FC Dosta Bystrc-Kninicky",
+        "id": "11115",
+        "country": null,
+        "league_id": "TRC"
+      },
+      {
+        "name": "That Ras Club",
+        "id": "42852",
+        "country": null,
+        "league_id": "TRC"
+      },
+      {
+        "name": "Tractor FC U21",
+        "id": "45473",
+        "country": null,
+        "league_id": "TRC"
+      },
+      {
+        "name": "Dynamo Kotrcina Lucka",
+        "id": "75154",
+        "country": null,
+        "league_id": "TRC"
+      },
+      {
+        "name": "Piotrcovia-Ptak Piotrkow",
+        "id": "549",
+        "country": null,
+        "league_id": "TRC"
+      },
+      {
+        "name": "Piotrcovia Piotrków Trybunalski",
+        "id": "7177",
+        "country": null,
+        "league_id": "TRC"
+      },
+      {
+        "name": "NK Kostrc",
+        "id": "65101",
+        "country": null,
+        "league_id": "TRC"
+      }
+    ]
+  },
+  "Turkey Süper Lig": {
+    "id": "TR1",
+    "teams": [
+      {
+        "name": "TSV Trillfingen",
+        "id": "48947",
+        "country": null,
+        "league_id": "TR1"
+      },
+      {
+        "name": "Toulouse Rodéo Football Club",
+        "id": "38497",
+        "country": null,
+        "league_id": "TR1"
+      },
+      {
+        "name": "TJ Sokol Horni Ujezd (TR)",
+        "id": "124892",
+        "country": null,
+        "league_id": "TR1"
+      },
+      {
+        "name": "FK Trinec B (- 2021)",
+        "id": "40530",
+        "country": null,
+        "league_id": "TR1"
+      },
+      {
+        "name": "TFC Inter Troisdorf III",
+        "id": "102432",
+        "country": null,
+        "league_id": "TR1"
+      },
+      {
+        "name": "FSV Trier-Tarforst U17",
+        "id": "129325",
+        "country": null,
+        "league_id": "TR1"
+      }
+    ]
+  },
+  "UAE - Arabian Gulf League": {
+    "id": "UAE1",
+    "teams": [
+      {
+        "name": "United Arab Emirates",
+        "id": "5147",
+        "country": null,
+        "league_id": "UAE1"
+      },
+      {
+        "name": "Al-Nasr SC (UAE)",
+        "id": "5432",
+        "country": null,
+        "league_id": "UAE1"
+      },
+      {
+        "name": "Al-Orooba FC",
+        "id": "51771",
+        "country": null,
+        "league_id": "UAE1"
+      },
+      {
+        "name": "United Arab Emirates U23",
+        "id": "34592",
+        "country": null,
+        "league_id": "UAE1"
+      },
+      {
+        "name": "United Arab Emirates U20",
+        "id": "22992",
+        "country": null,
+        "league_id": "UAE1"
+      },
+      {
+        "name": "United Arab Emirates U19",
+        "id": "28209",
+        "country": null,
+        "league_id": "UAE1"
+      },
+      {
+        "name": "United FC (UAE)",
+        "id": "94732",
+        "country": null,
+        "league_id": "UAE1"
+      },
+      {
+        "name": "United Arab Emirates U17",
+        "id": "25513",
+        "country": null,
+        "league_id": "UAE1"
+      },
+      {
+        "name": "Grêmio Esportivo Mauaense U20",
+        "id": "96937",
+        "country": null,
+        "league_id": "UAE1"
+      },
+      {
+        "name": "Al-Taawon Club",
+        "id": "54744",
+        "country": null,
+        "league_id": "UAE1"
+      }
+    ]
+  },
+  "UEFA Nations League": {
+    "id": "UNL",
+    "teams": [
+      {
+        "name": "Atletico Suzuka Club",
+        "id": "29180",
+        "country": null,
+        "league_id": "UNL"
+      },
+      {
+        "name": "Chongqing Chunlei",
+        "id": "115891",
+        "country": null,
+        "league_id": "UNL"
+      },
+      {
+        "name": "Qinghai Kunlun",
+        "id": "119081",
+        "country": null,
+        "league_id": "UNL"
+      },
+      {
+        "name": "FC Bräunlingen",
+        "id": "76264",
+        "country": null,
+        "league_id": "UNL"
+      },
+      {
+        "name": "Lun Lok",
+        "id": "88642",
+        "country": null,
+        "league_id": "UNL"
+      },
+      {
+        "name": "Guangxi Junling",
+        "id": "108112",
+        "country": null,
+        "league_id": "UNL"
+      },
+      {
+        "name": "FK Viagem Usti nad Labem B",
+        "id": "102802",
+        "country": null,
+        "league_id": "UNL"
+      },
+      {
+        "name": "UNLV Rebels (University of Nevada/Las Vegas)",
+        "id": "9822",
+        "country": null,
+        "league_id": "UNL"
+      },
+      {
+        "name": "Kunming Zheng He Shipman",
+        "id": "70656",
+        "country": null,
+        "league_id": "UNL"
+      },
+      {
+        "name": "FK Viagem Usti nad Labem U19",
+        "id": "40316",
+        "country": null,
+        "league_id": "UNL"
+      }
+    ]
+  },
+  "USA - MLS": {
+    "id": "MLS1",
+    "teams": [
+      {
+        "name": "MLS Pool",
+        "id": "25643",
+        "country": null,
+        "league_id": "MLS1"
+      },
+      {
+        "name": "Major League Soccer L.L.C.",
+        "id": "58558",
+        "country": null,
+        "league_id": "MLS1"
+      },
+      {
+        "name": "FK Smolensk (-2021)",
+        "id": "73244",
+        "country": null,
+        "league_id": "MLS1"
+      },
+      {
+        "name": "MLS NEXT Pro  L.L.C.",
+        "id": "95082",
+        "country": null,
+        "league_id": "MLS1"
+      }
+    ]
+  },
+  "Ukraine - Premier League": {
+    "id": "UKR1",
+    "teams": [
+      {
+        "name": "Ukraine",
+        "id": "3699",
+        "country": null,
+        "league_id": "UKR1"
+      },
+      {
+        "name": "Ukraine U21",
+        "id": "16274",
+        "country": null,
+        "league_id": "UKR1"
+      },
+      {
+        "name": "FC Rapid 1923",
+        "id": "455",
+        "country": null,
+        "league_id": "UKR1"
+      },
+      {
+        "name": "Ukraine U20",
+        "id": "28381",
+        "country": null,
+        "league_id": "UKR1"
+      },
+      {
+        "name": "Ukraine U19",
+        "id": "21233",
+        "country": null,
+        "league_id": "UKR1"
+      },
+      {
+        "name": "Ukraine U17",
+        "id": "23313",
+        "country": null,
+        "league_id": "UKR1"
+      },
+      {
+        "name": "Ukraine Olympic Team",
+        "id": "114122",
+        "country": null,
+        "league_id": "UKR1"
+      },
+      {
+        "name": "Ukraine U16",
+        "id": "31726",
+        "country": null,
+        "league_id": "UKR1"
+      },
+      {
+        "name": "SC Feine Ukraine Hamburg",
+        "id": "120749",
+        "country": null,
+        "league_id": "UKR1"
+      },
+      {
+        "name": "Ukraine U15",
+        "id": "69561",
+        "country": null,
+        "league_id": "UKR1"
+      }
+    ]
+  },
+  "Uzbekistan - Uzbekistan Super League": {
+    "id": "UZ1",
+    "teams": [
+      {
+        "name": "Usbekistan U15",
+        "id": "102099",
+        "country": null,
+        "league_id": "UZ1"
+      },
+      {
+        "name": "FC United Zürich II",
+        "id": "47208",
+        "country": null,
+        "league_id": "UZ1"
+      }
+    ]
+  },
+  "Venezuela - Primera División": {
+    "id": "VE1",
+    "teams": [
+      {
+        "name": "Juventus Primavera",
+        "id": "11008",
+        "country": null,
+        "league_id": "VE1"
+      },
+      {
+        "name": "Juventus Under 17",
+        "id": "49567",
+        "country": null,
+        "league_id": "VE1"
+      },
+      {
+        "name": "TuS Vernich",
+        "id": "58824",
+        "country": null,
+        "league_id": "VE1"
+      },
+      {
+        "name": "Recreativo San Jorge (Villa Elisa)",
+        "id": "124343",
+        "country": null,
+        "league_id": "VE1"
+      },
+      {
+        "name": "Virtus Erchie",
+        "id": "124576",
+        "country": null,
+        "league_id": "VE1"
+      }
+    ]
+  },
+  "Wales - Welsh Premier League": {
+    "id": "WAL1",
+    "teams": [
+      {
+        "name": "Wales",
+        "id": "3864",
+        "country": null,
+        "league_id": "WAL1"
+      },
+      {
+        "name": "Millwall FC",
+        "id": "1028",
+        "country": null,
+        "league_id": "WAL1"
+      },
+      {
+        "name": "1.FC Kaiserslautern",
+        "id": "2",
+        "country": null,
+        "league_id": "WAL1"
+      },
+      {
+        "name": "Kolos Kovalivka",
+        "id": "48332",
+        "country": null,
+        "league_id": "WAL1"
+      },
+      {
+        "name": "Ross County FC",
+        "id": "2759",
+        "country": null,
+        "league_id": "WAL1"
+      },
+      {
+        "name": "SV Waldhof Mannheim",
+        "id": "85",
+        "country": null,
+        "league_id": "WAL1"
+      },
+      {
+        "name": "Walsall FC",
+        "id": "899",
+        "country": null,
+        "league_id": "WAL1"
+      },
+      {
+        "name": "Wales U21",
+        "id": "24966",
+        "country": null,
+        "league_id": "WAL1"
+      },
+      {
+        "name": "Greifswalder FC",
+        "id": "48991",
+        "country": null,
+        "league_id": "WAL1"
+      },
+      {
+        "name": "Wales C",
+        "id": "34425",
+        "country": null,
+        "league_id": "WAL1"
+      }
+    ]
+  },
+  "Premyer Liqa": {
+    "id": "AZ1",
+    "teams": [
+      {
+        "name": "AZ Alkmaar",
+        "id": "1090",
+        "country": null,
+        "league_id": "AZ1"
+      },
+      {
+        "name": "Azerbaijan",
+        "id": "8605",
+        "country": null,
+        "league_id": "AZ1"
+      },
+      {
+        "name": "AZ Alkmaar U21",
+        "id": "11368",
+        "country": null,
+        "league_id": "AZ1"
+      },
+      {
+        "name": "AZ Alkmaar U19",
+        "id": "7460",
+        "country": null,
+        "league_id": "AZ1"
+      },
+      {
+        "name": "AZ Alkmaar Youth",
+        "id": "32793",
+        "country": null,
+        "league_id": "AZ1"
+      },
+      {
+        "name": "FC Aktobe-Zhas",
+        "id": "65802",
+        "country": null,
+        "league_id": "AZ1"
+      }
+    ]
+  },
+  "Cyprus League": {
+    "id": "CYP1",
+    "teams": [
+      {
+        "name": "Cyprus",
+        "id": "3668",
+        "country": null,
+        "league_id": "CYP1"
+      },
+      {
+        "name": "Cyprus U21",
+        "id": "24967",
+        "country": null,
+        "league_id": "CYP1"
+      },
+      {
+        "name": "Cyprus U19",
+        "id": "28434",
+        "country": null,
+        "league_id": "CYP1"
+      },
+      {
+        "name": "Cyprus U17",
+        "id": "25962",
+        "country": null,
+        "league_id": "CYP1"
+      },
+      {
+        "name": "New York Pancyprian Freedoms",
+        "id": "28705",
+        "country": null,
+        "league_id": "CYP1"
+      },
+      {
+        "name": "Cyprus U16",
+        "id": "28166",
+        "country": null,
+        "league_id": "CYP1"
+      },
+      {
+        "name": "Cyprus U18",
+        "id": "28167",
+        "country": null,
+        "league_id": "CYP1"
+      },
+      {
+        "name": "Cyprus U15",
+        "id": "35747",
+        "country": null,
+        "league_id": "CYP1"
+      }
+    ]
+  },
+  "Superliga": {
+    "id": "DK1",
+    "teams": [
+      {
+        "name": "Dinamo Kutaisi (-1956)",
+        "id": "116621",
+        "country": null,
+        "league_id": "DK1"
+      }
+    ]
+  },
+  "Premier League": {
+    "id": "GB1",
+    "teams": [
+      {
+        "name": "FC Girondins Bordeaux U18",
+        "id": "129726",
+        "country": null,
+        "league_id": "GB1"
+      },
+      {
+        "name": "FC Girondins Bordeaux U17",
+        "id": "62344",
+        "country": null,
+        "league_id": "GB1"
+      },
+      {
+        "name": "Genclerbirligi Ankara",
+        "id": "820",
+        "country": null,
+        "league_id": "GB1"
+      },
+      {
+        "name": "Gebze Birlik Futbol Kulübü",
+        "id": "127095",
+        "country": null,
+        "league_id": "GB1"
+      },
+      {
+        "name": "Club Social y Atlético Guillermo Brown II",
+        "id": "61445",
+        "country": null,
+        "league_id": "GB1"
+      },
+      {
+        "name": "Graasten Boldklub",
+        "id": "77478",
+        "country": null,
+        "league_id": "GB1"
+      },
+      {
+        "name": "SC Gresaubach U19",
+        "id": "129076",
+        "country": null,
+        "league_id": "GB1"
+      },
+      {
+        "name": "1.FC Godesberg U17",
+        "id": "98963",
+        "country": null,
+        "league_id": "GB1"
+      },
+      {
+        "name": "Club Atlético Ferro Carril (GB)",
+        "id": "119177",
+        "country": null,
+        "league_id": "GB1"
+      },
+      {
+        "name": "Ganjlik Baku",
+        "id": "115559",
+        "country": null,
+        "league_id": "GB1"
+      },
+      {
+        "name": "1.FC Ringsdorff Godesberg U19(1919-2021)",
+        "id": "110440",
+        "country": null,
+        "league_id": "GB1"
+      },
+      {
+        "name": "1.FC Ringsdorff Godesberg II (1919-2021)",
+        "id": "104085",
+        "country": null,
+        "league_id": "GB1"
+      }
+    ]
+  },
+  "Championship": {
+    "id": "GB2",
+    "teams": [
+      {
+        "name": "DJK Gebenbach II",
+        "id": "55831",
+        "country": null,
+        "league_id": "GB2"
+      },
+      {
+        "name": "TOGB Berkel U23",
+        "id": "92876",
+        "country": null,
+        "league_id": "GB2"
+      },
+      {
+        "name": "Genclerbirligi Ankara",
+        "id": "820",
+        "country": null,
+        "league_id": "GB2"
+      },
+      {
+        "name": "Gebze Birlik Futbol Kulübü",
+        "id": "127095",
+        "country": null,
+        "league_id": "GB2"
+      },
+      {
+        "name": "Club Social y Atlético Guillermo Brown II",
+        "id": "61445",
+        "country": null,
+        "league_id": "GB2"
+      },
+      {
+        "name": "Graasten Boldklub",
+        "id": "77478",
+        "country": null,
+        "league_id": "GB2"
+      },
+      {
+        "name": "SC Gresaubach U19",
+        "id": "129076",
+        "country": null,
+        "league_id": "GB2"
+      },
+      {
+        "name": "1.FC Godesberg U17",
+        "id": "98963",
+        "country": null,
+        "league_id": "GB2"
+      },
+      {
+        "name": "Club Atlético Ferro Carril (GB)",
+        "id": "119177",
+        "country": null,
+        "league_id": "GB2"
+      },
+      {
+        "name": "Ganjlik Baku",
+        "id": "115559",
+        "country": null,
+        "league_id": "GB2"
+      },
+      {
+        "name": "1.FC Ringsdorff Godesberg U19(1919-2021)",
+        "id": "110440",
+        "country": null,
+        "league_id": "GB2"
+      },
+      {
+        "name": "1.FC Ringsdorff Godesberg II (1919-2021)",
+        "id": "104085",
+        "country": null,
+        "league_id": "GB2"
+      }
+    ]
+  },
+  "UEFA Champions League": {
+    "id": "CL",
+    "teams": [
+      {
+        "name": "Cerro Largo FC",
+        "id": "20189",
+        "country": null,
+        "league_id": "CL"
+      },
+      {
+        "name": "Clube Laguna (RN)",
+        "id": "108000",
+        "country": null,
+        "league_id": "CL"
+      },
+      {
+        "name": "Crystal Lake FC",
+        "id": "117552",
+        "country": null,
+        "league_id": "CL"
+      },
+      {
+        "name": "Cultural Deportiva Beluso",
+        "id": "114332",
+        "country": null,
+        "league_id": "CL"
+      }
+    ]
+  },
+  "UEFA Conference League": {
+    "id": "UNL",
+    "teams": [
+      {
+        "name": "Atletico Suzuka Club",
+        "id": "29180",
+        "country": null,
+        "league_id": "UNL"
+      },
+      {
+        "name": "Chongqing Chunlei",
+        "id": "115891",
+        "country": null,
+        "league_id": "UNL"
+      },
+      {
+        "name": "Qinghai Kunlun",
+        "id": "119081",
+        "country": null,
+        "league_id": "UNL"
+      },
+      {
+        "name": "FC Bräunlingen",
+        "id": "76264",
+        "country": null,
+        "league_id": "UNL"
+      },
+      {
+        "name": "Lun Lok",
+        "id": "88642",
+        "country": null,
+        "league_id": "UNL"
+      },
+      {
+        "name": "Guangxi Junling",
+        "id": "108112",
+        "country": null,
+        "league_id": "UNL"
+      },
+      {
+        "name": "FK Viagem Usti nad Labem B",
+        "id": "102802",
+        "country": null,
+        "league_id": "UNL"
+      },
+      {
+        "name": "UNLV Rebels (University of Nevada/Las Vegas)",
+        "id": "9822",
+        "country": null,
+        "league_id": "UNL"
+      },
+      {
+        "name": "Kunming Zheng He Shipman",
+        "id": "70656",
+        "country": null,
+        "league_id": "UNL"
+      },
+      {
+        "name": "FK Viagem Usti nad Labem U19",
+        "id": "40316",
+        "country": null,
+        "league_id": "UNL"
+      }
+    ]
+  },
+  "UEFA Europa League": {
+    "id": "EL",
+    "teams": [
+      {
+        "name": "Eintracht Lokstedt",
+        "id": "25341",
+        "country": null,
+        "league_id": "EL"
+      },
+      {
+        "name": "Dinamo St. Petersburg",
+        "id": "55591",
+        "country": null,
+        "league_id": "EL"
+      },
+      {
+        "name": "Elpida Liopetri",
+        "id": "123895",
+        "country": null,
+        "league_id": "EL"
+      },
+      {
+        "name": "Eintracht Lokstedt U19",
+        "id": "67027",
+        "country": null,
+        "league_id": "EL"
+      },
+      {
+        "name": "Eintracht Lemgo",
+        "id": "120041",
+        "country": null,
+        "league_id": "EL"
+      },
+      {
+        "name": "Eintracht Lokstedt V",
+        "id": "117249",
+        "country": null,
+        "league_id": "EL"
+      },
+      {
+        "name": "CD El Campello",
+        "id": "38711",
+        "country": null,
+        "league_id": "EL"
+      }
+    ]
+  },
+  "UEFA Youth League": {
+    "id": "UYL",
+    "teams": [
+      {
+        "name": "Borussia Mönchengladbach UEFA U19",
+        "id": "50629",
+        "country": null,
+        "league_id": "UYL"
+      },
+      {
+        "name": "FK Liepaja UEFA U19",
+        "id": "62118",
+        "country": null,
+        "league_id": "UYL"
+      },
+      {
+        "name": "Hertha BSC UEFA U19",
+        "id": "69413",
+        "country": null,
+        "league_id": "UYL"
+      }
+    ]
+  },
+  "Coupe de France": {
+    "id": "FRC",
+    "teams": [
+      {
+        "name": "CFR Craiova",
+        "id": "25780",
+        "country": null,
+        "league_id": "FRC"
+      },
+      {
+        "name": "ÉF Reims-Champagne",
+        "id": "61100",
+        "country": null,
+        "league_id": "FRC"
+      }
+    ]
+  },
+  "Feminine Division 1": {
+    "id": "FR1F",
+    "teams": [
+      {
+        "name": "Fleetwood Rangers FC (- 1899)",
+        "id": "119548",
+        "country": null,
+        "league_id": "FR1F"
+      }
+    ]
+  },
+  "Ligue 1": {
+    "id": "FR1",
+    "teams": [
+      {
+        "name": "FC Richemond FR",
+        "id": "36781",
+        "country": null,
+        "league_id": "FR1"
+      },
+      {
+        "name": "SpVg Frechen 20 III",
+        "id": "85653",
+        "country": null,
+        "league_id": "FR1"
+      },
+      {
+        "name": "Furia Roja Jesús María FC",
+        "id": "83062",
+        "country": null,
+        "league_id": "FR1"
+      },
+      {
+        "name": "Furia Roja Jesús María FC II",
+        "id": "83063",
+        "country": null,
+        "league_id": "FR1"
+      },
+      {
+        "name": "Furia Roja Jesús María FC U20",
+        "id": "83064",
+        "country": null,
+        "league_id": "FR1"
+      },
+      {
+        "name": "Fall River FC",
+        "id": "90572",
+        "country": null,
+        "league_id": "FR1"
+      },
+      {
+        "name": "SpVg Frechen 20 U17",
+        "id": "98523",
+        "country": null,
+        "league_id": "FR1"
+      },
+      {
+        "name": "FC Germania Freund II",
+        "id": "99568",
+        "country": null,
+        "league_id": "FR1"
+      },
+      {
+        "name": "SpVg Frechen 20 Jugend",
+        "id": "102311",
+        "country": null,
+        "league_id": "FR1"
+      },
+      {
+        "name": "SC Borussia Freialdenhoven U17",
+        "id": "102819",
+        "country": null,
+        "league_id": "FR1"
+      }
+    ]
+  },
+  "Ligue 2": {
+    "id": "FR2",
+    "teams": [
+      {
+        "name": "CD Mafra U23",
+        "id": "100335",
+        "country": null,
+        "league_id": "FR2"
+      },
+      {
+        "name": "FC Richemond FR",
+        "id": "36781",
+        "country": null,
+        "league_id": "FR2"
+      },
+      {
+        "name": "SpVg Frechen 20 III",
+        "id": "85653",
+        "country": null,
+        "league_id": "FR2"
+      },
+      {
+        "name": "Furia Roja Jesús María FC",
+        "id": "83062",
+        "country": null,
+        "league_id": "FR2"
+      },
+      {
+        "name": "Furia Roja Jesús María FC II",
+        "id": "83063",
+        "country": null,
+        "league_id": "FR2"
+      },
+      {
+        "name": "Furia Roja Jesús María FC U20",
+        "id": "83064",
+        "country": null,
+        "league_id": "FR2"
+      },
+      {
+        "name": "Fall River FC",
+        "id": "90572",
+        "country": null,
+        "league_id": "FR2"
+      },
+      {
+        "name": "SpVg Frechen 20 U17",
+        "id": "98523",
+        "country": null,
+        "league_id": "FR2"
+      },
+      {
+        "name": "FC Germania Freund II",
+        "id": "99568",
+        "country": null,
+        "league_id": "FR2"
+      },
+      {
+        "name": "SpVg Frechen 20 Jugend",
+        "id": "102311",
+        "country": null,
+        "league_id": "FR2"
+      },
+      {
+        "name": "SC Borussia Freialdenhoven U17",
+        "id": "102819",
+        "country": null,
+        "league_id": "FR2"
+      }
+    ]
+  },
+  "Erovnuli Liga": {
+    "id": "GEO1",
+    "teams": [
+      {
+        "name": "Georgia",
+        "id": "3669",
+        "country": null,
+        "league_id": "GEO1"
+      },
+      {
+        "name": "Georgia U21",
+        "id": "12148",
+        "country": null,
+        "league_id": "GEO1"
+      },
+      {
+        "name": "Georgia U19",
+        "id": "25740",
+        "country": null,
+        "league_id": "GEO1"
+      },
+      {
+        "name": "South Georgia Tormenta FC",
+        "id": "58894",
+        "country": null,
+        "league_id": "GEO1"
+      },
+      {
+        "name": "Geoje Citizen",
+        "id": "86382",
+        "country": null,
+        "league_id": "GEO1"
+      },
+      {
+        "name": "RRC Stockay Saint-Georges S/M",
+        "id": "53804",
+        "country": null,
+        "league_id": "GEO1"
+      },
+      {
+        "name": "Georgia U18",
+        "id": "48174",
+        "country": null,
+        "league_id": "GEO1"
+      },
+      {
+        "name": "Georgia U17",
+        "id": "25787",
+        "country": null,
+        "league_id": "GEO1"
+      },
+      {
+        "name": "Kidus Giorgis SA",
+        "id": "14120",
+        "country": null,
+        "league_id": "GEO1"
+      },
+      {
+        "name": "CS Entité Manageoise",
+        "id": "57094",
+        "country": null,
+        "league_id": "GEO1"
+      }
+    ]
+  },
+  "DFB-Pokal": {
+    "id": "DFB",
+    "teams": [
+      {
+        "name": "Germany",
+        "id": "3262",
+        "country": null,
+        "league_id": "DFB"
+      },
+      {
+        "name": "Germany U19",
+        "id": "5710",
+        "country": null,
+        "league_id": "DFB"
+      },
+      {
+        "name": "Germany U17",
+        "id": "17662",
+        "country": null,
+        "league_id": "DFB"
+      },
+      {
+        "name": "Fußball-Lehrer-Ausbildung des DFB",
+        "id": "13256",
+        "country": null,
+        "league_id": "DFB"
+      },
+      {
+        "name": "DFB-Stützpunkt",
+        "id": "36796",
+        "country": null,
+        "league_id": "DFB"
+      },
+      {
+        "name": "DFB-Jugend",
+        "id": "50422",
+        "country": null,
+        "league_id": "DFB"
+      },
+      {
+        "name": "CDFB L'Eliana",
+        "id": "85434",
+        "country": null,
+        "league_id": "DFB"
+      },
+      {
+        "name": "GD Fabril Barreiro U19",
+        "id": "92617",
+        "country": null,
+        "league_id": "DFB"
+      },
+      {
+        "name": "GD Fabril do Barreiro Under 15",
+        "id": "103980",
+        "country": null,
+        "league_id": "DFB"
+      },
+      {
+        "name": "GD Fabril do Barreiro Under 17",
+        "id": "103983",
+        "country": null,
+        "league_id": "DFB"
+      }
+    ]
+  },
+  "Super League 1": {
+    "id": "GR1",
+    "teams": [
+      {
+        "name": "NSF Gropiusstadt II",
+        "id": "58780",
+        "country": null,
+        "league_id": "GR1"
+      },
+      {
+        "name": "FC Bonaduz",
+        "id": "37835",
+        "country": null,
+        "league_id": "GR1"
+      },
+      {
+        "name": "LZS Gronowice",
+        "id": "62031",
+        "country": null,
+        "league_id": "GR1"
+      },
+      {
+        "name": "Avantul Floresti (GR)",
+        "id": "37183",
+        "country": null,
+        "league_id": "GR1"
+      },
+      {
+        "name": "FV Gröditz 1911 Jugend",
+        "id": "102939",
+        "country": null,
+        "league_id": "GR1"
+      },
+      {
+        "name": "SC Reusrath Jugend",
+        "id": "103069",
+        "country": null,
+        "league_id": "GR1"
+      },
+      {
+        "name": "Gorey Rangers Youth",
+        "id": "122476",
+        "country": null,
+        "league_id": "GR1"
+      }
+    ]
+  },
+  "Persian Gulf Pro League": {
+    "id": "IR1",
+    "teams": [
+      {
+        "name": "WSG Tirol 1c",
+        "id": "69759",
+        "country": null,
+        "league_id": "IR1"
+      },
+      {
+        "name": "ÍR Reykjavík",
+        "id": "21859",
+        "country": null,
+        "league_id": "IR1"
+      },
+      {
+        "name": "DJK Irchenrieth",
+        "id": "85578",
+        "country": null,
+        "league_id": "IR1"
+      },
+      {
+        "name": "Iran Johnderee Arak",
+        "id": "124763",
+        "country": null,
+        "league_id": "IR1"
+      }
+    ]
+  },
+  "Italy Cup": {
+    "id": "IT1",
+    "teams": [
+      {
+        "name": "Haïti U16",
+        "id": "78953",
+        "country": null,
+        "league_id": "IT1"
+      },
+      {
+        "name": "Jeunesse Sportive Ittroise",
+        "id": "119552",
+        "country": null,
+        "league_id": "IT1"
+      },
+      {
+        "name": "It’s Just Football Academy",
+        "id": "59453",
+        "country": null,
+        "league_id": "IT1"
+      }
+    ]
+  },
+  "Serie A": {
+    "id": "IT1",
+    "teams": [
+      {
+        "name": "Haïti U16",
+        "id": "78953",
+        "country": null,
+        "league_id": "IT1"
+      },
+      {
+        "name": "Jeunesse Sportive Ittroise",
+        "id": "119552",
+        "country": null,
+        "league_id": "IT1"
+      },
+      {
+        "name": "It’s Just Football Academy",
+        "id": "59453",
+        "country": null,
+        "league_id": "IT1"
+      }
+    ]
+  },
+  "Jordanian Pro League": {
+    "id": "JOR1",
+    "teams": [
+      {
+        "name": "Shakhtar Donetsk",
+        "id": "660",
+        "country": null,
+        "league_id": "JOR1"
+      },
+      {
+        "name": "Jordan",
+        "id": "15737",
+        "country": null,
+        "league_id": "JOR1"
+      },
+      {
+        "name": "Sandefjord Fotball",
+        "id": "6399",
+        "country": null,
+        "league_id": "JOR1"
+      },
+      {
+        "name": "Chornomorets Odesa",
+        "id": "6992",
+        "country": null,
+        "league_id": "JOR1"
+      },
+      {
+        "name": "Club Jorge Wilstermann ",
+        "id": "4862",
+        "country": null,
+        "league_id": "JOR1"
+      },
+      {
+        "name": "Vestri Ísafjördur",
+        "id": "29224",
+        "country": null,
+        "league_id": "JOR1"
+      },
+      {
+        "name": "FH Hafnarfjördur",
+        "id": "1185",
+        "country": null,
+        "league_id": "JOR1"
+      },
+      {
+        "name": "Shakhter Karaganda",
+        "id": "10480",
+        "country": null,
+        "league_id": "JOR1"
+      },
+      {
+        "name": "Sandefjord Fotball II",
+        "id": "55475",
+        "country": null,
+        "league_id": "JOR1"
+      },
+      {
+        "name": "Shakhtar Donetsk U19",
+        "id": "14300",
+        "country": null,
+        "league_id": "JOR1"
+      }
+    ]
+  },
+  "Eredivisie": {
+    "id": "NL1",
+    "teams": [
+      {
+        "name": "Sanliurfaspor U19",
+        "id": "111067",
+        "country": null,
+        "league_id": "NL1"
+      },
+      {
+        "name": "TSV Nellmersbach",
+        "id": "48942",
+        "country": null,
+        "league_id": "NL1"
+      }
+    ]
+  },
+  "NPFL": {
+    "id": "NGA1",
+    "teams": [
+      {
+        "name": "Nigeria",
+        "id": "3444",
+        "country": null,
+        "league_id": "NGA1"
+      },
+      {
+        "name": "Hungary",
+        "id": "3468",
+        "country": null,
+        "league_id": "NGA1"
+      },
+      {
+        "name": "Democratic Republic of the Congo",
+        "id": "3854",
+        "country": null,
+        "league_id": "NGA1"
+      },
+      {
+        "name": "FC Copenhagen",
+        "id": "190",
+        "country": null,
+        "league_id": "NGA1"
+      },
+      {
+        "name": "EA Guingamp",
+        "id": "855",
+        "country": null,
+        "league_id": "NGA1"
+      },
+      {
+        "name": "Shanghai Port",
+        "id": "27190",
+        "country": null,
+        "league_id": "NGA1"
+      },
+      {
+        "name": "Vålerenga Fotball Elite",
+        "id": "76",
+        "country": null,
+        "league_id": "NGA1"
+      },
+      {
+        "name": "Kyoto Sanga",
+        "id": "593",
+        "country": null,
+        "league_id": "NGA1"
+      },
+      {
+        "name": "Shanghai Shenhua",
+        "id": "3183",
+        "country": null,
+        "league_id": "NGA1"
+      },
+      {
+        "name": "Cape Town City FC ",
+        "id": "2303",
+        "country": null,
+        "league_id": "NGA1"
+      }
+    ]
+  },
+  "Premiership": {
+    "id": "SC1",
+    "teams": [
+      {
+        "name": "Montpellier HSC U19",
+        "id": "10852",
+        "country": null,
+        "league_id": "SC1"
+      },
+      {
+        "name": "United SC U17 ",
+        "id": "114806",
+        "country": null,
+        "league_id": "SC1"
+      },
+      {
+        "name": "Mohammedan SC (Kolkata) U17",
+        "id": "114823",
+        "country": null,
+        "league_id": "SC1"
+      },
+      {
+        "name": "Montpellier HSC U17",
+        "id": "107729",
+        "country": null,
+        "league_id": "SC1"
+      },
+      {
+        "name": "Düsseldorfer SC 99",
+        "id": "33318",
+        "country": null,
+        "league_id": "SC1"
+      },
+      {
+        "name": "CD Santa Clara U19",
+        "id": "15595",
+        "country": null,
+        "league_id": "SC1"
+      },
+      {
+        "name": "Real SC U17",
+        "id": "61165",
+        "country": null,
+        "league_id": "SC1"
+      },
+      {
+        "name": "Mem Martins SC U19",
+        "id": "103527",
+        "country": null,
+        "league_id": "SC1"
+      },
+      {
+        "name": "Real SC U15",
+        "id": "61166",
+        "country": null,
+        "league_id": "SC1"
+      },
+      {
+        "name": "Sinnai Calcio A 11",
+        "id": "125099",
+        "country": null,
+        "league_id": "SC1"
+      }
+    ]
+  },
+  "Eliteserien": {
+    "id": "NO1",
+    "teams": [
+      {
+        "name": "FK Buducnost Banovici U19",
+        "id": "29524",
+        "country": null,
+        "league_id": "NO1"
+      },
+      {
+        "name": "AD Nogueirense Sub-19",
+        "id": "68085",
+        "country": null,
+        "league_id": "NO1"
+      },
+      {
+        "name": "AD Nogueirense Sub-17",
+        "id": "68086",
+        "country": null,
+        "league_id": "NO1"
+      },
+      {
+        "name": "AD Nogueirense Sub-15",
+        "id": "68087",
+        "country": null,
+        "league_id": "NO1"
+      },
+      {
+        "name": "GD Nazarenos U19",
+        "id": "81878",
+        "country": null,
+        "league_id": "NO1"
+      },
+      {
+        "name": "Estrela Vendas Novas U19",
+        "id": "92491",
+        "country": null,
+        "league_id": "NO1"
+      },
+      {
+        "name": "AD Ninense U19",
+        "id": "99510",
+        "country": null,
+        "league_id": "NO1"
+      },
+      {
+        "name": "GD Nazarenos Sub-17",
+        "id": "103193",
+        "country": null,
+        "league_id": "NO1"
+      },
+      {
+        "name": "GD Nazarenos Sub-15",
+        "id": "103194",
+        "country": null,
+        "league_id": "NO1"
+      },
+      {
+        "name": "Estrela Vendas Novas Sub-17",
+        "id": "110231",
+        "country": null,
+        "league_id": "NO1"
+      }
+    ]
+  },
+  "Ekstraklasa": {
+    "id": "PL1",
+    "teams": [
+      {
+        "name": "CEP Lorient U17",
+        "id": "125253",
+        "country": null,
+        "league_id": "PL1"
+      },
+      {
+        "name": "CEP Lorient U19",
+        "id": "125256",
+        "country": null,
+        "league_id": "PL1"
+      },
+      {
+        "name": "CEP Lorient U18",
+        "id": "125257",
+        "country": null,
+        "league_id": "PL1"
+      },
+      {
+        "name": "Persela Lamongan Youth",
+        "id": "79849",
+        "country": null,
+        "league_id": "PL1"
+      },
+      {
+        "name": "FC Platinum U19",
+        "id": "99126",
+        "country": null,
+        "league_id": "PL1"
+      },
+      {
+        "name": "Yednist-2 Plysky (-2018)",
+        "id": "106130",
+        "country": null,
+        "league_id": "PL1"
+      }
+    ]
+  },
+  "Liga Portugal": {
+    "id": "PO1",
+    "teams": [
+      {
+        "name": "FC Porto U15",
+        "id": "56765",
+        "country": null,
+        "league_id": "PO1"
+      },
+      {
+        "name": "Atlético CP U19",
+        "id": "20107",
+        "country": null,
+        "league_id": "PO1"
+      },
+      {
+        "name": "SC Pombal U19",
+        "id": "35122",
+        "country": null,
+        "league_id": "PO1"
+      },
+      {
+        "name": "SC Praiense U19",
+        "id": "85335",
+        "country": null,
+        "league_id": "PO1"
+      },
+      {
+        "name": "GD Peniche U19",
+        "id": "72394",
+        "country": null,
+        "league_id": "PO1"
+      },
+      {
+        "name": "SC Paivense Under 19",
+        "id": "103405",
+        "country": null,
+        "league_id": "PO1"
+      },
+      {
+        "name": "UA Povoense Sub-17",
+        "id": "106828",
+        "country": null,
+        "league_id": "PO1"
+      },
+      {
+        "name": "SC Pombal Sub-15",
+        "id": "99438",
+        "country": null,
+        "league_id": "PO1"
+      },
+      {
+        "name": "AD Portomosense U19",
+        "id": "102655",
+        "country": null,
+        "league_id": "PO1"
+      },
+      {
+        "name": "UA Povoense Sub-15",
+        "id": "106829",
+        "country": null,
+        "league_id": "PO1"
+      }
+    ]
+  },
+  "Liga Portugal 2": {
+    "id": "PO1",
+    "teams": [
+      {
+        "name": "FC Porto U15",
+        "id": "56765",
+        "country": null,
+        "league_id": "PO1"
+      },
+      {
+        "name": "Atlético CP U19",
+        "id": "20107",
+        "country": null,
+        "league_id": "PO1"
+      },
+      {
+        "name": "SC Pombal U19",
+        "id": "35122",
+        "country": null,
+        "league_id": "PO1"
+      },
+      {
+        "name": "SC Praiense U19",
+        "id": "85335",
+        "country": null,
+        "league_id": "PO1"
+      },
+      {
+        "name": "GD Peniche U19",
+        "id": "72394",
+        "country": null,
+        "league_id": "PO1"
+      },
+      {
+        "name": "SC Paivense Under 19",
+        "id": "103405",
+        "country": null,
+        "league_id": "PO1"
+      },
+      {
+        "name": "UA Povoense Sub-17",
+        "id": "106828",
+        "country": null,
+        "league_id": "PO1"
+      },
+      {
+        "name": "SC Pombal Sub-15",
+        "id": "99438",
+        "country": null,
+        "league_id": "PO1"
+      },
+      {
+        "name": "AD Portomosense U19",
+        "id": "102655",
+        "country": null,
+        "league_id": "PO1"
+      },
+      {
+        "name": "UA Povoense Sub-15",
+        "id": "106829",
+        "country": null,
+        "league_id": "PO1"
+      }
+    ]
+  },
+  "Qatar Stars League": {
+    "id": "QAT1",
+    "teams": [
+      {
+        "name": "Al-Arabi SC",
+        "id": "1230",
+        "country": null,
+        "league_id": "QAT1"
+      },
+      {
+        "name": "Qatar",
+        "id": "14162",
+        "country": null,
+        "league_id": "QAT1"
+      },
+      {
+        "name": "Qatar SC",
+        "id": "965",
+        "country": null,
+        "league_id": "QAT1"
+      },
+      {
+        "name": "Qatar U23",
+        "id": "10830",
+        "country": null,
+        "league_id": "QAT1"
+      },
+      {
+        "name": "Qatar U20",
+        "id": "23659",
+        "country": null,
+        "league_id": "QAT1"
+      },
+      {
+        "name": "Qatar U18",
+        "id": "70284",
+        "country": null,
+        "league_id": "QAT1"
+      },
+      {
+        "name": "Qatar U17",
+        "id": "28553",
+        "country": null,
+        "league_id": "QAT1"
+      },
+      {
+        "name": "Qatar SC Olympic",
+        "id": "39334",
+        "country": null,
+        "league_id": "QAT1"
+      },
+      {
+        "name": "PFK Zaqatala ",
+        "id": "62681",
+        "country": null,
+        "league_id": "QAT1"
+      },
+      {
+        "name": "Al-Shirqat FC",
+        "id": "88442",
+        "country": null,
+        "league_id": "QAT1"
+      }
+    ]
+  },
+  "Saudi Pro League": {
+    "id": "SA1",
+    "teams": [
+      {
+        "name": "Brothers Sports Association U17",
+        "id": "114782",
+        "country": null,
+        "league_id": "SA1"
+      },
+      {
+        "name": "Namdhari Sports Academy U17",
+        "id": "114796",
+        "country": null,
+        "league_id": "SA1"
+      },
+      {
+        "name": "UCSA Tarasivka U17",
+        "id": "121310",
+        "country": null,
+        "league_id": "SA1"
+      },
+      {
+        "name": "FC Cesarense U19",
+        "id": "75070",
+        "country": null,
+        "league_id": "SA1"
+      },
+      {
+        "name": "GD Salão U19",
+        "id": "103404",
+        "country": null,
+        "league_id": "SA1"
+      },
+      {
+        "name": "Académica Santarém U19",
+        "id": "103671",
+        "country": null,
+        "league_id": "SA1"
+      },
+      {
+        "name": "FC Cesarense U17",
+        "id": "105475",
+        "country": null,
+        "league_id": "SA1"
+      },
+      {
+        "name": "FC Cesarense U15",
+        "id": "105476",
+        "country": null,
+        "league_id": "SA1"
+      },
+      {
+        "name": "Bidhannagar Muncipal Sports Academy U17",
+        "id": "127269",
+        "country": null,
+        "league_id": "SA1"
+      },
+      {
+        "name": "Adamas United Sports Academy U17",
+        "id": "127271",
+        "country": null,
+        "league_id": "SA1"
+      }
+    ]
+  },
+  "Singapore Premier League": {
+    "id": "SIN1",
+    "teams": [
+      {
+        "name": "Bologna FC 1909",
+        "id": "1025",
+        "country": null,
+        "league_id": "SIN1"
+      },
+      {
+        "name": "Without Club",
+        "id": "515",
+        "country": null,
+        "league_id": "SIN1"
+      },
+      {
+        "name": "Zenit St. Petersburg",
+        "id": "964",
+        "country": null,
+        "league_id": "SIN1"
+      },
+      {
+        "name": "Red Bull Salzburg",
+        "id": "409",
+        "country": null,
+        "league_id": "SIN1"
+      },
+      {
+        "name": "Coventry City",
+        "id": "990",
+        "country": null,
+        "league_id": "SIN1"
+      },
+      {
+        "name": "Tigres UANL",
+        "id": "7055",
+        "country": null,
+        "league_id": "SIN1"
+      },
+      {
+        "name": "Sint-Truidense VV",
+        "id": "475",
+        "country": null,
+        "league_id": "SIN1"
+      },
+      {
+        "name": "FC Rapid 1923",
+        "id": "455",
+        "country": null,
+        "league_id": "SIN1"
+      },
+      {
+        "name": "Frosinone Calcio",
+        "id": "8970",
+        "country": null,
+        "league_id": "SIN1"
+      },
+      {
+        "name": "FC Südtirol",
+        "id": "4554",
+        "country": null,
+        "league_id": "SIN1"
+      }
+    ]
+  },
+  "Prva Liga": {
+    "id": "SV1",
+    "teams": [
+      {
+        "name": "TSV 1860 Munich",
+        "id": "72",
+        "country": null,
+        "league_id": "SV1"
+      },
+      {
+        "name": "SV Alsenborn",
+        "id": "22449",
+        "country": null,
+        "league_id": "SV1"
+      },
+      {
+        "name": "SV Lauderbach 1931",
+        "id": "28345",
+        "country": null,
+        "league_id": "SV1"
+      },
+      {
+        "name": "SSV 2013",
+        "id": "93291",
+        "country": null,
+        "league_id": "SV1"
+      },
+      {
+        "name": "Hamburger SV",
+        "id": "41",
+        "country": null,
+        "league_id": "SV1"
+      },
+      {
+        "name": "Wuppertaler SV",
+        "id": "299",
+        "country": null,
+        "league_id": "SV1"
+      },
+      {
+        "name": "Bremer SV",
+        "id": "1328",
+        "country": null,
+        "league_id": "SV1"
+      },
+      {
+        "name": "SV Buchonia Flieden",
+        "id": "1394",
+        "country": null,
+        "league_id": "SV1"
+      },
+      {
+        "name": "SV Zeilsheim",
+        "id": "11543",
+        "country": null,
+        "league_id": "SV1"
+      },
+      {
+        "name": "Heider SV",
+        "id": "1297",
+        "country": null,
+        "league_id": "SV1"
+      },
+      {
+        "name": "SV Lengede",
+        "id": "8580",
+        "country": null,
+        "league_id": "SV1"
+      },
+      {
+        "name": "SV 1910 Breinig Breinigerberg",
+        "id": "10251",
+        "country": null,
+        "league_id": "SV1"
+      },
+      {
+        "name": "SV Schaffhausen",
+        "id": "5708",
+        "country": null,
+        "league_id": "SV1"
+      },
+      {
+        "name": "Hansa Friesoythe",
+        "id": "5297",
+        "country": null,
+        "league_id": "SV1"
+      }
+    ]
+  },
+  "Copa Libertadores": {
+    "id": "LIBER",
+    "teams": [
+      {
+        "name": "Liverpool FC",
+        "id": "31",
+        "country": null,
+        "league_id": "LIBER"
+      },
+      {
+        "name": "Liberia",
+        "id": "9172",
+        "country": null,
+        "league_id": "LIBER"
+      },
+      {
+        "name": "Club Libertad Asunción",
+        "id": "9875",
+        "country": null,
+        "league_id": "LIBER"
+      },
+      {
+        "name": "FC Slovan Liberec",
+        "id": "697",
+        "country": null,
+        "league_id": "LIBER"
+      },
+      {
+        "name": "Libertad FC",
+        "id": "87068",
+        "country": null,
+        "league_id": "LIBER"
+      },
+      {
+        "name": "AD Municipal Liberia",
+        "id": "18579",
+        "country": null,
+        "league_id": "LIBER"
+      },
+      {
+        "name": "FC Slovan Liberec B",
+        "id": "7133",
+        "country": null,
+        "league_id": "LIBER"
+      },
+      {
+        "name": "AC Libertas",
+        "id": "10616",
+        "country": null,
+        "league_id": "LIBER"
+      },
+      {
+        "name": "Club Libertad Asunción U19",
+        "id": "24816",
+        "country": null,
+        "league_id": "LIBER"
+      },
+      {
+        "name": "Liberia U20",
+        "id": "85940",
+        "country": null,
+        "league_id": "LIBER"
+      }
+    ]
+  },
+  "Copa Sudamericana": {
+    "id": "SUDA",
+    "teams": [
+      {
+        "name": "South Africa",
+        "id": "3806",
+        "country": null,
+        "league_id": "SUDA"
+      },
+      {
+        "name": "South Africa U23",
+        "id": "28649",
+        "country": null,
+        "league_id": "SUDA"
+      },
+      {
+        "name": "Sudan",
+        "id": "13313",
+        "country": null,
+        "league_id": "SUDA"
+      },
+      {
+        "name": "South Africa U17",
+        "id": "32648",
+        "country": null,
+        "league_id": "SUDA"
+      },
+      {
+        "name": "South Sudan",
+        "id": "33192",
+        "country": null,
+        "league_id": "SUDA"
+      },
+      {
+        "name": "South Africa U20",
+        "id": "22984",
+        "country": null,
+        "league_id": "SUDA"
+      },
+      {
+        "name": "South Sudan U20",
+        "id": "75394",
+        "country": null,
+        "league_id": "SUDA"
+      },
+      {
+        "name": "Sudan U20",
+        "id": "56031",
+        "country": null,
+        "league_id": "SUDA"
+      },
+      {
+        "name": "Hilal Al-Sahil SC",
+        "id": "101315",
+        "country": null,
+        "league_id": "SUDA"
+      },
+      {
+        "name": "Hay Al-Arab SC",
+        "id": "71000",
+        "country": null,
+        "league_id": "SUDA"
+      }
+    ]
+  },
+  "Copa del Rey": {
+    "id": "CDR",
+    "teams": [
+      {
+        "name": "Club Deportivo Riestra",
+        "id": "19775",
+        "country": null,
+        "league_id": "CDR"
+      },
+      {
+        "name": "Chengdu Rongcheng B",
+        "id": "125740",
+        "country": null,
+        "league_id": "CDR"
+      },
+      {
+        "name": "Club Deportivo Riestra II",
+        "id": "61810",
+        "country": null,
+        "league_id": "CDR"
+      },
+      {
+        "name": "Quarteirense Futebol SAD",
+        "id": "25819",
+        "country": null,
+        "league_id": "CDR"
+      },
+      {
+        "name": "CCDR Vila Cortez",
+        "id": "41780",
+        "country": null,
+        "league_id": "CDR"
+      },
+      {
+        "name": "ACDR Lamelas",
+        "id": "67660",
+        "country": null,
+        "league_id": "CDR"
+      },
+      {
+        "name": "ASD Atletic Cdr Mutina",
+        "id": "82920",
+        "country": null,
+        "league_id": "CDR"
+      },
+      {
+        "name": "Kowloon City District Recreation & Sports Council",
+        "id": "85943",
+        "country": null,
+        "league_id": "CDR"
+      },
+      {
+        "name": "CD Rabo de Peixe",
+        "id": "20804",
+        "country": null,
+        "league_id": "CDR"
+      },
+      {
+        "name": "CD Revilla",
+        "id": "55903",
+        "country": null,
+        "league_id": "CDR"
+      }
+    ]
+  },
+  "LaLiga": {
+    "id": "GB1",
+    "teams": [
+      {
+        "name": "FC Girondins Bordeaux U18",
+        "id": "129726",
+        "country": null,
+        "league_id": "GB1"
+      },
+      {
+        "name": "FC Girondins Bordeaux U17",
+        "id": "62344",
+        "country": null,
+        "league_id": "GB1"
+      },
+      {
+        "name": "Genclerbirligi Ankara",
+        "id": "820",
+        "country": null,
+        "league_id": "GB1"
+      },
+      {
+        "name": "Gebze Birlik Futbol Kulübü",
+        "id": "127095",
+        "country": null,
+        "league_id": "GB1"
+      },
+      {
+        "name": "Club Social y Atlético Guillermo Brown II",
+        "id": "61445",
+        "country": null,
+        "league_id": "GB1"
+      },
+      {
+        "name": "Graasten Boldklub",
+        "id": "77478",
+        "country": null,
+        "league_id": "GB1"
+      },
+      {
+        "name": "SC Gresaubach U19",
+        "id": "129076",
+        "country": null,
+        "league_id": "GB1"
+      },
+      {
+        "name": "1.FC Godesberg U17",
+        "id": "98963",
+        "country": null,
+        "league_id": "GB1"
+      },
+      {
+        "name": "Club Atlético Ferro Carril (GB)",
+        "id": "119177",
+        "country": null,
+        "league_id": "GB1"
+      },
+      {
+        "name": "Ganjlik Baku",
+        "id": "115559",
+        "country": null,
+        "league_id": "GB1"
+      },
+      {
+        "name": "1.FC Ringsdorff Godesberg U19(1919-2021)",
+        "id": "110440",
+        "country": null,
+        "league_id": "GB1"
+      },
+      {
+        "name": "1.FC Ringsdorff Godesberg II (1919-2021)",
+        "id": "104085",
+        "country": null,
+        "league_id": "GB1"
+      }
+    ]
+  },
+  "Allsvenskan": {
+    "id": "SE1",
+    "teams": [
+      {
+        "name": "GD Alcochetense U19",
+        "id": "34588",
+        "country": null,
+        "league_id": "SE1"
+      },
+      {
+        "name": "CD Portosantense U19",
+        "id": "89887",
+        "country": null,
+        "league_id": "SE1"
+      },
+      {
+        "name": "GDRC Ponterrolense U19",
+        "id": "96373",
+        "country": null,
+        "league_id": "SE1"
+      },
+      {
+        "name": "SC Mineiro Aljustrelense U19",
+        "id": "96562",
+        "country": null,
+        "league_id": "SE1"
+      },
+      {
+        "name": "AD Confiança",
+        "id": "3280",
+        "country": null,
+        "league_id": "SE1"
+      },
+      {
+        "name": "CS Sergipe",
+        "id": "7816",
+        "country": null,
+        "league_id": "SE1"
+      },
+      {
+        "name": "Dorense FC",
+        "id": "56342",
+        "country": null,
+        "league_id": "SE1"
+      },
+      {
+        "name": "Associação Olímpica de Itabaiana (SE)",
+        "id": "8547",
+        "country": null,
+        "league_id": "SE1"
+      },
+      {
+        "name": "AD Barra (SE)",
+        "id": "98798",
+        "country": null,
+        "league_id": "SE1"
+      },
+      {
+        "name": "AA Guarany (SE)",
+        "id": "82391",
+        "country": null,
+        "league_id": "SE1"
+      },
+      {
+        "name": "América FC",
+        "id": "19956",
+        "country": null,
+        "league_id": "SE1"
+      },
+      {
+        "name": "América de Pedrinhas FC (SE) U20",
+        "id": "126840",
+        "country": null,
+        "league_id": "SE1"
+      },
+      {
+        "name": "Sociedade Boca Júnior FC (SE)",
+        "id": "21845",
+        "country": null,
+        "league_id": "SE1"
+      },
+      {
+        "name": "Falcon Futebol Clube (SE) U20",
+        "id": "96905",
+        "country": null,
+        "league_id": "SE1"
+      }
+    ]
+  },
+  "Superettan": {
+    "id": "SE2",
+    "teams": [
+      {
+        "name": "AD Confiança",
+        "id": "3280",
+        "country": null,
+        "league_id": "SE2"
+      },
+      {
+        "name": "CS Sergipe",
+        "id": "7816",
+        "country": null,
+        "league_id": "SE2"
+      },
+      {
+        "name": "Dorense FC",
+        "id": "56342",
+        "country": null,
+        "league_id": "SE2"
+      },
+      {
+        "name": "Associação Olímpica de Itabaiana (SE)",
+        "id": "8547",
+        "country": null,
+        "league_id": "SE2"
+      },
+      {
+        "name": "AD Barra (SE)",
+        "id": "98798",
+        "country": null,
+        "league_id": "SE2"
+      },
+      {
+        "name": "AA Guarany (SE)",
+        "id": "82391",
+        "country": null,
+        "league_id": "SE2"
+      },
+      {
+        "name": "América FC",
+        "id": "19956",
+        "country": null,
+        "league_id": "SE2"
+      },
+      {
+        "name": "América de Pedrinhas FC (SE) U20",
+        "id": "126840",
+        "country": null,
+        "league_id": "SE2"
+      },
+      {
+        "name": "Sociedade Boca Júnior FC (SE)",
+        "id": "21845",
+        "country": null,
+        "league_id": "SE2"
+      },
+      {
+        "name": "Falcon Futebol Clube (SE) U20",
+        "id": "96905",
+        "country": null,
+        "league_id": "SE2"
+      }
+    ]
+  },
+  "Süper Lig": {
+    "id": "TR1",
+    "teams": [
+      {
+        "name": "TSV Trillfingen",
+        "id": "48947",
+        "country": null,
+        "league_id": "TR1"
+      },
+      {
+        "name": "Toulouse Rodéo Football Club",
+        "id": "38497",
+        "country": null,
+        "league_id": "TR1"
+      },
+      {
+        "name": "TJ Sokol Horni Ujezd (TR)",
+        "id": "124892",
+        "country": null,
+        "league_id": "TR1"
+      },
+      {
+        "name": "FK Trinec B (- 2021)",
+        "id": "40530",
+        "country": null,
+        "league_id": "TR1"
+      },
+      {
+        "name": "TFC Inter Troisdorf III",
+        "id": "102432",
+        "country": null,
+        "league_id": "TR1"
+      },
+      {
+        "name": "FSV Trier-Tarforst U17",
+        "id": "129325",
+        "country": null,
+        "league_id": "TR1"
+      }
+    ]
+  },
+  "UAE Pro League": {
+    "id": "UAE1",
+    "teams": [
+      {
+        "name": "United Arab Emirates",
+        "id": "5147",
+        "country": null,
+        "league_id": "UAE1"
+      },
+      {
+        "name": "Al-Nasr SC (UAE)",
+        "id": "5432",
+        "country": null,
+        "league_id": "UAE1"
+      },
+      {
+        "name": "Al-Orooba FC",
+        "id": "51771",
+        "country": null,
+        "league_id": "UAE1"
+      },
+      {
+        "name": "United Arab Emirates U23",
+        "id": "34592",
+        "country": null,
+        "league_id": "UAE1"
+      },
+      {
+        "name": "United Arab Emirates U20",
+        "id": "22992",
+        "country": null,
+        "league_id": "UAE1"
+      },
+      {
+        "name": "United Arab Emirates U19",
+        "id": "28209",
+        "country": null,
+        "league_id": "UAE1"
+      },
+      {
+        "name": "United FC (UAE)",
+        "id": "94732",
+        "country": null,
+        "league_id": "UAE1"
+      },
+      {
+        "name": "United Arab Emirates U17",
+        "id": "25513",
+        "country": null,
+        "league_id": "UAE1"
+      },
+      {
+        "name": "Grêmio Esportivo Mauaense U20",
+        "id": "96937",
+        "country": null,
+        "league_id": "UAE1"
+      },
+      {
+        "name": "Al-Taawon Club",
+        "id": "54744",
+        "country": null,
+        "league_id": "UAE1"
+      }
+    ]
+  }
+}

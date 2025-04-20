@@ -5,6 +5,7 @@ import re
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import lru_cache
+import json
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -25,7 +26,16 @@ class TransfermarktAPI:
         self.max_requests_per_second = 5  # Maximum requests per second
         self.min_delay = 0.2  # Minimum delay between requests in seconds
         
-        # Common abbreviations and their full names with standardized formats
+        # Load unified team mappings
+        try:
+            with open('unified_leagues_teams_20250420_203041_20250420_203043.json', 'r') as f:
+                self.unified_data = json.load(f)
+            logger.info("Loaded unified team mappings successfully")
+        except Exception as e:
+            logger.warning(f"Could not load unified team mappings: {e}")
+            self.unified_data = {}
+        
+        # Keep existing abbreviations as fallback
         self.abbreviations = {
             # English Teams
             "manchester city": "manchester city",
@@ -668,83 +678,56 @@ class TransfermarktAPI:
     def clean_team_name(self, team_name, domain="de"):
         """Clean team name by removing common prefixes/suffixes and standardizing format"""
         if not team_name:
-            return team_name
+            return ""
             
-        if isinstance(team_name, dict):
-            return team_name
+        # First check unified mappings
+        for league in self.unified_data.values():
+            if isinstance(league, dict) and "teams" in league:
+                for team in league["teams"]:
+                    if team["name"].lower() == team_name.lower() and team["transfermarkt_name"]:
+                        logger.info(f"Found exact Transfermarkt name for {team_name}: {team['transfermarkt_name']}")
+                        return team["transfermarkt_name"]
+        
+        # If no exact match in unified data, try normalized search
+        normalized_input = team_name.lower().strip()
+        for league in self.unified_data.values():
+            if isinstance(league, dict) and "teams" in league:
+                for team in league["teams"]:
+                    if (self._normalize_for_comparison(team["name"]) == self._normalize_for_comparison(normalized_input) 
+                        and team["transfermarkt_name"]):
+                        logger.info(f"Found normalized Transfermarkt name for {team_name}: {team['transfermarkt_name']}")
+                        return team["transfermarkt_name"]
+        
+        # Fallback to existing abbreviations
+        normalized = team_name.lower().strip()
+        if normalized in self.abbreviations:
+            return self.abbreviations[normalized]
             
-        # Convert to lowercase for consistent processing
-        cleaned = team_name.lower().strip()
+        # Apply standard cleaning if no match found
+        cleaned = re.sub(r'[^\w\s-]', '', team_name)
+        cleaned = re.sub(r'\s+', ' ', cleaned).strip()
         
-        # First check for direct matches in abbreviations
-        if cleaned in self.abbreviations:
-            return self.abbreviations[cleaned]
+        # Remove common suffixes if they appear as whole words
+        suffixes = ['fc', 'cf', 'ac', 'sc', 'fk', 'if']
+        words = cleaned.lower().split()
+        if words and words[-1] in suffixes:
+            words.pop()
+        cleaned = ' '.join(words)
         
-        # Special handling for German teams
-        if domain == "de":
-            # Handle Bayern Munich variations
-            if any(name in cleaned for name in ["bayern", "munich", "münchen"]):
-                return "fc bayern münchen"
-            # Handle Dortmund variations
-            if any(name in cleaned for name in ["dortmund", "bvb", "borussia"]):
-                return "borussia dortmund"
-                
-        # Special handling for Spanish teams
-        elif domain == "es":
-            # Handle Real Madrid variations
-            if "real madrid" in cleaned:
-                return "real madrid cf"  # Add CF to get correct market value
-            # Handle Barcelona variations
-            if "barcelona" in cleaned:
-                return "fc barcelona"
-            # Handle Atletico Madrid variations
-            if any(name in cleaned for name in ["atletico", "atlético", "atleti"]):
-                return "atletico de madrid"  # Use standard ASCII characters
-                
-        # Special handling for Italian teams
-        elif domain == "it":
-            # Handle Juventus variations
-            if any(name in cleaned for name in ["juventus", "juve"]):
-                return "juventus"  # Remove 'turin' as it's not used in API
-            # Handle Inter variations
-            if "inter" in cleaned:
-                return "inter"  # API uses just 'inter', not 'inter milan'
+        return cleaned.title()
         
-        # Special handling for numbered clubs
-        if "1860 munich" in cleaned:
-            return "tsv 1860 münchen"
-        if "1899 hoffenheim" in cleaned:
-            return "tsg hoffenheim"
+    def _normalize_for_comparison(self, name):
+        """Normalize team name for comparison"""
+        if not name:
+            return ""
+        # Remove all non-alphanumeric characters and convert to lowercase
+        normalized = re.sub(r'[^\w\s]', '', name.lower())
+        # Remove common words that don't affect meaning
+        stop_words = ['fc', 'cf', 'ac', 'sc', 'fk', 'if', 'the']
+        words = normalized.split()
+        words = [w for w in words if w not in stop_words]
+        return ' '.join(words)
         
-        # Special handling for French teams
-        elif domain == "fr":
-            # Handle Lyon variations
-            if "lyon" in cleaned:
-                return "olympique lyon"  # Not lyonnais
-            # Handle PSG variations
-            if any(name in cleaned for name in ["psg", "paris"]):
-                return "paris saint-germain"
-            # Handle Monaco variations
-            if "monaco" in cleaned:
-                return "as monaco"
-                
-        # Standard replacements for special characters
-        replacements = {
-            'ue': 'u',  # Use standard ASCII instead of umlauts
-            'ae': 'a',
-            'oe': 'o',
-            'ss': 'ss'
-        }
-        for old, new in replacements.items():
-            cleaned = cleaned.replace(old, new)
-        
-        # Remove common prefixes if they're standalone words
-        prefixes_to_remove = ["fc", "ac", "as", "sv", "vfb", "vfl"]
-        for prefix in prefixes_to_remove:
-            cleaned = re.sub(f"^{prefix}\s+|\s+{prefix}$", "", cleaned)
-        
-        return cleaned
-
     def get_multiple_teams_market_value(self, teams, domain="de"):
         """Get market values for multiple teams in parallel with batching"""
         logger.info(f"Getting market values for {len(teams)} teams")
