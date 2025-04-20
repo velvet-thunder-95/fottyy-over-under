@@ -35,6 +35,40 @@ class TransfermarktAPI:
             logger.warning(f"Could not load unified team mappings: {e}")
             self.unified_data = {}
         
+        # Team name mappings from games_export.csv
+        self.TEAM_MAPPINGS = {
+            # La Liga
+            'Villarreal': 'Villarreal CF',
+            'Athletic Club Bilbao': 'Athletic Bilbao',
+            'Deportivo Alavés': 'Deportivo Alaves',
+            'CA Osasuna': 'Osasuna',
+            
+            # Premier League
+            'Brighton & Hove Albion': 'Brighton',
+            'Wolverhampton Wanderers': 'Wolves',
+            
+            # Bundesliga
+            'Borussia M\'gladbach': 'Borussia Mönchengladbach',
+            'Bayern München': 'Bayern Munich',
+            'Köln': 'FC Köln',
+            
+            # Serie A
+            'Inter Milan': 'Inter',
+            
+            # Ligue 1
+            'Olympique Marseille': 'Marseille',
+            'Olympique Lyonnais': 'Lyon',
+            'PSG': 'Paris Saint-Germain',
+            
+            # Other Leagues
+            'RSC Anderlecht': 'Anderlecht',
+            'Union Saint-Gilloise': 'Royale Union Saint-Gilloise',
+            'Ferencváros': 'Ferencvarosi TC',
+            'Viktoria Plzeň': 'Viktoria Plzen',
+            'Qarabağ': 'FK Qarabag',
+            'Neftçi': 'Neftchi Baku',
+        }
+        
         # Keep existing abbreviations as fallback
         self.abbreviations = {
             # English Teams
@@ -704,6 +738,10 @@ class TransfermarktAPI:
         """Clean team name by removing common prefixes/suffixes and standardizing format"""
         if not team_name:
             return ""
+            
+        # First check direct mappings
+        if team_name in self.TEAM_MAPPINGS:
+            team_name = self.TEAM_MAPPINGS[team_name]
             
         # Check if it's a women's team
         normalized = team_name.lower().strip()
