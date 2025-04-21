@@ -777,7 +777,7 @@ class TransfermarktAPI:
         
         # Set fuzzy matching thresholds
         self.exact_match_threshold = 0.90  # Slightly reduced for better matching
-        self.fuzzy_match_threshold = 0.65  # Slightly reduced for better matching
+        self.fuzzy_match_threshold = 0.75  # Lower threshold for better matching
         
         # Women's team mappings with their IDs
         self.womens_teams = {
@@ -1175,7 +1175,7 @@ class TransfermarktAPI:
             exact_name = self.DANISH_TEAMS[normalized]
             
         if exact_name:
-            logging.info(f"Found exact Transfermarkt name for {exact_name}: {exact_name}")
+            logging.info(f"Found exact Transfermarkt name for {team_name}: {exact_name}")
             # Use the exact name for searching
             team_name = exact_name
             
@@ -1189,28 +1189,42 @@ class TransfermarktAPI:
                 if variation in self.TEAM_MAPPINGS:
                     variation = self.TEAM_MAPPINGS[variation]
                 
-                # Make the search request
-                url = f"https://transfermarkt-api.vercel.app/teams/search/{variation}"
-                response = requests.get(url, headers=self.headers)
+                # Clean the variation for URL
+                url_safe_variation = variation.replace(" ", "-").replace(".", "").lower()
                 
-                if response.status_code == 200:
-                    data = response.json()
-                    if data and isinstance(data, list) and len(data) > 0:
-                        # Find best match using fuzzy matching
-                        best_match = None
-                        highest_ratio = 0
+                # Try both the direct API and search API
+                urls = [
+                    f"https://transfermarkt-api.vercel.app/teams/{url_safe_variation}",
+                    f"https://transfermarkt-api.vercel.app/teams/search/{url_safe_variation}"
+                ]
+                
+                for url in urls:
+                    response = requests.get(url, headers=self.headers)
+                    
+                    if response.status_code == 200:
+                        data = response.json()
                         
-                        for team in data:
-                            # Compare with both the original name and exact name if available
-                            name_to_compare = exact_name or team_name
-                            ratio = fuzz.ratio(name_to_compare.lower(), team['name'].lower())
-                            if ratio > highest_ratio and ratio >= self.fuzzy_match_threshold:
-                                highest_ratio = ratio
-                                best_match = team
-                                
-                        if best_match:
-                            return {"id": best_match["id"], "name": best_match["name"]}
+                        # Handle direct API response
+                        if isinstance(data, dict) and 'id' in data:
+                            return {"id": data["id"], "name": data["name"]}
                             
+                        # Handle search API response
+                        if isinstance(data, list) and len(data) > 0:
+                            # Find best match using fuzzy matching
+                            best_match = None
+                            highest_ratio = 0
+                            
+                            for team in data:
+                                # Compare with both the original name and exact name if available
+                                name_to_compare = exact_name or team_name
+                                ratio = fuzz.ratio(name_to_compare.lower(), team['name'].lower())
+                                if ratio > highest_ratio and ratio >= self.fuzzy_match_threshold:
+                                    highest_ratio = ratio
+                                    best_match = team
+                                    
+                            if best_match:
+                                return {"id": best_match["id"], "name": best_match["name"]}
+                                
             except Exception as e:
                 logger.warning(f"Error searching for team {variation}: {str(e)}")
                 continue
