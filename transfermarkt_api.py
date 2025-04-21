@@ -14,11 +14,14 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class TransfermarktAPI:
-    def __init__(self, max_workers=20):
-        self.base_url = "https://transfermarket.p.rapidapi.com"
+    def __init__(self, api_key=None, max_workers=20):
+        """Initialize the TransfermarktAPI client."""
+        self.api_key = api_key or "9a7723d114mshe44a60d17ffc5e8p1d348djsncb88cc895980"  # Default RapidAPI key
+        self.base_url = "https://transfermarkt-api.vercel.app"
         self.headers = {
-            "x-rapidapi-host": "transfermarket.p.rapidapi.com",
-            "x-rapidapi-key": "9a7723d114mshe44a60d17ffc5e8p1d348djsncb88cc895980"
+            'X-RapidAPI-Key': self.api_key,
+            'X-RapidAPI-Host': 'transfermarkt-api.vercel.app',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         }
         # Increase cache size and make it persistent across instances
         TransfermarktAPI.search_cache = getattr(TransfermarktAPI, 'search_cache', {})
