@@ -6,7 +6,7 @@ import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import lru_cache
 import json
-from fuzzywuzzy import fuzz
+from thefuzz import fuzz
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
