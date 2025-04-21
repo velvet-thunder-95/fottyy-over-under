@@ -696,7 +696,11 @@ class TransfermarktAPI:
             'arezzo': {'id': '4090', 'name': 'SS Arezzo'},
             'novara': {'id': '2885', 'name': 'Novara Calcio'},
             'alessandria': {'id': '4091', 'name': 'US Alessandria Calcio 1912'},
-            'cesena': {'id': '4086', 'name': 'Cesena FC'}
+            'cesena': {'id': '4086', 'name': 'Cesena FC'},
+            'genoa': {'id': '252', 'name': 'Genoa CFC'},
+            'lazio': {'id': '398', 'name': 'SS Lazio'},
+            'cagliari': {'id': '1390', 'name': 'Cagliari Calcio'},
+            'fiorentina': {'id': '430', 'name': 'ACF Fiorentina'}
         }
         
         # English Teams Direct IDs
