@@ -4,6 +4,7 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
 from football_api import get_match_by_teams, get_match_result
+from session_state import init_session_state, check_login_state
 from match_analyzer import MatchAnalyzer
 from supabase_db import SupabaseDB
 import logging
@@ -451,8 +452,6 @@ def get_confidence_level(confidence):
 
 def show_history_page():
     """Display prediction history page"""
-    from session_state import check_login_state, init_session_state  # Import here to avoid circular dependency
-    
     st.markdown("""
         <style>
         .stDataFrame {
