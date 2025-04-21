@@ -1452,16 +1452,17 @@ def get_market_values(home_team, away_team):
     try:
         api = TransfermarktAPI()
         # Get market values using the new method
-        home_value, away_value = api.get_both_teams_market_value(home_team, away_team)
+        market_values = api.get_both_teams_market_value(home_team, away_team)
+        
+        # Extract values from the dictionary
+        home_value = market_values.get('home_market_value', 0)
+        away_value = market_values.get('away_market_value', 0)
         
         # Format values to millions with 1 decimal place
         def format_value(value):
-            if value is None:  
+            if value is None or value == 0:
                 return 'N/A'
-            # Handle integer values (in euros)
-            if isinstance(value, (int, float)):
-                return f"€{value/1000000:.1f}M"
-            return 'N/A'
+            return f"€{value/1000000:.1f}M"
         
         formatted_home = format_value(home_value)
         formatted_away = format_value(away_value)
