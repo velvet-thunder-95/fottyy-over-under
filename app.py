@@ -1369,7 +1369,7 @@ def display_market_values(home_team, away_team):
         
         # Format values for display
         def format_value(value):
-            if value is None or value == 0:
+            if value is None:  
                 return 'N/A'
             # Handle integer values (in euros)
             if isinstance(value, (int, float)):
@@ -1456,7 +1456,7 @@ def get_market_values(home_team, away_team):
         
         # Format values to millions with 1 decimal place
         def format_value(value):
-            if value is None or value == 0:
+            if value is None:  
                 return 'N/A'
             # Handle integer values (in euros)
             if isinstance(value, (int, float)):
