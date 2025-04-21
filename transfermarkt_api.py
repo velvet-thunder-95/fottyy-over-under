@@ -67,10 +67,50 @@ class TransfermarktAPI:
             'Viktoria Plzeň': 'Viktoria Plzen',
             'Qarabağ': 'FK Qarabag',
             'Neftçi': 'Neftchi Baku',
-        }
-        
-        # Keep existing abbreviations as fallback
-        self.abbreviations = {
+            
+            # Italian Teams with Fixed IDs - Part 1
+            'Cagliari': 'Cagliari Calcio',
+            'Fiorentina': 'ACF Fiorentina',
+            'Torino': 'Torino FC',
+            'FC Torino': 'Torino FC',
+            'Udinese': 'Udinese Calcio',
+            'Genoa': 'Genoa CFC',
+            'Lazio': 'SS Lazio',
+            'Parma': 'Parma Calcio 1913',
+            'Juventus': 'Juventus FC',
+            'Brescia': 'Brescia Calcio',
+            'Reggiana': 'AC Reggiana 1919',
+            'Cittadella': 'AS Cittadella',
+            'Salernitana': 'US Salernitana 1919',
+            'Inter': 'Inter Milan',
+            'Inter Milan': 'Inter Milan',
+            'Milan': 'AC Milan',
+            'AC Milan': 'AC Milan',
+            'Roma': 'AS Roma',
+            'Napoli': 'SSC Napoli',
+            'Atalanta': 'Atalanta BC',
+            
+            # Italian Teams with Fixed IDs - Part 2
+            'Bologna': 'Bologna FC 1909',
+            'Empoli': 'Empoli FC',
+            'Lecce': 'US Lecce',
+            'Monza': 'AC Monza',
+            'Sassuolo': 'US Sassuolo',
+            'Verona': 'Hellas Verona',
+            'Hellas Verona': 'Hellas Verona',
+            'Frosinone': 'Frosinone Calcio',
+            'Sampdoria': 'UC Sampdoria',
+            'Spezia': 'Spezia Calcio',
+            'Venezia': 'Venezia FC',
+            'Cremonese': 'US Cremonese',
+            'Palermo': 'US Città di Palermo',
+            'Bari': 'SSC Bari',
+            'Como': 'Como 1907',
+            'Pisa': 'AC Pisa 1909',
+            'Ternana': 'Ternana Calcio',
+            'Catanzaro': 'US Catanzaro 1929',
+            'Modena': 'Modena FC',
+            
             # English Teams
             "manchester city": "manchester city",
             "man city": "manchester city",
@@ -593,7 +633,7 @@ class TransfermarktAPI:
             "ssv ulm": "ssv ulm 1846",
             "ssv ulm 1846": "ssv ulm 1846",
             "saarbrucken": "1. fc saarbrücken",
-            "1. fc saarbrucken": "1. fc saarbrücken",
+            "1. fc saarbruck": "1. fc saarbrücken",
             "waldhof": "sv waldhof mannheim",
             "waldhof mannheim": "sv waldhof mannheim",
             "sv waldhof mannheim": "sv waldhof mannheim",
@@ -631,6 +671,30 @@ class TransfermarktAPI:
             # Colombian Teams with Updated IDs
             "santa fe": "Independiente Santa Fe",
             "independiente santa fe": "Independiente Santa Fe"
+        }
+        
+        # Italian Teams Direct IDs
+        self.ITALIAN_TEAMS = {
+            'palermo': {'id': '458', 'name': 'US Città di Palermo'},
+            'carrarese': {'id': '6578', 'name': 'Carrarese Calcio'},
+            'frosinone': {'id': '2821', 'name': 'Frosinone Calcio'},
+            'spezia': {'id': '3522', 'name': 'Spezia Calcio'},
+            'cosenza': {'id': '4088', 'name': 'Cosenza Calcio'},
+            'mantova': {'id': '4087', 'name': 'Mantova 1911'},
+            'juve stabia': {'id': '4083', 'name': 'SS Juve Stabia'},
+            'sampdoria': {'id': '1038', 'name': 'UC Sampdoria'},
+            'lecco': {'id': '6505', 'name': 'Calcio Lecco 1912'},
+            'sudtirol': {'id': '15107', 'name': 'FC Südtirol'},
+            'perugia': {'id': '4087', 'name': 'AC Perugia Calcio'},
+            'pescara': {'id': '2834', 'name': 'Delfino Pescara 1936'},
+            'avellino': {'id': '4078', 'name': 'US Avellino 1912'},
+            'triestina': {'id': '4084', 'name': 'US Triestina Calcio 1918'},
+            'virtus entella': {'id': '6865', 'name': 'Virtus Entella'},
+            'vicenza': {'id': '4088', 'name': 'LR Vicenza'},
+            'pro vercelli': {'id': '4089', 'name': 'FC Pro Vercelli 1892'},
+            'arezzo': {'id': '4090', 'name': 'SS Arezzo'},
+            'novara': {'id': '2885', 'name': 'Novara Calcio'},
+            'alessandria': {'id': '4091', 'name': 'US Alessandria Calcio 1912'}
         }
         
         # Set fuzzy matching thresholds
@@ -734,17 +798,13 @@ class TransfermarktAPI:
                 
         return "de"  # default to German domain
 
-    def clean_team_name(self, team_name, domain="de"):
-        """Clean team name by removing common prefixes/suffixes and standardizing format"""
-        if not team_name:
+    def normalize_team_name(self, name):
+        """Normalize team name for comparison."""
+        if not name:
             return ""
             
-        # First check direct mappings
-        if team_name in self.TEAM_MAPPINGS:
-            team_name = self.TEAM_MAPPINGS[team_name]
-            
-        # Check if it's a women's team
-        normalized = team_name.lower().strip()
+        # First check if it's a women's team
+        normalized = name.lower().strip()
         is_womens_team = any(suffix in normalized for suffix in [" w", " women", " ladies", " fem"])
         if is_womens_team:
             # Remove women's team suffixes for matching
@@ -756,83 +816,27 @@ class TransfermarktAPI:
             if normalized in self.womens_teams:
                 return self.womens_teams[normalized]["name"]
             
-        # Special handling for Czech characters
-        czech_chars = {
-            'ě': 'e',
-            'š': 's',
-            'č': 'c',
-            'ř': 'r',
-            'ž': 'z',
-            'ý': 'y',
-            'á': 'a',
-            'í': 'i',
-            'é': 'e',
-            'ů': 'u',
-            'ú': 'u',
-            'ň': 'n',
-            'ť': 't',
-            'ď': 'd'
-        }
+        # Check direct mappings
+        if name in self.TEAM_MAPPINGS:
+            return self.TEAM_MAPPINGS[name]
+            
+        # Remove special characters but keep spaces and letters with accents
+        normalized = re.sub(r'[^\w\s\u00C0-\u017F]', '', name)
+        normalized = normalized.lower().strip()
         
-        # First check unified mappings
+        # Remove common suffixes and prefixes
+        normalized = re.sub(r'\s+(fc|cf|ac|sc|fk|if)\s*$', '', normalized)
+        normalized = re.sub(r'^(fc|cf|ac|sc|fk|if)\s+', '', normalized)
+        
+        # Check unified mappings
         for league in self.unified_data.values():
             if isinstance(league, dict) and "teams" in league:
                 for team in league["teams"]:
-                    if team["name"].lower() == team_name.lower() and team["transfermarkt_name"]:
-                        logger.info(f"Found exact Transfermarkt name for {team_name}: {team['transfermarkt_name']}")
+                    if team["name"].lower() == normalized and team["transfermarkt_name"]:
+                        logger.info(f"Found exact Transfermarkt name for {name}: {team['transfermarkt_name']}")
                         return team["transfermarkt_name"]
         
-        # Handle special Czech teams
-        czech_teams_map = {
-            "prostejov": "1. SK Prostějov",
-            "prostějov": "1. SK Prostějov",
-            "opava": "SFC Opava",
-            "sparta prague": "Sparta Praha",
-            "slavia prague": "Slavia Praha",
-            "viktoria plzen": "Viktoria Plzeň",
-            "plzen": "Viktoria Plzeň",
-            "banik ostrava": "Baník Ostrava",
-            "sigma olomouc": "Sigma Olomouc",
-            "zbrojovka brno": "FC Zbrojovka Brno"
-        }
-        
-        normalized = team_name.lower().strip()
-        if normalized in czech_teams_map:
-            return czech_teams_map[normalized]
-            
-        # Apply Czech character normalization
-        for czech, latin in czech_chars.items():
-            normalized = normalized.replace(czech, latin)
-        
-        # Fallback to existing abbreviations
-        normalized = team_name.lower().strip()
-        if normalized in self.abbreviations:
-            return self.abbreviations[normalized]
-            
-        # Apply standard cleaning if no match found
-        cleaned = re.sub(r'[^\w\s-]', '', team_name)
-        cleaned = re.sub(r'\s+', ' ', cleaned).strip()
-        
-        # Remove common suffixes if they appear as whole words
-        suffixes = ['fc', 'cf', 'ac', 'sc', 'fk', 'if']
-        words = cleaned.lower().split()
-        if words and words[-1] in suffixes:
-            words.pop()
-        cleaned = ' '.join(words)
-        
-        return cleaned.title()
-        
-    def _normalize_for_comparison(self, name):
-        """Normalize team name for comparison"""
-        if not name:
-            return ""
-        # Remove all non-alphanumeric characters and convert to lowercase
-        normalized = re.sub(r'[^\w\s]', '', name.lower())
-        # Remove common words that don't affect meaning
-        stop_words = ['fc', 'cf', 'ac', 'sc', 'fk', 'if', 'the']
-        words = normalized.split()
-        words = [w for w in words if w not in stop_words]
-        return ' '.join(words)
+        return normalized.strip()
         
     def get_multiple_teams_market_value(self, teams, domain="de"):
         """Get market values for multiple teams in parallel with batching"""
@@ -894,17 +898,19 @@ class TransfermarktAPI:
         
         return results
 
-    def get_both_teams_market_value(self, home_team, away_team, domain="de"):
-        """Get market values for both teams in a match using parallel processing"""
-        logger.info(f"Getting market values for match: {home_team} vs {away_team}")
-        
+    def get_both_teams_market_value(self, home_team, away_team):
+        """Get market values for both teams."""
         try:
-            home_value = self.get_team_market_value(home_team, domain)
-            away_value = self.get_team_market_value(away_team, domain)
+            home_value = self.get_team_market_value(home_team)
+            away_value = self.get_team_market_value(away_team)
             
-            logger.info(f"Market values - Home: {home_value}, Away: {away_value}")
+            # Extract market values from dictionaries
+            if isinstance(home_value, dict) and 'market_value' in home_value:
+                home_value = home_value.get('market_value')
+            if isinstance(away_value, dict) and 'market_value' in away_value:
+                away_value = away_value.get('market_value')
+                
             return home_value, away_value
-            
         except Exception as e:
             logger.error(f"Error getting market values: {str(e)}")
             return None, None
@@ -928,7 +934,7 @@ class TransfermarktAPI:
         """Generate different variations of the team name for searching"""
         variations = [
             team_name,  # Original name
-            self.clean_team_name(team_name, domain),  # Cleaned name
+            self.normalize_team_name(team_name),  # Normalized name
             team_name.replace(" ", "-"),  # With hyphens
             team_name.replace("-", " "),  # Without hyphens
         ]
@@ -1068,240 +1074,54 @@ class TransfermarktAPI:
         if not team_name:
             return ""
         # Remove special characters and convert to lowercase
-        key = re.sub(r'[^a-zA-Z0-9\s]', '', team_name.lower())
+        key = re.sub(r'[^\w\s\u00C0-\u017F]', '', team_name.lower())
         # Replace multiple spaces with single space and strip
         key = ' '.join(key.split())
         return key
 
     def search_team(self, team_name, domain="de"):
-        """Search for a team and return its ID"""
+        """Search for a team and return its ID."""
         if not team_name:
             return None
             
-        # Check for women's teams first
-        normalized = team_name.lower().strip()
-        is_womens_team = any(suffix in normalized for suffix in [" w", " women", " ladies", " fem"])
-        if is_womens_team:
-            # Remove women's team suffixes for matching
-            for suffix in [" w", " women", " ladies", " fem"]:
-                normalized = normalized.replace(suffix, "")
-            normalized = normalized.strip()
-            # Add back "w" for consistent lookup
-            normalized = normalized + " w"
-            if normalized in self.womens_teams:
-                return self.womens_teams[normalized]
+        # First check Italian teams
+        normalized = self.normalize_team_name(team_name).lower()
+        if normalized in self.ITALIAN_TEAMS:
+            return self.ITALIAN_TEAMS[normalized]
             
-        # Clean and standardize the team name
-        team_name = self.clean_team_name(team_name, domain)
-        if isinstance(team_name, dict):
-            # If team_name is a dict (from abbreviations), return it directly
-            return team_name
-                
-        search_key = self.get_search_key(team_name)
-        
-        # Check cache first
-        cache_key = f"{search_key}:{domain}"
-        if cache_key in self.search_cache:
-            logger.info(f"Found {team_name} in cache")
-            return self.search_cache[cache_key]
-        
-        # Check if we have a direct mapping for this team
-        if team_name.lower() in self.abbreviations:
-            mapped_name = self.abbreviations[team_name.lower()]
-            # If mapped_name is a string, we need to search for it
-            if isinstance(mapped_name, str):
-                team_name = mapped_name
-                search_key = self.get_search_key(team_name)
-            else:
-                # If mapped_name is a dict with id and name, cache and return it
-                self.search_cache[cache_key] = mapped_name
-                return mapped_name
-        
-        # Special handling for Czech teams
-        if domain == "cz":
-            czech_teams_ids = {
-                "1. SK Prostějov": "24138",
-                "SFC Opava": "5545",
-                "Sparta Praha": "197",
-                "Slavia Praha": "62",
-                "Viktoria Plzeň": "941",
-                "Baník Ostrava": "422",
-                "Sigma Olomouc": "412",
-                "FC Zbrojovka Brno": "5546"
-            }
-            cleaned_name = self.clean_team_name(team_name, domain)
-            if cleaned_name in czech_teams_ids:
-                return {"id": czech_teams_ids[cleaned_name], "name": cleaned_name}
-        
-        # Generate search variations
-        search_variations = self._generate_search_variations(team_name, domain)
+        # Generate variations of the team name
+        variations = self._generate_search_variations(team_name, domain)
         
         # Try each variation
-        for variation in search_variations:
-            url = f"{self.base_url}/search"
-            params = {"query": variation, "domain": domain}
-            
+        for variation in variations:
             try:
-                data = self._make_api_request(url, params)
-                if not data:
-                    continue
+                # Check if we have a direct mapping
+                if variation in self.TEAM_MAPPINGS:
+                    variation = self.TEAM_MAPPINGS[variation]
                 
-                # Look for exact match first in clubs array
-                clubs = data.get("clubs", [])
-                if not clubs:
-                    # Try teams array if clubs is empty
-                    clubs = data.get("teams", [])
+                # Make the search request
+                url = f"https://transfermarkt-api.vercel.app/teams/search/{variation}"
+                response = requests.get(url, headers=self.headers)
                 
-                if clubs:
-                    # Try exact match first
-                    for club in clubs:
-                        if club.get("name", "").lower() == variation.lower():
-                            result = {"id": str(club["id"]), "name": club["name"]}
-                            self.search_cache[cache_key] = result
-                            return result
-                    
-                    # If no exact match, use fuzzy matching
-                    best_match = None
-                    highest_similarity = 0
-                    
-                    for club in clubs:
-                        similarity = self._calculate_similarity(club.get("name", "").lower(), variation.lower())
-                        if similarity > highest_similarity and similarity > 0.8:  # 80% similarity threshold
-                            highest_similarity = similarity
-                            best_match = club
-                    
-                    if best_match:
-                        result = {"id": str(best_match["id"]), "name": best_match["name"]}
-                        self.search_cache[cache_key] = result
-                        return result
-                    
-                    # If no good match found, try next variation
-                    continue
-            
-            except Exception as e:
-                logger.error(f"Error searching for variation {variation}: {str(e)}")
-                continue
-        
-        logger.warning(f"No results found for team: {team_name}")
-        return None
-        
-    def get_team_market_value(self, team_name, search_domain=None):
-        """Get market value for a team with validation"""
-        logger.info(f"Getting market value for team: {team_name}")
-        
-        try:
-            # Use appropriate domain based on team name if not provided
-            if search_domain is None:
-                search_domain = self.get_search_domain(team_name)
-            
-            # Clean and standardize team name
-            cleaned_name = self.clean_team_name(team_name)
-            
-            # Search for the team first
-            search_result = self.search_team(cleaned_name, search_domain)
-            if not search_result:
-                # Try alternate domains if first search fails
-                alternate_domains = ["de", "gb", "es", "it"] if search_domain != "de" else ["gb", "es", "it", "fr"]
-                for alt_domain in alternate_domains:
-                    search_result = self.search_team(cleaned_name, alt_domain)
-                    if search_result:
-                        search_domain = alt_domain
-                        break
+                if response.status_code == 200:
+                    data = response.json()
+                    if data and isinstance(data, list) and len(data) > 0:
+                        # Find best match using fuzzy matching
+                        best_match = None
+                        highest_ratio = 0
                         
-                if not search_result:
-                    logger.warning(f"No search results found for team: {team_name}")
-                    return None
-            
-            # Get team ID from search result
-            team_id = search_result.get('id')
-            if not team_id:
-                logger.warning(f"No team ID found in search result for {team_name}")
-                return None
-            
-            # Get squad data to calculate total market value
-            squad = self.get_team_squad(team_id, search_domain)
-            if not squad:
-                logger.warning(f"No squad data found for team ID {team_id}")
-                return None
-            
-            # Validate squad size
-            if len(squad) < 15:
-                logger.warning(f"Squad size suspiciously small ({len(squad)}) for team {team_id}")
-                # Try to get cached value if available
-                cached_key = f"squad_{team_id}_{search_domain}"
-                if hasattr(self, cached_key):
-                    cached_squad = getattr(self, cached_key)
-                    if len(cached_squad) > len(squad):
-                        squad = cached_squad
-            
-            # Calculate total market value from squad with validation
-            valid_values = []
-            for player in squad:
-                market_value = player.get('marketValue', {}).get('value', 0)
-                # Validate individual player values
-                if isinstance(market_value, (int, float)) and market_value > 0:
-                    valid_values.append(market_value)
-            
-            # Validate total value
-            if not valid_values:
-                logger.warning(f"No valid market values found for {team_name}")
-                return None
-            
-            total_value = sum(valid_values)
-            
-            # Validate total value is reasonable
-            total_value = self.validate_market_value(total_value, team_name)
-            if total_value is None:
-                return None
-            
-            logger.info(f"Total market value for {team_name}: {total_value}")
-            return {
-                'market_value': total_value,
-                'currency': 'EUR',
-                'last_updated': None
-            }
-            
-        except Exception as e:
-            logger.error(f"Error getting market value for {team_name}: {str(e)}")
-            return {
-                'market_value': 0,
-                'currency': 'EUR',
-                'last_updated': None
-            }
-
-
-    def get_both_teams_market_value(self, home_team, away_team, domain="de"):
-        """Get market values for both teams in a match"""
-        logger.info(f"Getting market values for match: {home_team} vs {away_team}")
-        
-        try:
-            home_value = self.get_team_market_value(home_team, domain)
-            away_value = self.get_team_market_value(away_team, domain)
-            
-            logger.info(f"Market values - Home: {home_value}, Away: {away_value}")
-            return home_value, away_value
-            
-        except Exception as e:
-            logger.error(f"Error getting market values: {str(e)}")
-            return None, None
-
-    def get_market_values_batch(self, teams, domain="de"):
-        """Get market values for multiple teams in a single batch"""
-        logger.info(f"Getting market values for {len(teams)} teams in batch")
-        
-        try:
-            # Use the existing get_multiple_teams_market_value method
-            market_values = self.get_multiple_teams_market_value(teams, domain)
-            
-            # Format the results as expected by the odds generator
-            return {
-                team: {
-                    'market_value': value,
-                    'currency': 'EUR',
-                    'last_updated': None  # We don't track this currently
-                } for team, value in market_values.items()
-            }
-            
-        except Exception as e:
-            logger.error(f"Error getting market values batch: {str(e)}")
-            return {team: {'market_value': 0, 'currency': 'EUR', 'last_updated': None} for team in teams}
+                        for team in data:
+                            ratio = fuzz.ratio(variation.lower(), team['name'].lower())
+                            if ratio > highest_ratio and ratio >= self.fuzzy_match_threshold:
+                                highest_ratio = ratio
+                                best_match = team
+                                
+                        if best_match:
+                            return {"id": best_match["id"], "name": best_match["name"]}
+                            
+            except Exception as e:
+                logger.warning(f"Error searching for team {variation}: {str(e)}")
+                continue
+                
+        logger.warning(f"No search results found for team: {team_name}")
+        return None
