@@ -6,6 +6,7 @@ import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import lru_cache
 import json
+from fuzzywuzzy import fuzz
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -673,6 +674,21 @@ class TransfermarktAPI:
             "independiente santa fe": "Independiente Santa Fe"
         }
         
+        # English Teams Direct IDs
+        self.ENGLISH_TEAMS = {
+            'crewe alexandra': {'id': '127', 'name': 'Crewe Alexandra'},
+            'milton keynes dons': {'id': '1020', 'name': 'Milton Keynes Dons'},
+            'doncaster rovers': {'id': '142', 'name': 'Doncaster Rovers'},
+            'colchester united': {'id': '148', 'name': 'Colchester United'},
+            'gillingham': {'id': '149', 'name': 'Gillingham FC'},
+            'afc wimbledon': {'id': '4777', 'name': 'AFC Wimbledon'},
+            'harrogate town': {'id': '7968', 'name': 'Harrogate Town AFC'},
+            'fleetwood town': {'id': '4782', 'name': 'Fleetwood Town'},
+            'morecambe': {'id': '1076', 'name': 'Morecambe FC'},
+            'salford city': {'id': '7370', 'name': 'Salford City'},
+            'cesena': {'id': '4086', 'name': 'Cesena FC'}
+        }
+        
         # Italian Teams Direct IDs
         self.ITALIAN_TEAMS = {
             'palermo': {'id': '458', 'name': 'US Città di Palermo'},
@@ -1084,10 +1100,12 @@ class TransfermarktAPI:
         if not team_name:
             return None
             
-        # First check Italian teams
+        # First check Italian and English teams
         normalized = self.normalize_team_name(team_name).lower()
         if normalized in self.ITALIAN_TEAMS:
             return self.ITALIAN_TEAMS[normalized]
+        if normalized in self.ENGLISH_TEAMS:
+            return self.ENGLISH_TEAMS[normalized]
             
         # Generate variations of the team name
         variations = self._generate_search_variations(team_name, domain)
@@ -1125,3 +1143,59 @@ class TransfermarktAPI:
                 
         logger.warning(f"No search results found for team: {team_name}")
         return None
+
+    def get_team_market_value(self, team_name, search_domain=None):
+        """Get market value for a team with validation"""
+        logger.info(f"Getting market value for team: {team_name}")
+        
+        try:
+            # Use appropriate domain based on team name if not provided
+            if search_domain is None:
+                search_domain = self.get_search_domain(team_name)
+            
+            # Clean and standardize team name
+            cleaned_name = self.normalize_team_name(team_name)
+            
+            # Search for the team first
+            search_result = self.search_team(cleaned_name, search_domain)
+            if not search_result:
+                # Try alternate domains if first search fails
+                alternate_domains = ["de", "gb", "es", "it"] if search_domain != "de" else ["gb", "es", "it", "fr"]
+                for alt_domain in alternate_domains:
+                    search_result = self.search_team(cleaned_name, alt_domain)
+                    if search_result:
+                        search_domain = alt_domain
+                        break
+                        
+                if not search_result:
+                    logger.warning(f"No search results found for team: {team_name}")
+                    return None
+            
+            # Get team ID from search result
+            team_id = search_result.get('id')
+            if not team_id:
+                logger.warning(f"No team ID found in search result for {team_name}")
+                return None
+            
+            # Make the market value request
+            url = f"https://transfermarkt-api.vercel.app/teams/{team_id}/market-value"
+            response = requests.get(url, headers=self.headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data and isinstance(data, dict):
+                    market_value = data.get('marketValue', 0)
+                    if isinstance(market_value, (int, float)):
+                        logger.info(f"Total market value for {team_name}: {market_value}")
+                        return {
+                            'market_value': market_value,
+                            'currency': 'EUR',
+                            'last_updated': None
+                        }
+            
+            logger.warning(f"No valid market value found for team: {team_name}")
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error getting market value for {team_name}: {str(e)}")
+            return None
