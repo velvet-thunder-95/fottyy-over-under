@@ -566,53 +566,53 @@ class TransfermarktAPI:
             "police club": "al-shorta sc",
             
             # Add more mappings here
-            "bodo/glimt": {"id": "2619", "name": "FK Bodø/Glimt"},
-            "ludogorets razgrad": {"id": "31614", "name": "Ludogorets Razgrad"},
-            "riga fc": {"id": "35159", "name": "Riga FC"},
-            "istra 1961": {"id": "4051", "name": "NK Istra 1961"},
-            "gorica": {"id": "2947", "name": "HNK Gorica"},
-            "bb bodrumspor": {"id": "24134", "name": "Bandırmaboluspor"},
-            "elversberg": {"id": "4097", "name": "SV 07 Elversberg"},
-            "darmstadt 98": {"id": "105", "name": "SV Darmstadt 98"},
-            "nürnberg": {"id": "4", "name": "1. FC Nürnberg"},
-            "bastia": {"id": "3444", "name": "SC Bastia"},
-            "real sociedad": {"id": "681", "name": "Real Sociedad San Sebastián"},
-            "hoffenheim": {"id": "533", "name": "TSG 1899 Hoffenheim"},
-            "1. fc kaiserslautern": {"id": "2", "name": "1. FC Kaiserslautern"},
-            "sl benfica": {"id": "294", "name": "Benfica Lissabon"},
-            "la equidad": {"id": "6954", "name": "CD La Equidad Seguros"},
-            "levadiakos fc": {"id": "2186", "name": "APO Levadiakos"},
-            "gps kallithea": {"id": "5847", "name": "Kallithea FC"},
-            "vv sint-truiden": {"id": "1773", "name": "K. Sint-Truidense VV"},
-            "sporting cp": {"id": "336", "name": "Sporting CP"},
-            "farense": {"id": "2420", "name": "SC Farense"},
-            "estrela amadora": {"id": "15804", "name": "CF Estrela da Amadora"},
+            "bodo/glimt": "FK Bodø/Glimt",
+            "ludogorets razgrad": "Ludogorets Razgrad",
+            "riga fc": "Riga FC",
+            "istra 1961": "NK Istra 1961",
+            "gorica": "HNK Gorica",
+            "bb bodrumspor": "Bandırmaboluspor",
+            "elversberg": "SV 07 Elversberg",
+            "darmstadt 98": "SV Darmstadt 98",
+            "nürnberg": "1. FC Nürnberg",
+            "bastia": "SC Bastia",
+            "real sociedad": "Real Sociedad San Sebastián",
+            "hoffenheim": "TSG 1899 Hoffenheim",
+            "1. fc kaiserslautern": "1. FC Kaiserslautern",
+            "sl benfica": "Benfica Lissabon",
+            "la equidad": "CD La Equidad Seguros",
+            "levadiakos fc": "APO Levadiakos",
+            "gps kallithea": "Kallithea FC",
+            "vv sint-truiden": "K. Sint-Truidense VV",
+            "sporting cp": "Sporting CP",
+            "farense": "SC Farense",
+            "estrela amadora": "CF Estrela da Amadora",
             
             # Add new direct mappings
-            "union magdalena": {"id": "2442", "name": "Unión Magdalena"},
-            "pae lamia": {"id": "7955", "name": "PAS Lamia 1964"},
-            "gaziantep fk": {"id": "18562", "name": "Gaziantep FK"},
-            "racing club de ferrol": {"id": "2859", "name": "Racing de Ferrol"},
-            "sunderland afc": {"id": "289", "name": "Sunderland AFC"},
-            "oxford united": {"id": "1072", "name": "Oxford United"},
-            "grasshopper club zürich": {"id": "405", "name": "Grasshopper Club Zürich"},
-            "al-shorta sc": {"id": "24162", "name": "Al-Shorta SC"},
+            "union magdalena": "Unión Magdalena",
+            "pae lamia": "PAS Lamia 1964",
+            "gaziantep fk": "Gaziantep FK",
+            "racing club de ferrol": "Racing de Ferrol",
+            "sunderland afc": "Sunderland AFC",
+            "oxford united": "Oxford United",
+            "grasshopper club zürich": "Grasshopper Club Zürich",
+            "al-shorta sc": "Al-Shorta SC",
             
             # Saudi Teams with Fixed IDs
-            "al quadisiya": {"id": "18541", "name": "Al-Qadisiyah"},
-            "al-quadisiya": {"id": "18541", "name": "Al-Qadisiyah"},
-            "al qadisiyah": {"id": "18541", "name": "Al-Qadisiyah"},
-            "al raed": {"id": "18549", "name": "Al-Raed"},
-            "al-raed": {"id": "18549", "name": "Al-Raed"},
-            "al shabab": {"id": "7801", "name": "Al-Shabab"},
-            "al-shabab": {"id": "7801", "name": "Al-Shabab"},
+            "al quadisiya": "Al-Qadisiyah",
+            "al-quadisiya": "Al-Qadisiyah",
+            "al qadisiyah": "Al-Qadisiyah",
+            "al raed": "Al-Raed",
+            "al-raed": "Al-Raed",
+            "al shabab": "Al-Shabab",
+            "al-shabab": "Al-Shabab",
             
             # English Teams
-            "brighton": {"id": "1237", "name": "Brighton & Hove Albion"},
-            "brighton & hove": {"id": "1237", "name": "Brighton & Hove Albion"},
-            "brighton & hove albion": {"id": "1237", "name": "Brighton & Hove Albion"},
-            "ipswich": {"id": "677", "name": "Ipswich Town"},
-            "ipswich town": {"id": "677", "name": "Ipswich Town"},
+            "brighton": "Brighton & Hove Albion",
+            "brighton & hove": "Brighton & Hove Albion",
+            "brighton & hove albion": "Brighton & Hove Albion",
+            "ipswich": "Ipswich Town",
+            "ipswich town": "Ipswich Town",
             
             # German Teams with Updated IDs
             "jahn regensburg": "ssv jahn regensburg",
@@ -674,73 +674,105 @@ class TransfermarktAPI:
             "independiente santa fe": "Independiente Santa Fe"
         }
         
-        # Italian Teams Direct IDs
-        self.ITALIAN_TEAMS = {
-            'palermo': {'id': '458', 'name': 'US Città di Palermo'},
-            'carrarese': {'id': '6578', 'name': 'Carrarese Calcio'},
-            'frosinone': {'id': '2821', 'name': 'Frosinone Calcio'},
-            'spezia': {'id': '3522', 'name': 'Spezia Calcio'},
-            'cosenza': {'id': '4088', 'name': 'Cosenza Calcio'},
-            'mantova': {'id': '4087', 'name': 'Mantova 1911'},
-            'juve stabia': {'id': '4083', 'name': 'SS Juve Stabia'},
-            'sampdoria': {'id': '1038', 'name': 'UC Sampdoria'},
-            'lecco': {'id': '6505', 'name': 'Calcio Lecco 1912'},
-            'sudtirol': {'id': '15107', 'name': 'FC Südtirol'},
-            'perugia': {'id': '4087', 'name': 'AC Perugia Calcio'},
-            'pescara': {'id': '2834', 'name': 'Delfino Pescara 1936'},
-            'avellino': {'id': '4078', 'name': 'US Avellino 1912'},
-            'triestina': {'id': '4084', 'name': 'US Triestina Calcio 1918'},
-            'virtus entella': {'id': '6865', 'name': 'Virtus Entella'},
-            'vicenza': {'id': '4088', 'name': 'LR Vicenza'},
-            'pro vercelli': {'id': '4089', 'name': 'FC Pro Vercelli 1892'},
-            'arezzo': {'id': '4090', 'name': 'SS Arezzo'},
-            'novara': {'id': '2885', 'name': 'Novara Calcio'},
-            'alessandria': {'id': '4091', 'name': 'US Alessandria Calcio 1912'},
-            'cesena': {'id': '4086', 'name': 'Cesena FC'},
-            'genoa': {'id': '252', 'name': 'Genoa CFC'},
-            'lazio': {'id': '398', 'name': 'SS Lazio'},
-            'cagliari': {'id': '1390', 'name': 'Cagliari Calcio'},
-            'fiorentina': {'id': '430', 'name': 'ACF Fiorentina'}
-        }
-        
-        # English Teams Direct IDs
+        # English League One Teams
         self.ENGLISH_TEAMS = {
-            'crewe alexandra': {'id': '127', 'name': 'Crewe Alexandra'},
-            'milton keynes dons': {'id': '1020', 'name': 'Milton Keynes Dons'},
-            'doncaster rovers': {'id': '142', 'name': 'Doncaster Rovers'},
-            'colchester united': {'id': '148', 'name': 'Colchester United'},
-            'gillingham': {'id': '149', 'name': 'Gillingham FC'},
-            'afc wimbledon': {'id': '4777', 'name': 'AFC Wimbledon'},
-            'harrogate town': {'id': '7968', 'name': 'Harrogate Town AFC'},
-            'fleetwood town': {'id': '4782', 'name': 'Fleetwood Town'},
-            'morecambe': {'id': '1076', 'name': 'Morecambe FC'},
-            'salford city': {'id': '7370', 'name': 'Salford City'},
-            'newport county': {'id': '2653', 'name': 'Newport County AFC'},
-            'walsall': {'id': '146', 'name': 'Walsall FC'},
-            'accrington stanley': {'id': '1204', 'name': 'Accrington Stanley'},
-            'carlisle united': {'id': '1108', 'name': 'Carlisle United'},
-            'barrow': {'id': '1116', 'name': 'Barrow AFC'},
-            'tranmere rovers': {'id': '144', 'name': 'Tranmere Rovers'},
-            'chesterfield': {'id': '2717', 'name': 'Chesterfield FC'},
-            'bradford city': {'id': '1146', 'name': 'Bradford City'},
-            'notts county': {'id': '2717', 'name': 'Notts County'},
-            'cheltenham town': {'id': '2715', 'name': 'Cheltenham Town'},
-            'port vale': {'id': '1928', 'name': 'Port Vale FC'},
-            'grimsby town': {'id': '1101', 'name': 'Grimsby Town'},
-            'swindon town': {'id': '1107', 'name': 'Swindon Town'},
-            'bromley': {'id': '4791', 'name': 'Bromley FC'}
+            'crewe alexandra': 'Crewe Alexandra',
+            'milton keynes dons': 'Milton Keynes Dons',
+            'doncaster rovers': 'Doncaster Rovers',
+            'colchester united': 'Colchester United',
+            'gillingham': 'Gillingham FC',
+            'afc wimbledon': 'AFC Wimbledon',
+            'harrogate town': 'Harrogate Town AFC',
+            'fleetwood town': 'Fleetwood Town',
+            'morecambe': 'Morecambe FC',
+            'salford city': 'Salford City',
+            'newport county': 'Newport County AFC',
+            'walsall': 'Walsall FC',
+            'accrington stanley': 'Accrington Stanley',
+            'carlisle united': 'Carlisle United',
+            'barrow': 'Barrow AFC',
+            'tranmere rovers': 'Tranmere Rovers',
+            'chesterfield': 'Chesterfield FC',
+            'bradford city': 'Bradford City',
+            'notts county': 'Notts County',
+            'cheltenham town': 'Cheltenham Town',
+            'port vale': 'Port Vale FC',
+            'grimsby town': 'Grimsby Town',
+            'swindon town': 'Swindon Town',
+            'bromley': 'Bromley FC',
+            'barnsley': 'Barnsley FC',
+            'peterborough united': 'Peterborough United',
+            'blackpool': 'Blackpool FC',
+            'wrexham': 'Wrexham AFC',
+            'bristol rovers': 'Bristol Rovers',
+            'stevenage': 'Stevenage FC',
+            'burton albion': 'Burton Albion',
+            'cambridge united': 'Cambridge United',
+            'leyton orient': 'Leyton Orient FC',
+            'crawley town': 'Crawley Town FC',
+            'exeter city': 'Exeter City',
+            'lincoln city': 'Lincoln City FC',
+            'bolton wanderers': 'Bolton Wanderers',
+            'mansfield town': 'Mansfield Town FC',
+            'reading': 'Reading FC',
+            'northampton town': 'Northampton Town',
+            'shrewsbury town': 'Shrewsbury Town FC',
+            'stockport county': 'Stockport County FC',
+            'huddersfield town': 'Huddersfield Town',
+            'wigan athletic': 'Wigan Athletic',
+            'rotherham united': 'Rotherham United',
+            'wycombe wanderers': 'Wycombe Wanderers',
+            'charlton athletic': 'Charlton Athletic FC'
         }
         
-        # Danish Teams Direct IDs
+        # Italian Teams
+        self.ITALIAN_TEAMS = {
+            'palermo': 'US Città di Palermo',
+            'carrarese': 'Carrarese Calcio',
+            'frosinone': 'Frosinone Calcio',
+            'spezia': 'Spezia Calcio',
+            'cosenza': 'Cosenza Calcio',
+            'mantova': 'Mantova 1911',
+            'juve stabia': 'SS Juve Stabia',
+            'sampdoria': 'UC Sampdoria',
+            'lecco': 'Calcio Lecco 1912',
+            'sudtirol': 'FC Südtirol',
+            'perugia': 'AC Perugia Calcio',
+            'pescara': 'Delfino Pescara 1936',
+            'avellino': 'US Avellino 1912',
+            'triestina': 'US Triestina Calcio 1918',
+            'virtus entella': 'Virtus Entella',
+            'vicenza': 'LR Vicenza',
+            'pro vercelli': 'FC Pro Vercelli 1892',
+            'arezzo': 'SS Arezzo',
+            'novara': 'Novara Calcio',
+            'alessandria': 'US Alessandria Calcio 1912',
+            'cesena': 'Cesena FC',
+            'genoa': 'Genoa CFC',
+            'lazio': 'SS Lazio',
+            'cagliari': 'Cagliari Calcio',
+            'fiorentina': 'ACF Fiorentina',
+            'parma': 'Parma Calcio 1913',
+            'juventus': 'Juventus FC',
+            'cittadella': 'AS Cittadella',
+            'salernitana': 'US Salernitana 1919',
+            'sassuolo': 'US Sassuolo',
+            'cremonese': 'US Cremonese',
+            'pisa': 'AC Pisa 1909',
+            'catanzaro': 'US Catanzaro 1929',
+            'milan': 'AC Milan'
+        }
+        
+        # Danish Teams
         self.DANISH_TEAMS = {
-            'brøndby': {'id': '206', 'name': 'Brøndby IF'},
-            'randers': {'id': '1016', 'name': 'Randers FC'},
-            'viborg': {'id': '1019', 'name': 'Viborg FF'},
-            'lyngby': {'id': '1018', 'name': 'Lyngby BK'},
-            'københavn': {'id': '190', 'name': 'FC København'},
-            'agf': {'id': '1015', 'name': 'Aarhus GF'},
-            'varberg': {'id': '11060', 'name': 'Varbergs BoIS'},
-            'umeå': {'id': '7794', 'name': 'Umeå FC'}
+            'brøndby': 'Brøndby IF',
+            'randers': 'Randers FC',
+            'viborg': 'Viborg FF',
+            'lyngby': 'Lyngby BK',
+            'københavn': 'FC København',
+            'agf': 'Aarhus GF',
+            'varberg': 'Varbergs BoIS',
+            'umeå': 'Umeå FC'
         }
         
         # Set fuzzy matching thresholds
@@ -1126,18 +1158,26 @@ class TransfermarktAPI:
         return key
 
     def search_team(self, team_name, domain="de"):
-        """Search for a team and return its ID."""
+        """Search for a team using fuzzy matching and API search."""
         if not team_name:
             return None
             
-        # First check Italian, English and Danish teams
+        # First check Italian, English and Danish teams for exact matches
         normalized = self.normalize_team_name(team_name).lower()
+        
+        # Get the exact Transfermarkt name if available
+        exact_name = None
         if normalized in self.ITALIAN_TEAMS:
-            return self.ITALIAN_TEAMS[normalized]
-        if normalized in self.ENGLISH_TEAMS:
-            return self.ENGLISH_TEAMS[normalized]
-        if normalized in self.DANISH_TEAMS:
-            return self.DANISH_TEAMS[normalized]
+            exact_name = self.ITALIAN_TEAMS[normalized]
+        elif normalized in self.ENGLISH_TEAMS:
+            exact_name = self.ENGLISH_TEAMS[normalized]
+        elif normalized in self.DANISH_TEAMS:
+            exact_name = self.DANISH_TEAMS[normalized]
+            
+        if exact_name:
+            logging.info(f"Found exact Transfermarkt name for {exact_name}: {exact_name}")
+            # Use the exact name for searching
+            team_name = exact_name
             
         # Generate variations of the team name
         variations = self._generate_search_variations(team_name, domain)
@@ -1161,7 +1201,9 @@ class TransfermarktAPI:
                         highest_ratio = 0
                         
                         for team in data:
-                            ratio = fuzz.ratio(variation.lower(), team['name'].lower())
+                            # Compare with both the original name and exact name if available
+                            name_to_compare = exact_name or team_name
+                            ratio = fuzz.ratio(name_to_compare.lower(), team['name'].lower())
                             if ratio > highest_ratio and ratio >= self.fuzzy_match_threshold:
                                 highest_ratio = ratio
                                 best_match = team
@@ -1175,59 +1217,3 @@ class TransfermarktAPI:
                 
         logger.warning(f"No search results found for team: {team_name}")
         return None
-
-    def get_team_market_value(self, team_name, search_domain=None):
-        """Get market value for a team with validation"""
-        logger.info(f"Getting market value for team: {team_name}")
-        
-        try:
-            # Use appropriate domain based on team name if not provided
-            if search_domain is None:
-                search_domain = self.get_search_domain(team_name)
-            
-            # Clean and standardize team name
-            cleaned_name = self.normalize_team_name(team_name)
-            
-            # Search for the team first
-            search_result = self.search_team(cleaned_name, search_domain)
-            if not search_result:
-                # Try alternate domains if first search fails
-                alternate_domains = ["de", "gb", "es", "it"] if search_domain != "de" else ["gb", "es", "it", "fr"]
-                for alt_domain in alternate_domains:
-                    search_result = self.search_team(cleaned_name, alt_domain)
-                    if search_result:
-                        search_domain = alt_domain
-                        break
-                        
-                if not search_result:
-                    logger.warning(f"No search results found for team: {team_name}")
-                    return None
-            
-            # Get team ID from search result
-            team_id = search_result.get('id')
-            if not team_id:
-                logger.warning(f"No team ID found in search result for {team_name}")
-                return None
-            
-            # Make the market value request
-            url = f"https://transfermarkt-api.vercel.app/teams/{team_id}/market-value"
-            response = requests.get(url, headers=self.headers)
-            
-            if response.status_code == 200:
-                data = response.json()
-                if data and isinstance(data, dict):
-                    market_value = data.get('marketValue', 0)
-                    if isinstance(market_value, (int, float)):
-                        logger.info(f"Total market value for {team_name}: {market_value}")
-                        return {
-                            'market_value': market_value,
-                            'currency': 'EUR',
-                            'last_updated': None
-                        }
-            
-            logger.warning(f"No valid market value found for team: {team_name}")
-            return None
-            
-        except Exception as e:
-            logger.error(f"Error getting market value for {team_name}: {str(e)}")
-            return None
