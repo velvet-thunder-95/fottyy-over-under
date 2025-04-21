@@ -674,21 +674,6 @@ class TransfermarktAPI:
             "independiente santa fe": "Independiente Santa Fe"
         }
         
-        # English Teams Direct IDs
-        self.ENGLISH_TEAMS = {
-            'crewe alexandra': {'id': '127', 'name': 'Crewe Alexandra'},
-            'milton keynes dons': {'id': '1020', 'name': 'Milton Keynes Dons'},
-            'doncaster rovers': {'id': '142', 'name': 'Doncaster Rovers'},
-            'colchester united': {'id': '148', 'name': 'Colchester United'},
-            'gillingham': {'id': '149', 'name': 'Gillingham FC'},
-            'afc wimbledon': {'id': '4777', 'name': 'AFC Wimbledon'},
-            'harrogate town': {'id': '7968', 'name': 'Harrogate Town AFC'},
-            'fleetwood town': {'id': '4782', 'name': 'Fleetwood Town'},
-            'morecambe': {'id': '1076', 'name': 'Morecambe FC'},
-            'salford city': {'id': '7370', 'name': 'Salford City'},
-            'cesena': {'id': '4086', 'name': 'Cesena FC'}
-        }
-        
         # Italian Teams Direct IDs
         self.ITALIAN_TEAMS = {
             'palermo': {'id': '458', 'name': 'US Città di Palermo'},
@@ -710,7 +695,48 @@ class TransfermarktAPI:
             'pro vercelli': {'id': '4089', 'name': 'FC Pro Vercelli 1892'},
             'arezzo': {'id': '4090', 'name': 'SS Arezzo'},
             'novara': {'id': '2885', 'name': 'Novara Calcio'},
-            'alessandria': {'id': '4091', 'name': 'US Alessandria Calcio 1912'}
+            'alessandria': {'id': '4091', 'name': 'US Alessandria Calcio 1912'},
+            'cesena': {'id': '4086', 'name': 'Cesena FC'}
+        }
+        
+        # English Teams Direct IDs
+        self.ENGLISH_TEAMS = {
+            'crewe alexandra': {'id': '127', 'name': 'Crewe Alexandra'},
+            'milton keynes dons': {'id': '1020', 'name': 'Milton Keynes Dons'},
+            'doncaster rovers': {'id': '142', 'name': 'Doncaster Rovers'},
+            'colchester united': {'id': '148', 'name': 'Colchester United'},
+            'gillingham': {'id': '149', 'name': 'Gillingham FC'},
+            'afc wimbledon': {'id': '4777', 'name': 'AFC Wimbledon'},
+            'harrogate town': {'id': '7968', 'name': 'Harrogate Town AFC'},
+            'fleetwood town': {'id': '4782', 'name': 'Fleetwood Town'},
+            'morecambe': {'id': '1076', 'name': 'Morecambe FC'},
+            'salford city': {'id': '7370', 'name': 'Salford City'},
+            'newport county': {'id': '2653', 'name': 'Newport County AFC'},
+            'walsall': {'id': '146', 'name': 'Walsall FC'},
+            'accrington stanley': {'id': '1204', 'name': 'Accrington Stanley'},
+            'carlisle united': {'id': '1108', 'name': 'Carlisle United'},
+            'barrow': {'id': '1116', 'name': 'Barrow AFC'},
+            'tranmere rovers': {'id': '144', 'name': 'Tranmere Rovers'},
+            'chesterfield': {'id': '2717', 'name': 'Chesterfield FC'},
+            'bradford city': {'id': '1146', 'name': 'Bradford City'},
+            'notts county': {'id': '2717', 'name': 'Notts County'},
+            'cheltenham town': {'id': '2715', 'name': 'Cheltenham Town'},
+            'port vale': {'id': '1928', 'name': 'Port Vale FC'},
+            'grimsby town': {'id': '1101', 'name': 'Grimsby Town'},
+            'swindon town': {'id': '1107', 'name': 'Swindon Town'},
+            'bromley': {'id': '4791', 'name': 'Bromley FC'}
+        }
+        
+        # Danish Teams Direct IDs
+        self.DANISH_TEAMS = {
+            'brøndby': {'id': '206', 'name': 'Brøndby IF'},
+            'randers': {'id': '1016', 'name': 'Randers FC'},
+            'viborg': {'id': '1019', 'name': 'Viborg FF'},
+            'lyngby': {'id': '1018', 'name': 'Lyngby BK'},
+            'københavn': {'id': '190', 'name': 'FC København'},
+            'agf': {'id': '1015', 'name': 'Aarhus GF'},
+            'varberg': {'id': '11060', 'name': 'Varbergs BoIS'},
+            'umeå': {'id': '7794', 'name': 'Umeå FC'}
         }
         
         # Set fuzzy matching thresholds
@@ -1100,12 +1126,14 @@ class TransfermarktAPI:
         if not team_name:
             return None
             
-        # First check Italian and English teams
+        # First check Italian, English and Danish teams
         normalized = self.normalize_team_name(team_name).lower()
         if normalized in self.ITALIAN_TEAMS:
             return self.ITALIAN_TEAMS[normalized]
         if normalized in self.ENGLISH_TEAMS:
             return self.ENGLISH_TEAMS[normalized]
+        if normalized in self.DANISH_TEAMS:
+            return self.DANISH_TEAMS[normalized]
             
         # Generate variations of the team name
         variations = self._generate_search_variations(team_name, domain)
