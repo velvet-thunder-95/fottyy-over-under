@@ -766,13 +766,58 @@ class TransfermarktAPI:
         # Danish Teams
         self.DANISH_TEAMS = {
             'brøndby': 'Brøndby IF',
-            'randers': 'Randers FC',
-            'viborg': 'Viborg FF',
-            'lyngby': 'Lyngby BK',
             'københavn': 'FC København',
-            'agf': 'Aarhus GF',
-            'varberg': 'Varbergs BoIS',
-            'umeå': 'Umeå FC'
+            'agf': 'AGF Aarhus',
+            'randers': 'Randers FC',
+            'lyngby': 'Lyngby BK',
+            'viborg': 'Viborg FF',
+            'silkeborg': 'Silkeborg IF',
+            'vejle': 'Vejle BK',
+            'midtjylland': 'FC Midtjylland',
+            'nordsjælland': 'FC Nordsjælland',
+            'odense': 'OB Odense',
+            'aarhus': 'AGF Aarhus',
+            'horsens': 'AC Horsens',
+            'aalborg': 'AaB Aalborg',
+            'sønderjyske': 'SønderjyskE'
+        }
+        
+        # Swedish Teams
+        self.SWEDISH_TEAMS = {
+            'djurgården': 'Djurgårdens IF',
+            'gais': 'GAIS Göteborg',
+            'malmö': 'Malmö FF',
+            'aik': 'AIK Solna',
+            'hammarby': 'Hammarby IF',
+            'göteborg': 'IFK Göteborg',
+            'elfsborg': 'IF Elfsborg',
+            'häcken': 'BK Häcken',
+            'kalmar': 'Kalmar FF',
+            'norrköping': 'IFK Norrköping',
+            'sirius': 'IK Sirius',
+            'degerfors': 'Degerfors IF',
+            'mjällby': 'Mjällby AIF',
+            'varbergs': 'Varbergs BoIS',
+            'värnamo': 'IFK Värnamo'
+        }
+        
+        # Norwegian Teams
+        self.NORWEGIAN_TEAMS = {
+            'rosenborg': 'Rosenborg BK',
+            'vålerenga': 'Vålerenga Fotball',
+            'molde': 'Molde FK',
+            'bodø/glimt': 'FK Bodø/Glimt',
+            'brann': 'SK Brann',
+            'lillestrøm': 'Lillestrøm SK',
+            'viking': 'Viking FK',
+            'strømsgodset': 'Strømsgodset IF',
+            'odd': 'Odds BK',
+            'sarpsborg': 'Sarpsborg 08',
+            'haugesund': 'FK Haugesund',
+            'tromsø': 'Tromsø IL',
+            'aalesund': 'Aalesunds FK',
+            'stabæk': 'Stabæk Fotball',
+            'ham-kam': 'Hamarkameratene'
         }
         
         # Set fuzzy matching thresholds
@@ -1162,7 +1207,7 @@ class TransfermarktAPI:
         if not team_name:
             return None
             
-        # First check Italian, English and Danish teams for exact matches
+        # First check all team mappings for exact matches
         normalized = self.normalize_team_name(team_name).lower()
         
         # Get the exact Transfermarkt name if available
@@ -1173,6 +1218,10 @@ class TransfermarktAPI:
             exact_name = self.ENGLISH_TEAMS[normalized]
         elif normalized in self.DANISH_TEAMS:
             exact_name = self.DANISH_TEAMS[normalized]
+        elif normalized in self.SWEDISH_TEAMS:
+            exact_name = self.SWEDISH_TEAMS[normalized]
+        elif normalized in self.NORWEGIAN_TEAMS:
+            exact_name = self.NORWEGIAN_TEAMS[normalized]
             
         if exact_name:
             logging.info(f"Found exact Transfermarkt name for {team_name}: {exact_name}")
@@ -1199,32 +1248,35 @@ class TransfermarktAPI:
                 ]
                 
                 for url in urls:
-                    response = requests.get(url, headers=self.headers)
-                    
-                    if response.status_code == 200:
-                        data = response.json()
+                    try:
+                        response = requests.get(url, headers=self.headers)
                         
-                        # Handle direct API response
-                        if isinstance(data, dict) and 'id' in data:
-                            return {"id": data["id"], "name": data["name"]}
+                        if response.status_code == 200:
+                            data = response.json()
                             
-                        # Handle search API response
-                        if isinstance(data, list) and len(data) > 0:
-                            # Find best match using fuzzy matching
-                            best_match = None
-                            highest_ratio = 0
-                            
-                            for team in data:
-                                # Compare with both the original name and exact name if available
-                                name_to_compare = exact_name or team_name
-                                ratio = fuzz.ratio(name_to_compare.lower(), team['name'].lower())
-                                if ratio > highest_ratio and ratio >= self.fuzzy_match_threshold:
-                                    highest_ratio = ratio
-                                    best_match = team
-                                    
-                            if best_match:
-                                return {"id": best_match["id"], "name": best_match["name"]}
+                            # Handle direct API response
+                            if isinstance(data, dict) and 'id' in data:
+                                return {"id": data["id"], "name": data["name"]}
                                 
+                            # Handle search API response
+                            if isinstance(data, list) and len(data) > 0:
+                                # Find best match using fuzzy matching
+                                best_match = None
+                                highest_ratio = 0
+                                
+                                for team in data:
+                                    # Compare with both the original name and exact name if available
+                                    name_to_compare = exact_name or team_name
+                                    ratio = fuzz.ratio(name_to_compare.lower(), team['name'].lower())
+                                    if ratio > highest_ratio and ratio >= self.fuzzy_match_threshold:
+                                        highest_ratio = ratio
+                                        best_match = team
+                                        
+                                if best_match:
+                                    return {"id": best_match["id"], "name": best_match["name"]}
+                    except requests.exceptions.RequestException as e:
+                        logger.warning(f"Request failed for URL {url}: {str(e)}")
+                        continue
             except Exception as e:
                 logger.warning(f"Error searching for team {variation}: {str(e)}")
                 continue
