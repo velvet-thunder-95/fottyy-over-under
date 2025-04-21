@@ -7,6 +7,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import lru_cache
 import json
 from thefuzz import fuzz
+import urllib.parse
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -765,21 +766,21 @@ class TransfermarktAPI:
         
         # Danish Teams
         self.DANISH_TEAMS = {
-            'brøndby': 'Brøndby IF',
-            'københavn': 'FC København',
-            'agf': 'AGF Aarhus',
+            'brøndby': 'Brondby IF',  
+            'københavn': 'FC Kobenhavn',  
+            'agf': 'AGF',  
             'randers': 'Randers FC',
-            'lyngby': 'Lyngby BK',
+            'lyngby': 'Lyngby Boldklub',  
             'viborg': 'Viborg FF',
-            'silkeborg': 'Silkeborg IF',
-            'vejle': 'Vejle BK',
+            'silkeborg': 'Silkeborg IF Fodbold',  
+            'vejle': 'Vejle Boldklub',  
             'midtjylland': 'FC Midtjylland',
-            'nordsjælland': 'FC Nordsjælland',
-            'odense': 'OB Odense',
-            'aarhus': 'AGF Aarhus',
+            'nordsjælland': 'FC Nordsjaelland',  
+            'odense': 'Odense Boldklub',  
+            'aarhus': 'AGF',  
             'horsens': 'AC Horsens',
-            'aalborg': 'AaB Aalborg',
-            'sønderjyske': 'SønderjyskE'
+            'aalborg': 'Aalborg BK',  
+            'sønderjyske': 'Sonderjysk Elitesport'  
         }
         
         # Swedish Teams
@@ -921,45 +922,43 @@ class TransfermarktAPI:
                 
         return "de"  # default to German domain
 
-    def normalize_team_name(self, name):
-        """Normalize team name for comparison."""
-        if not name:
+    def normalize_team_name(self, team_name):
+        """Normalize team name by removing special characters and common words."""
+        if not team_name:
             return ""
             
-        # First check if it's a women's team
-        normalized = name.lower().strip()
-        is_womens_team = any(suffix in normalized for suffix in [" w", " women", " ladies", " fem"])
-        if is_womens_team:
-            # Remove women's team suffixes for matching
-            for suffix in [" w", " women", " ladies", " fem"]:
-                normalized = normalized.replace(suffix, "")
-            normalized = normalized.strip()
-            # Add back "w" for consistent women's team lookup
-            normalized = normalized + " w"
-            if normalized in self.womens_teams:
-                return self.womens_teams[normalized]["name"]
-            
-        # Check direct mappings
-        if name in self.TEAM_MAPPINGS:
-            return self.TEAM_MAPPINGS[name]
-            
-        # Remove special characters but keep spaces and letters with accents
-        normalized = re.sub(r'[^\w\s\u00C0-\u017F]', '', name)
-        normalized = normalized.lower().strip()
+        # Convert to lowercase
+        name = team_name.lower()
         
-        # Remove common suffixes and prefixes
-        normalized = re.sub(r'\s+(fc|cf|ac|sc|fk|if)\s*$', '', normalized)
-        normalized = re.sub(r'^(fc|cf|ac|sc|fk|if)\s+', '', normalized)
+        # Remove special characters but keep letters with diacritics
+        name = re.sub(r'[^\w\s\u00C0-\u017F-]', '', name)
         
-        # Check unified mappings
-        for league in self.unified_data.values():
-            if isinstance(league, dict) and "teams" in league:
-                for team in league["teams"]:
-                    if team["name"].lower() == normalized and team["transfermarkt_name"]:
-                        logger.info(f"Found exact Transfermarkt name for {name}: {team['transfermarkt_name']}")
-                        return team["transfermarkt_name"]
+        # Replace Scandinavian characters with their non-diacritic versions
+        replacements = {
+            'ø': 'o',
+            'æ': 'ae',
+            'å': 'a',
+            'ä': 'a',
+            'ö': 'o',
+            'ü': 'u',
+            'é': 'e',
+            'è': 'e',
+            'ê': 'e',
+            'ë': 'e',
+            'á': 'a',
+            'à': 'a',
+            'â': 'a',
+            'ã': 'a'
+        }
+        for old, new in replacements.items():
+            name = name.replace(old, new)
         
-        return normalized.strip()
+        # Remove common words
+        common_words = ['fc', 'if', 'bk', 'fk', 'sk', 'afc', 'united', 'city']
+        words = name.split()
+        words = [w for w in words if w not in common_words]
+        
+        return ' '.join(words).strip()
         
     def get_multiple_teams_market_value(self, teams, domain="de"):
         """Get market values for multiple teams in parallel with batching"""
@@ -1131,76 +1130,25 @@ class TransfermarktAPI:
         
         self.request_times.append(current_time)
 
-    def _make_api_request(self, url, params):
-        """Make an API request with minimal rate limiting and no retries"""
-        try:
-            self._rate_limit()  # Apply rate limiting
-            response = requests.get(url, headers=self.headers, params=params)
-            
-            if response.status_code == 429:  # Too Many Requests
-                logger.warning("Rate limit hit, returning None")
-                return None
-            
-            response.raise_for_status()
-            return response.json()  # Return JSON data instead of response object
-            
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Request failed: {str(e)}")
-            return None
-        
-    @lru_cache(maxsize=128)
-    def get_team_squad(self, team_id, domain="de"):
-        """Get all players in a team's squad with caching and validation"""
-        if not team_id:
-            return []
-            
-        logger.debug(f"Fetching squad for team ID: {team_id}")
-        
-        url = f"{self.base_url}/clubs/get-squad"
-        params = {
-            "id": str(team_id),
-            "domain": domain
-        }
-        
-        try:
-            data = self._make_api_request(url, params)
-            if not data:
-                return []
-            
-            squad = data.get("squad", [])
-            
-            # Validate squad size
-            if len(squad) < 15:
-                logger.warning(f"Squad size suspiciously small ({len(squad)}) for team {team_id}")
-                # Try to get cached value if available
-                cached_key = f"squad_{team_id}_{domain}"
-                if hasattr(self, cached_key):
-                    cached_squad = getattr(self, cached_key)
-                    if len(cached_squad) > len(squad):
-                        return cached_squad
-            
-            # Cache valid squad
-            if len(squad) >= 15:
-                setattr(self, f"squad_{team_id}_{domain}", squad)
-            
-            logger.debug(f"Found {len(squad)} players in squad")
-            time.sleep(0.1)  # Reduced delay for faster processing
-            
-            return squad
-            
-        except Exception as e:
-            logger.error(f"Error fetching team squad: {str(e)}")
-            return []
-
-    def get_search_key(self, team_name):
-        """Generate a standardized search key for a team name"""
-        if not team_name:
-            return ""
-        # Remove special characters and convert to lowercase
-        key = re.sub(r'[^\w\s\u00C0-\u017F]', '', team_name.lower())
-        # Replace multiple spaces with single space and strip
-        key = ' '.join(key.split())
-        return key
+    def _make_request_with_retry(self, url, max_retries=3, delay=1):
+        """Make a request with retry mechanism"""
+        for attempt in range(max_retries):
+            try:
+                response = requests.get(url, headers=self.headers)
+                if response.status_code == 200:
+                    return response
+                elif response.status_code == 429:  # Rate limit
+                    logger.warning(f"Rate limited on attempt {attempt + 1}, waiting {delay * (attempt + 1)} seconds")
+                    time.sleep(delay * (attempt + 1))
+                    continue
+                else:
+                    logger.warning(f"Request failed with status {response.status_code} on attempt {attempt + 1}")
+            except requests.exceptions.RequestException as e:
+                if attempt == max_retries - 1:
+                    raise
+                logger.warning(f"Request failed on attempt {attempt + 1}: {str(e)}")
+                time.sleep(delay * (attempt + 1))
+        return None
 
     def search_team(self, team_name, domain="de"):
         """Search for a team using fuzzy matching and API search."""
@@ -1238,8 +1186,10 @@ class TransfermarktAPI:
                 if variation in self.TEAM_MAPPINGS:
                     variation = self.TEAM_MAPPINGS[variation]
                 
-                # Clean the variation for URL
+                # Clean and encode the variation for URL
                 url_safe_variation = variation.replace(" ", "-").replace(".", "").lower()
+                url_safe_variation = re.sub(r'[^\w\s-]', '', url_safe_variation)  # Remove any remaining special chars
+                url_safe_variation = urllib.parse.quote(url_safe_variation)  # URL encode
                 
                 # Try both the direct API and search API
                 urls = [
@@ -1248,41 +1198,90 @@ class TransfermarktAPI:
                 ]
                 
                 for url in urls:
-                    try:
-                        response = requests.get(url, headers=self.headers)
+                    response = self._make_request_with_retry(url)
+                    if response:
+                        data = response.json()
                         
-                        if response.status_code == 200:
-                            data = response.json()
+                        # Handle direct API response
+                        if isinstance(data, dict) and 'id' in data:
+                            return {"id": data["id"], "name": data["name"]}
                             
-                            # Handle direct API response
-                            if isinstance(data, dict) and 'id' in data:
-                                return {"id": data["id"], "name": data["name"]}
+                        # Handle search API response
+                        if isinstance(data, list) and len(data) > 0:
+                            # Find best match using fuzzy matching
+                            best_match = None
+                            highest_ratio = 0
+                            
+                            for team in data:
+                                # Compare with both the original name and exact name if available
+                                name_to_compare = exact_name or team_name
+                                ratio = fuzz.ratio(name_to_compare.lower(), team['name'].lower())
+                                if ratio > highest_ratio and ratio >= self.fuzzy_match_threshold:
+                                    highest_ratio = ratio
+                                    best_match = team
+                                    
+                            if best_match:
+                                return {"id": best_match["id"], "name": best_match["name"]}
                                 
-                            # Handle search API response
-                            if isinstance(data, list) and len(data) > 0:
-                                # Find best match using fuzzy matching
-                                best_match = None
-                                highest_ratio = 0
-                                
-                                for team in data:
-                                    # Compare with both the original name and exact name if available
-                                    name_to_compare = exact_name or team_name
-                                    ratio = fuzz.ratio(name_to_compare.lower(), team['name'].lower())
-                                    if ratio > highest_ratio and ratio >= self.fuzzy_match_threshold:
-                                        highest_ratio = ratio
-                                        best_match = team
-                                        
-                                if best_match:
-                                    return {"id": best_match["id"], "name": best_match["name"]}
-                    except requests.exceptions.RequestException as e:
-                        logger.warning(f"Request failed for URL {url}: {str(e)}")
-                        continue
             except Exception as e:
                 logger.warning(f"Error searching for team {variation}: {str(e)}")
                 continue
                 
         logger.warning(f"No search results found for team: {team_name}")
         return None
+
+    def get_search_key(self, team_name):
+        """Generate a standardized search key for a team name"""
+        if not team_name:
+            return ""
+        # Remove special characters and convert to lowercase
+        key = re.sub(r'[^\w\s\u00C0-\u017F]', '', team_name.lower())
+        # Replace multiple spaces with single space and strip
+        key = ' '.join(key.split())
+        return key
+
+    def get_team_squad(self, team_id, domain="de"):
+        """Get all players in a team's squad with caching and validation"""
+        if not team_id:
+            return []
+            
+        logger.debug(f"Fetching squad for team ID: {team_id}")
+        
+        url = f"{self.base_url}/clubs/get-squad"
+        params = {
+            "id": str(team_id),
+            "domain": domain
+        }
+        
+        try:
+            data = self._make_request_with_retry(url, params=params)
+            if not data:
+                return []
+            
+            squad = data.get("squad", [])
+            
+            # Validate squad size
+            if len(squad) < 15:
+                logger.warning(f"Squad size suspiciously small ({len(squad)}) for team {team_id}")
+                # Try to get cached value if available
+                cached_key = f"squad_{team_id}_{domain}"
+                if hasattr(self, cached_key):
+                    cached_squad = getattr(self, cached_key)
+                    if len(cached_squad) > len(squad):
+                        return cached_squad
+            
+            # Cache valid squad
+            if len(squad) >= 15:
+                setattr(self, f"squad_{team_id}_{domain}", squad)
+            
+            logger.debug(f"Found {len(squad)} players in squad")
+            time.sleep(0.1)  # Reduced delay for faster processing
+            
+            return squad
+            
+        except Exception as e:
+            logger.error(f"Error fetching team squad: {str(e)}")
+            return []
 
     def get_team_market_value(self, team_name, search_domain=None):
         """Get market value for a team with validation"""
@@ -1319,7 +1318,7 @@ class TransfermarktAPI:
             
             # Make the market value request
             url = f"https://transfermarkt-api.vercel.app/teams/{team_id}/market-value"
-            response = requests.get(url, headers=self.headers)
+            response = self._make_request_with_retry(url)
             
             if response.status_code == 200:
                 data = response.json()
