@@ -2567,11 +2567,11 @@ def show_main_app():
                             if st.button(" Apply Filter", key=f"apply_{idx}", use_container_width=True):
                                 selected_leagues = filter['leagues']
                                 confidence_levels = filter['confidence']
-                                st.experimental_rerun()
+                                st.rerun()
                         with col2:
                             if st.button(" Delete", key=f"delete_{idx}", use_container_width=True):
                                 st.session_state.saved_filters.pop(idx)
-                                st.experimental_rerun()
+                                st.rerun()
 
             st.markdown('</div>', unsafe_allow_html=True)
         
