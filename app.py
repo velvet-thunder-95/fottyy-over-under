@@ -1,6 +1,5 @@
 # app.py
 
-
 import sys
 import os
 import streamlit as st
@@ -42,7 +41,7 @@ from transfermarkt_api import TransfermarktAPI
 import base64
 from unidecode import unidecode as unidecode_text
 from odds_generator import OddsGenerator  # Import the odds generator
-from filter_storage import load_saved_filters, save_filter_to_db, delete_filter_from_db  # Import filter_storage functions
+import filter_storage  # Import the entire module
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -1392,7 +1391,7 @@ def display_market_values(home_team, away_team):
     """Display market values for both teams in a styled box"""
     try:
         logger.info(f"Starting to display market values for {home_team} vs {away_team}")
-        home_value, away_value = get_market_values(home_team, away_team)
+        home_value, away_value = filter_storage.get_market_values(home_team, away_team)
         
         # Format values for display
         def format_value(value):
@@ -1477,7 +1476,7 @@ def get_market_values(home_team, away_team):
     """Get market values for both teams with caching"""
     logger.info(f"Fetching market values for {home_team} vs {away_team}")
     try:
-        api = TransfermarktAPI()
+        api = filter_storage.TransfermarktAPI()
         # Get market values using the new method
         market_values = api.get_both_teams_market_value(home_team, away_team)
         
@@ -1504,7 +1503,7 @@ def get_market_values(home_team, away_team):
 @st.cache_data(ttl=3600)  # Cache for 1 hour
 def get_multiple_market_values(teams):
     """Get market values for multiple teams with caching"""
-    api = TransfermarktAPI(max_workers=20)  # Increased to 20 worker threads for better parallelization
+    api = filter_storage.TransfermarktAPI(max_workers=20)  # Increased to 20 worker threads for better parallelization
     return api.get_multiple_teams_market_value(teams)
 
 def display_match_odds(match_data):
@@ -2441,7 +2440,7 @@ def save_filter(name, leagues, confidence_levels):
             'confidence': confidence_levels,
             'created_at': datetime.now().isoformat()
         }
-        return save_filter_to_db(name, leagues, confidence_levels)
+        return filter_storage.save_filter(name, leagues, confidence_levels)
     except Exception as e:
         logger.error(f"Error saving filter: {str(e)}")
         return []
@@ -2449,7 +2448,7 @@ def save_filter(name, leagues, confidence_levels):
 def delete_filter(filter_id):
     """Delete filter from Supabase"""
     try:
-        return delete_filter_from_db(filter_id)
+        return filter_storage.delete_filter(filter_id)
     except Exception as e:
         logger.error(f"Error deleting filter: {str(e)}")
         return []
@@ -2457,7 +2456,7 @@ def delete_filter(filter_id):
 def show_main_app():
     # Load filters at startup
     if 'saved_filters' not in st.session_state:
-        st.session_state.saved_filters = load_saved_filters()  # Load from Supabase
+        st.session_state.saved_filters = filter_storage.load_saved_filters()  # Load from Supabase
         
     # Initialize filter selections in session state if not present
     if 'selected_leagues' not in st.session_state:
