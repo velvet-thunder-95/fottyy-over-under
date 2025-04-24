@@ -2514,7 +2514,7 @@ def show_main_app():
             "Select Leagues",
             options=list(available_leagues.keys()),
             default=st.session_state.selected_leagues,
-            key='leagues'
+            key='leagues_select'
         )
         
         # Confidence level filter
@@ -2522,7 +2522,7 @@ def show_main_app():
             "Filter by Confidence Level",
             options=["All", "High", "Medium", "Low"],
             default=st.session_state.confidence_levels,
-            key='confidence'
+            key='confidence_select'
         )
         
         # Update session state with current selections
@@ -2569,10 +2569,9 @@ def show_main_app():
                         col1, col2 = st.columns(2)
                         with col1:
                             if st.button(" Apply", key=f"apply_filter_{idx}", use_container_width=True):
+                                # Only update the session state values
                                 st.session_state.selected_leagues = saved_filter['leagues']
                                 st.session_state.confidence_levels = saved_filter['confidence']
-                                st.session_state.leagues = saved_filter['leagues']
-                                st.session_state.confidence = saved_filter['confidence']
                                 st.rerun()
                         with col2:
                             if st.button(" Delete", key=f"delete_filter_{idx}", use_container_width=True):
