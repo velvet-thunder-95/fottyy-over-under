@@ -2431,10 +2431,17 @@ def load_filters():
     except (FileNotFoundError, json.JSONDecodeError):
         return []
 
-def save_filters(filters):
-    """Save filters to JSON file"""
-    with open('filters.json', 'w') as f:
-        json.dump(filters, f, indent=4)
+def save_filter(name, leagues, confidence):
+    """Save filter to Supabase"""
+    history = PredictionHistory()
+    history.db.add_filter(name, leagues, confidence)
+    return history.db.get_all_filters()
+
+def delete_filter(filter_id):
+    """Delete filter from Supabase"""
+    history = PredictionHistory()
+    history.db.delete_filter(filter_id)
+    return history.db.get_all_filters()
 
 def show_main_app():
     # Load filters at startup
@@ -2539,14 +2546,11 @@ def show_main_app():
             with col2:
                 if st.button(" Save", use_container_width=True, type="primary"):
                     if filter_name:
-                        current_filter = {
-                            "name": filter_name,
-                            "leagues": selected_leagues,
-                            "confidence": confidence_levels,
-                            "created": datetime.now().strftime("%Y-%m-%d %H:%M")
-                        }
-                        st.session_state.saved_filters.append(current_filter)
-                        save_filters(st.session_state.saved_filters)
+                        st.session_state.saved_filters = save_filter(
+                            filter_name,
+                            selected_leagues,
+                            confidence_levels
+                        )
                         st.success(f" Filter saved: {filter_name}")
                     else:
                         st.error(" Enter filter name")
@@ -2575,8 +2579,7 @@ def show_main_app():
                                 st.rerun()
                         with col2:
                             if st.button(" Delete", key=f"delete_filter_{idx}", use_container_width=True):
-                                st.session_state.saved_filters.pop(idx)
-                                save_filters(st.session_state.saved_filters)
+                                st.session_state.saved_filters = delete_filter(saved_filter['id'])
                                 st.rerun()
 
             st.markdown('</div>', unsafe_allow_html=True)
