@@ -675,7 +675,54 @@ class TransfermarktAPI:
 
             # Colombian Teams with Updated IDs
             "santa fe": "Independiente Santa Fe",
-            "independiente santa fe": "Independiente Santa Fe"
+            "independiente santa fe": "Independiente Santa Fe",
+            
+            # Indonesian Teams
+            'Madura United': 'Madura United FC',
+            'Persib': 'Persib Bandung',
+            'Persija': 'Persija Jakarta',
+            'PSM': 'PSM Makassar',
+            'Bali United': 'Bali United FC',
+            'Arema': 'Arema FC',
+            'PSIS': 'PSIS Semarang',
+            'Persebaya': 'Persebaya Surabaya',
+            'Bhayangkara': 'Bhayangkara FC',
+            'Borneo': 'Borneo FC',
+            
+            # South American Teams - Copa Sudamericana
+            'Racing': 'Racing Club',
+            'Racing Club': 'Racing Club',
+            'Defensa': 'Defensa y Justicia',
+            'Estudiantes': 'Estudiantes de La Plata',
+            'Independiente': 'CA Independiente',
+            'San Lorenzo': 'CA San Lorenzo de Almagro',
+            'Lanús': 'Club Atlético Lanús',
+            'Vélez': 'Vélez Sarsfield',
+            'Huracán': 'CA Huracán',
+            'Banfield': 'CA Banfield',
+            'LDU Quito': 'LDU de Quito',
+            'Barcelona SC': 'Barcelona Sporting Club',
+            'Emelec': 'CS Emelec',
+            'Nacional': 'Club Nacional',
+            'Peñarol': 'CA Peñarol',
+            'Cerro Porteño': 'Club Cerro Porteño',
+            'Olimpia': 'Club Olimpia',
+            'Sporting Cristal': 'Club Sporting Cristal',
+            'Universitario': 'Universitario de Deportes',
+            'Atlético Nacional': 'Atlético Nacional',
+            'Millonarios': 'Millonarios FC',
+            'Santa Fe': 'Independiente Santa Fe'
+        }
+        
+        # Regional domain mappings
+        self.DOMAIN_MAPPINGS = {
+            'id': ['Madura United', 'Persib', 'Persija', 'PSM', 'Bali United', 'Arema', 'PSIS', 'Persebaya', 'Bhayangkara', 'Borneo'],
+            'ar': ['Racing', 'Defensa', 'Estudiantes', 'Independiente', 'San Lorenzo', 'Lanús', 'Vélez', 'Huracán', 'Banfield'],
+            'ec': ['LDU Quito', 'Barcelona SC', 'Emelec'],
+            'uy': ['Nacional', 'Peñarol'],
+            'py': ['Cerro Porteño', 'Olimpia'],
+            'pe': ['Sporting Cristal', 'Universitario'],
+            'co': ['Atlético Nacional', 'Millonarios', 'Santa Fe']
         }
         
         # Danish Teams
@@ -966,6 +1013,7 @@ class TransfermarktAPI:
 
     def get_search_domain(self, team_name):
         """Determine the appropriate search domain based on team name"""
+        normalized_name = self.normalize_team_name(team_name)
         team_lower = team_name.lower()
         
         # Check in unified data first
@@ -973,6 +1021,12 @@ class TransfermarktAPI:
             for league_data in self.unified_data.values():
                 if team_lower in map(str.lower, league_data.get('teams', [])):
                     return league_data.get('domain', 'de')
+        
+        # Check if team is in any of our domain-specific lists
+        for domain, teams in self.DOMAIN_MAPPINGS.items():
+            if any(self.normalize_team_name(team) in normalized_name or normalized_name in self.normalize_team_name(team) for team in teams):
+                logger.info(f"Found domain {domain} for team {team_name}")
+                return domain
         
         # Swedish teams
         swedish_keywords = ['if', 'aik', 'malmö', 'malmo', 'göteborg', 'goteborg', 'hammarby', 'djurgården', 'djurgarden']
@@ -988,8 +1042,20 @@ class TransfermarktAPI:
         danish_keywords = ['københavn', 'kobenhavn', 'midtjylland', 'brøndby', 'brondby', 'aarhus', 'randers']
         if any(keyword in team_lower for keyword in danish_keywords):
             return 'dk'
-            
-        # Default to German domain
+        
+        # Default domain mappings for major leagues
+        if any(term in normalized_name for term in ['united', 'city', 'arsenal', 'chelsea', 'liverpool']):
+            return 'gb1'  # Premier League
+        elif any(term in normalized_name for term in ['real', 'barcelona', 'atletico', 'sevilla']):
+            return 'es1'  # La Liga
+        elif any(term in normalized_name for term in ['bayern', 'dortmund', 'leipzig']):
+            return 'de1'  # Bundesliga
+        elif any(term in normalized_name for term in ['milan', 'inter', 'juventus', 'roma']):
+            return 'it1'  # Serie A
+        elif any(term in normalized_name for term in ['paris', 'lyon', 'marseille']):
+            return 'fr1'  # Ligue 1
+        
+        # Default to German domain if no specific match
         return 'de'
 
     def get_search_key(self, team_name):

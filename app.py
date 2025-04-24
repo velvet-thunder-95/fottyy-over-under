@@ -652,6 +652,32 @@ st.markdown("""
         cursor: pointer !important;
     }
     
+    /* Saved Filters Styling */
+    .saved-filters-container {
+        margin: 10px 0;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    .filter-button {
+        background-color: #f0f2f6;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 5px 10px;
+        font-size: 14px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .filter-button:hover {
+        background-color: #e0e2e6;
+    }
+    .delete-filter {
+        color: #ff4b4b;
+        margin-left: 5px;
+        cursor: pointer;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -932,7 +958,7 @@ def create_match_features_from_api(match_data):
                 
                 # Debug prints
                 print(f"Home - Pred: {home_implied*100:.2f}%, Odds: {odds_home:.2f}")
-                print(f"Draw - Pred: {draw_implied*100:.2f}%, Odds: {odds_draw:.2f}")
+                print(f"Draw - Pred: {draw_implied*100:.2f}%, Odds: {draw_odds:.2f}")
                 print(f"Away - Pred: {away_implied*100:.2f}%, Odds: {odds_away:.2f}")
                 
                 home_ev = calculate_ev(home_implied*100, odds_home)
@@ -1389,10 +1415,10 @@ def display_market_values(home_team, away_team):
                     return market_value
             return 'N/A'
         
-        formatted_home_value = format_value(home_value)
-        formatted_away_value = format_value(away_value)
+        formatted_home = format_value(home_value)
+        formatted_away = format_value(away_value)
         
-        logger.info(f"Retrieved market values - Home: {formatted_home_value}, Away: {formatted_away_value}")
+        logger.info(f"Retrieved market values - Home: {formatted_home}, Away: {formatted_away}")
         
         st.markdown(f"""
             <div style="
@@ -1424,7 +1450,7 @@ def display_market_values(home_team, away_team):
                             color: #0f172a;
                             font-weight: 600;
                             font-size: 1.1rem;">
-                            {formatted_home_value}
+                            {formatted_home}
                         </span>
                     </div>
                     <div>
@@ -1433,7 +1459,7 @@ def display_market_values(home_team, away_team):
                             color: #0f172a;
                             font-weight: 600;
                             font-size: 1.1rem;">
-                            {formatted_away_value}
+                            {formatted_away}
                         </span>
                     </div>
                 </div>
@@ -2038,7 +2064,7 @@ def display_match_details(match, prediction_data, confidence):
             
             # Create combined container with market values and odds
             html = f'''
-                <div style="width: 100%; max-width: 800px; margin: 0 auto;">
+                <div style="width: 100%; max-width: 800px; margin: 5px auto;">
                     <div style="background-color: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px; margin-bottom: 4px;">
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 4px;">
                             <div style="text-align: center;">
@@ -2227,7 +2253,7 @@ def display_odds_box(title, odds, implied_prob, ev):
     ev_color = get_ev_color(ev)
     
     st.markdown(f"""
-        <div style="background-color: {ev_color}; padding: 0.5rem; border-radius: 6px; margin: 0.25rem 0; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+        <div style="background-color: {ev_color}; padding: 0.5rem; border-radius: 6px; margin: 0.25rem 0; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);">
             <h4 style="margin: 0; color: #1a1a1a; font-size: 0.9rem; font-weight: 600;">{title}</h4>
             <div style="display: flex; justify-content: space-between; margin-top: 0.25rem;">
                 <div>
@@ -2462,29 +2488,115 @@ def show_main_app():
         
         # League filter
         selected_leagues = st.multiselect(
-            "Select Competitions",
+            "Select Leagues",
             options=list(available_leagues.keys()),
             default=["All Matches"],
-            help="Filter matches by competitions (select multiple)"
+            help="Filter matches by leagues (select multiple)"
         )
-        
-        # Confidence filter
+
+        # Confidence level filter
         confidence_levels = st.multiselect(
-            "Filter by Confidence Levels",
+            "Filter by Confidence Level",
             options=["All", "High", "Medium", "Low"],
             default=["All"],
             help="Filter predictions by confidence levels (High: ≥70%, Medium: 50-69%, Low: <50%)"
         )
+
+        # Filter saving section with improved UI
+        st.markdown("""
+        <style>
+            .filter-section {
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
+                padding: 1rem;
+                margin: 1rem 0;
+            }
+            .saved-filter {
+                background: white;
+                border: 1px solid #e2e8f0;
+                border-radius: 6px;
+                padding: 0.75rem;
+                margin: 0.5rem 0;
+            }
+        </style>
+        """, unsafe_allow_html=True)
+
+        with st.container():
+            st.markdown('<div class="filter-section">', unsafe_allow_html=True)
+            
+            # Save new filter
+            col1, col2 = st.columns([2, 3])
+            with col1:
+                filter_name = st.text_input(" Save Current Filter", placeholder="Enter filter name", key="filter_name")
+            with col2:
+                if st.button(" Save Filter", use_container_width=True, type="primary"):
+                    if filter_name:
+                        if 'saved_filters' not in st.session_state:
+                            st.session_state.saved_filters = []
+                        
+                        current_filter = {
+                            "name": filter_name,
+                            "leagues": selected_leagues,
+                            "confidence": confidence_levels,
+                            "created": datetime.now().strftime("%Y-%m-%d %H:%M")
+                        }
+                        st.session_state.saved_filters.append(current_filter)
+                        st.success(f" Filter '{filter_name}' saved!")
+                    else:
+                        st.error(" Please enter a filter name")
+            
+            # Show saved filters
+            if 'saved_filters' in st.session_state and st.session_state.saved_filters:
+                st.markdown("#### Saved Filters")
+                
+                for idx, filter in enumerate(st.session_state.saved_filters):
+                    with st.container():
+                        st.markdown(f"""
+                        <div class="saved-filter">
+                            <div style="font-weight: 600; font-size: 1.1em; margin-bottom: 4px;">{filter['name']}</div>
+                            <div style="color: #666; font-size: 0.9em;">
+                                <span style="color: #2d3748;"> Leagues:</span> {', '.join(filter['leagues'])}<br>
+                                <span style="color: #2d3748;"> Confidence:</span> {', '.join(filter['confidence'])}
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            if st.button(" Apply Filter", key=f"apply_{idx}", use_container_width=True):
+                                selected_leagues = filter['leagues']
+                                confidence_levels = filter['confidence']
+                                st.experimental_rerun()
+                        with col2:
+                            if st.button(" Delete", key=f"delete_{idx}", use_container_width=True):
+                                st.session_state.saved_filters.pop(idx)
+                                st.experimental_rerun()
+
+            st.markdown('</div>', unsafe_allow_html=True)
         
         # Filter matches by selected leagues
         if "All Matches" not in selected_leagues:
             matches = [m for m in matches if get_league_name(m) in selected_leagues]
-        
+
+        # Filter by confidence levels
+        if "All" not in confidence_levels:
+            filtered_matches = []
+            for match in matches:
+                prediction = match.get('prediction', {})
+                confidence = prediction.get('confidence', 0)
+                
+                if ("High" in confidence_levels and confidence >= 70) or \
+                   ("Medium" in confidence_levels and 50 <= confidence < 70) or \
+                   ("Low" in confidence_levels and confidence < 50):
+                    filtered_matches.append(match)
+            matches = filtered_matches
+
         if not matches:
-            st.info(f"No matches found for selected competitions between {start_date} and {end_date}.")
+            st.info("No matches found for the selected filters.")
             return
-        
-        # Group matches by league for better organization
+
+        # Group matches by league
         matches_by_league = {}
         for match in matches:
             league_name = get_league_name(match)
@@ -2528,44 +2640,157 @@ def show_main_app():
             else:
                 st.info(f"No matches with selected confidence levels found in {league_name}.")
                 
-# Add Navigation JavaScript
-st.markdown("""
-<script>
-    function handleLogout() {
-        // Clear session state
-        localStorage.clear();
-        sessionStorage.clear();
+    # Add saved filters display and functionality
+    st.markdown("""
+    <script>
+        // Initialize filters container if not exists
+        if (!window.filtersInitialized) {
+            window.filtersInitialized = true;
+            
+            // Create container for saved filters if it doesn't exist
+            let container = document.getElementById('savedFiltersContainer');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'savedFiltersContainer';
+                container.className = 'saved-filters-container';
+                document.body.insertBefore(container, document.body.firstChild);
+            }
+            
+            // Load saved filters immediately
+            loadSavedFilters();
+        }
         
-        // Redirect to home page
-        window.location.href = '/';
-    }
+        function loadSavedFilters() {
+            const savedFilters = JSON.parse(localStorage.getItem('savedFilters') || '[]');
+            const container = document.getElementById('savedFiltersContainer');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            if (savedFilters.length > 0) {
+                container.style.display = 'flex';
+                savedFilters.forEach((filter, index) => {
+                    const button = document.createElement('button');
+                    button.className = 'saved-filter-button';
+                    button.innerHTML = `
+                        ${filter.name}
+                        <span onclick="event.stopPropagation(); deleteFilter(${index})" style="color: #e53e3e; margin-left: 0.5rem;">&times;</span>
+                    `;
+                    button.onclick = () => applyFilter(filter);
+                    container.appendChild(button);
+                });
+            }
+        }
+        
+        function deleteFilter(index) {
+            let savedFilters = JSON.parse(localStorage.getItem('savedFilters') || '[]');
+            savedFilters.splice(index, 1);
+            localStorage.setItem('savedFilters', JSON.stringify(savedFilters));
+            loadSavedFilters();
+        }
+        
+        function applyFilter(filter) {
+            const selects = Array.from(document.querySelectorAll('[data-testid="stMultiSelect"]'));
+            if (selects.length < 2) return;
+            
+            // Clear existing selections first
+            selects.forEach(select => {
+                const clearBtn = select.querySelector('button[aria-label="Clear all"]');
+                if (clearBtn) clearBtn.click();
+            });
+            
+            // Small delay to ensure clear is complete
+            setTimeout(() => {
+                // Apply league selections
+                const leagueSelect = selects[0];
+                filter.leagues.forEach(league => {
+                    const option = Array.from(leagueSelect.querySelectorAll('div[role="option"]'))
+                        .find(opt => opt.textContent.trim() === league);
+                    if (option) option.click();
+                });
+                
+                // Apply confidence selections
+                const confidenceSelect = selects[1];
+                filter.confidence.forEach(conf => {
+                    const option = Array.from(confidenceSelect.querySelectorAll('div[role="option"]'))
+                        .find(opt => opt.textContent.trim() === conf);
+                    if (option) option.click();
+                });
+            }, 100);
+        }
+    </script>
+    """, unsafe_allow_html=True)
+    
+    # Add CSS for the modal and filters
+    st.markdown("""
+    <style>
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+        
+        .save-filter-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 8px;
+            z-index: 1001;
+            width: 90%;
+            max-width: 400px;
+        }
+        
+        .saved-filters-container {
+            display: none;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin: 1rem 0;
+            padding: 0.5rem;
+            background: #f8fafc;
+            border-radius: 4px;
+        }
+        
+        .saved-filter-button {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            padding: 0.25rem 0.75rem;
+            font-size: 0.875rem;
+            color: #2d3748;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+        }
+        
+        .saved-filter-button:hover {
+            background: #f1f5f9;
+        }
+    </style>
+    """, unsafe_allow_html=True)
 
-    function navigateToHome() {
-        window.location.href = '/';
-    }
-
-    function navigateToHistory() {
-        window.location.href = '/?page=history';
-    }
-</script>
-""", unsafe_allow_html=True)
-
-# Add Navigation Buttons
 def add_navigation_buttons():
     col1, col2, col3 = st.columns([2,2,2])
     
     with col1:
-        if st.button("🏠 Home", key="home"):
+        if st.button(" Home", key="home"):
             st.query_params["page"] = "main"
             st.rerun()
             
     with col2:
-        if st.button("📊 History", key="history"):
+        if st.button(" History", key="history"):
             st.query_params["page"] = "history"
             st.rerun()
             
     with col3:
-        if st.button("🚪 Logout", key="logout"):
+        if st.button(" Logout", key="logout"):
             st.session_state.logged_in = False
             st.query_params.clear()
             st.rerun()
