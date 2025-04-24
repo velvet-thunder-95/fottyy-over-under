@@ -42,7 +42,7 @@ from transfermarkt_api import TransfermarktAPI
 import base64
 from unidecode import unidecode as unidecode_text
 from odds_generator import OddsGenerator  # Import the odds generator
-from filter_storage import load_saved_filters, save_filter as save_filter_to_db, delete_filter as delete_filter_from_db  # Import filter_storage functions
+from filter_storage import load_saved_filters, save_filter_to_db, delete_filter_from_db  # Import filter_storage functions
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -2432,19 +2432,33 @@ def load_filters():
     except (FileNotFoundError, json.JSONDecodeError):
         return []
 
-def save_filter(name, leagues, confidence):
+def save_filter(name, leagues, confidence_levels):
     """Save filter to Supabase"""
-    return save_filter_to_db(name, leagues, confidence)
+    try:
+        data = {
+            'name': name,
+            'leagues': leagues,
+            'confidence': confidence_levels,
+            'created_at': datetime.now().isoformat()
+        }
+        return save_filter_to_db(name, leagues, confidence_levels)
+    except Exception as e:
+        logger.error(f"Error saving filter: {str(e)}")
+        return []
 
 def delete_filter(filter_id):
     """Delete filter from Supabase"""
-    return delete_filter_from_db(filter_id)
+    try:
+        return delete_filter_from_db(filter_id)
+    except Exception as e:
+        logger.error(f"Error deleting filter: {str(e)}")
+        return []
 
 def show_main_app():
     # Load filters at startup
     if 'saved_filters' not in st.session_state:
-        st.session_state.saved_filters = load_filters()
-    
+        st.session_state.saved_filters = load_saved_filters()  # Load from Supabase
+        
     # Initialize filter selections in session state if not present
     if 'selected_leagues' not in st.session_state:
         st.session_state.selected_leagues = ["All Matches"]
