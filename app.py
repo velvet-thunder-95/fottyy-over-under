@@ -2327,6 +2327,103 @@ def calculate_ev(predicted_prob, odds):
         logger.error(f"Error calculating EV: {str(e)}")
         return 0.0
 
+def get_team_logo_path(team_name):
+    """Get the logo path for a team from teams_data.json"""
+    try:
+        # Use relative path for teams_data.json
+        teams_data_path = 'teams_data.json'
+        if not os.path.exists(teams_data_path):
+            logger.error(f"teams_data.json not found at {teams_data_path}")
+            return None
+            
+        with open(teams_data_path, 'r') as f:
+            teams_data = json.load(f)
+        
+        original_name = team_name
+        
+        # Handle common variations in team names
+        variations = []
+        
+        # Original name
+        variations.append(team_name)
+        
+        # Remove common suffixes
+        team_name = team_name.replace(' FC', '').replace(' CF', '')
+        team_name = team_name.replace(' SAD', '').replace(' CD', '')
+        team_name = team_name.replace(' SC', '').replace(' SK', '')
+        team_name = team_name.replace(' FK', '').replace(' JK', '')
+        team_name = team_name.strip()
+        variations.append(team_name)
+        
+        # Try without accents
+        unaccented = unidecode_text(team_name)
+        if unaccented != team_name:
+            variations.append(unaccented)
+            
+        # Try with/without UD prefix
+        if team_name.startswith('UD '):
+            variations.append(team_name[3:])
+        else:
+            variations.append('UD ' + team_name)
+            
+        # Handle Turkish team variations
+        turkish_teams = {
+            'Gaziantep': [
+                'Gaziantep',
+                'Gaziantep FK',
+                'Gazişehir Gaziantep',
+                'Gazisehir Gaziantep',
+                'Gaziantep Football Club'
+            ],
+            'Galatasaray': [
+                'Galatasaray',
+                'Galatasaray SK',
+                'Galatasaray Istanbul'
+            ],
+            'Fenerbahce': [
+                'Fenerbahce',
+                'Fenerbahçe',
+                'Fenerbahce SK',
+                'Fenerbahce Istanbul'
+            ],
+            'Besiktas': [
+                'Besiktas',
+                'Beşiktaş',
+                'Besiktas JK',
+                'Besiktas Istanbul'
+            ],
+            'Trabzonspor': [
+                'Trabzonspor',
+                'Trabzon'
+            ]
+        }
+        
+        # Check if team name contains any Turkish team variation
+        for base_team, team_variations in turkish_teams.items():
+            if any(variant.lower() in team_name.lower() for variant in team_variations):
+                variations.extend(team_variations)
+                break
+            
+        # Try each variation
+        for variant in variations:
+            if variant in teams_data:
+                # Convert absolute path to relative path
+                logo_path = teams_data[variant]['logo_path']
+                relative_path = os.path.join('team_logos', os.path.basename(logo_path))
+                
+                if os.path.exists(relative_path):
+                    logger.info(f"Found logo for {original_name} using variant: {variant}")
+                    return relative_path
+                else:
+                    logger.warning(f"Logo file not found at {relative_path} for {variant}")
+                    
+        logger.error(f"No logo found for {original_name}. Tried variations: {variations}")
+        return None
+            
+    except Exception as e:
+        logger.error(f"Error getting logo path for {team_name}: {str(e)}")
+        return None
+
 def load_filters():
     """Load filters from JSON file"""
     try:
