@@ -2423,7 +2423,30 @@ def get_team_logo_path(team_name):
         logger.error(f"Error getting logo path for {team_name}: {str(e)}")
         return None
 
+def load_filters():
+    """Load filters from JSON file"""
+    try:
+        with open('filters.json', 'r') as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return []
+
+def save_filters(filters):
+    """Save filters to JSON file"""
+    with open('filters.json', 'w') as f:
+        json.dump(filters, f, indent=4)
+
 def show_main_app():
+    # Load filters at startup
+    if 'saved_filters' not in st.session_state:
+        st.session_state.saved_filters = load_filters()
+    
+    # Initialize filter selections in session state if not present
+    if 'selected_leagues' not in st.session_state:
+        st.session_state.selected_leagues = ["All Matches"]
+    if 'confidence_levels' not in st.session_state:
+        st.session_state.confidence_levels = ["All"]
+    
     # Update results automatically
     update_match_results()
     
@@ -2490,51 +2513,32 @@ def show_main_app():
         selected_leagues = st.multiselect(
             "Select Leagues",
             options=list(available_leagues.keys()),
-            default=["All Matches"],
-            help="Filter matches by leagues (select multiple)"
+            default=st.session_state.selected_leagues,
+            key='leagues_select'
         )
-
+        
         # Confidence level filter
         confidence_levels = st.multiselect(
             "Filter by Confidence Level",
             options=["All", "High", "Medium", "Low"],
-            default=["All"],
-            help="Filter predictions by confidence levels (High: ≥70%, Medium: 50-69%, Low: <50%)"
+            default=st.session_state.confidence_levels,
+            key='confidence_select'
         )
-
-        # Filter saving section with improved UI
-        st.markdown("""
-        <style>
-            .filter-section {
-                background: #f8fafc;
-                border: 1px solid #e2e8f0;
-                border-radius: 8px;
-                padding: 1rem;
-                margin: 1rem 0;
-            }
-            .saved-filter {
-                background: white;
-                border: 1px solid #e2e8f0;
-                border-radius: 6px;
-                padding: 0.75rem;
-                margin: 0.5rem 0;
-            }
-        </style>
-        """, unsafe_allow_html=True)
-
+        
+        # Update session state with current selections
+        st.session_state.selected_leagues = selected_leagues
+        st.session_state.confidence_levels = confidence_levels
+        
+        # Filter saving section
         with st.container():
             st.markdown('<div class="filter-section">', unsafe_allow_html=True)
             
-            # Save new filter
             col1, col2 = st.columns([2, 3])
             with col1:
-                filter_name = st.text_input(" Save Current Filter", placeholder="Enter filter name", key="filter_name")
+                filter_name = st.text_input(" Save Filter", placeholder="Enter name", key="filter_name")
             with col2:
-                if st.button(" Save Filter", use_container_width=True, type="primary"):
+                if st.button(" Save", use_container_width=True, type="primary"):
                     if filter_name:
-                        if 'saved_filters' not in st.session_state:
-                            st.session_state.saved_filters = []
-                        
                         current_filter = {
                             "name": filter_name,
                             "leagues": selected_leagues,
@@ -2542,14 +2546,14 @@ def show_main_app():
                             "created": datetime.now().strftime("%Y-%m-%d %H:%M")
                         }
                         st.session_state.saved_filters.append(current_filter)
-                        st.success(f" Filter '{filter_name}' saved!")
+                        save_filters(st.session_state.saved_filters)
+                        st.success(f" Filter saved: {filter_name}")
                     else:
-                        st.error(" Please enter a filter name")
+                        st.error(" Enter filter name")
             
             # Show saved filters
-            if 'saved_filters' in st.session_state and st.session_state.saved_filters:
+            if st.session_state.saved_filters:
                 st.markdown("#### Saved Filters")
-                
                 for idx, filter in enumerate(st.session_state.saved_filters):
                     with st.container():
                         st.markdown(f"""
@@ -2564,13 +2568,14 @@ def show_main_app():
                         
                         col1, col2 = st.columns(2)
                         with col1:
-                            if st.button(" Apply Filter", key=f"apply_{idx}", use_container_width=True):
-                                selected_leagues = filter['leagues']
-                                confidence_levels = filter['confidence']
+                            if st.button(" Apply", key=f"apply_{idx}", use_container_width=True):
+                                st.session_state.selected_leagues = filter['leagues']
+                                st.session_state.confidence_levels = filter['confidence']
                                 st.rerun()
                         with col2:
                             if st.button(" Delete", key=f"delete_{idx}", use_container_width=True):
                                 st.session_state.saved_filters.pop(idx)
+                                save_filters(st.session_state.saved_filters)
                                 st.rerun()
 
             st.markdown('</div>', unsafe_allow_html=True)
