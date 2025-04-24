@@ -2514,7 +2514,7 @@ def show_main_app():
             "Select Leagues",
             options=list(available_leagues.keys()),
             default=st.session_state.selected_leagues,
-            key='leagues_select'
+            key='leagues'
         )
         
         # Confidence level filter
@@ -2522,7 +2522,7 @@ def show_main_app():
             "Filter by Confidence Level",
             options=["All", "High", "Medium", "Low"],
             default=st.session_state.confidence_levels,
-            key='confidence_select'
+            key='confidence'
         )
         
         # Update session state with current selections
@@ -2554,26 +2554,28 @@ def show_main_app():
             # Show saved filters
             if st.session_state.saved_filters:
                 st.markdown("#### Saved Filters")
-                for idx, filter in enumerate(st.session_state.saved_filters):
+                for idx, saved_filter in enumerate(st.session_state.saved_filters):
                     with st.container():
                         st.markdown(f"""
                         <div class="saved-filter">
-                            <div style="font-weight: 600; font-size: 1.1em; margin-bottom: 4px;">{filter['name']}</div>
+                            <div style="font-weight: 600; font-size: 1.1em; margin-bottom: 4px;">{saved_filter['name']}</div>
                             <div style="color: #666; font-size: 0.9em;">
-                                <span style="color: #2d3748;"> Leagues:</span> {', '.join(filter['leagues'])}<br>
-                                <span style="color: #2d3748;"> Confidence:</span> {', '.join(filter['confidence'])}
+                                <span style="color: #2d3748;"> Leagues:</span> {', '.join(saved_filter['leagues'])}<br>
+                                <span style="color: #2d3748;"> Confidence:</span> {', '.join(saved_filter['confidence'])}
                             </div>
                         </div>
                         """, unsafe_allow_html=True)
                         
                         col1, col2 = st.columns(2)
                         with col1:
-                            if st.button(" Apply", key=f"apply_{idx}", use_container_width=True):
-                                st.session_state.selected_leagues = filter['leagues']
-                                st.session_state.confidence_levels = filter['confidence']
+                            if st.button(" Apply", key=f"apply_filter_{idx}", use_container_width=True):
+                                st.session_state.selected_leagues = saved_filter['leagues']
+                                st.session_state.confidence_levels = saved_filter['confidence']
+                                st.session_state.leagues = saved_filter['leagues']
+                                st.session_state.confidence = saved_filter['confidence']
                                 st.rerun()
                         with col2:
-                            if st.button(" Delete", key=f"delete_{idx}", use_container_width=True):
+                            if st.button(" Delete", key=f"delete_filter_{idx}", use_container_width=True):
                                 st.session_state.saved_filters.pop(idx)
                                 save_filters(st.session_state.saved_filters)
                                 st.rerun()
