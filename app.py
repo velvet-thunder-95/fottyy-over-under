@@ -1,5 +1,6 @@
 # app.py
 
+
 import sys
 import os
 import streamlit as st
@@ -41,7 +42,6 @@ from transfermarkt_api import TransfermarktAPI
 import base64
 from unidecode import unidecode as unidecode_text
 from odds_generator import OddsGenerator  # Import the odds generator
-import filter_storage  # Import the entire module
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -652,32 +652,6 @@ st.markdown("""
         cursor: pointer !important;
     }
     
-    /* Saved Filters Styling */
-    .saved-filters-container {
-        margin: 10px 0;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-    }
-    .filter-button {
-        background-color: #f0f2f6;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        padding: 5px 10px;
-        font-size: 14px;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-    }
-    .filter-button:hover {
-        background-color: #e0e2e6;
-    }
-    .delete-filter {
-        color: #ff4b4b;
-        margin-left: 5px;
-        cursor: pointer;
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -958,7 +932,7 @@ def create_match_features_from_api(match_data):
                 
                 # Debug prints
                 print(f"Home - Pred: {home_implied*100:.2f}%, Odds: {odds_home:.2f}")
-                print(f"Draw - Pred: {draw_implied*100:.2f}%, Odds: {draw_odds:.2f}")
+                print(f"Draw - Pred: {draw_implied*100:.2f}%, Odds: {odds_draw:.2f}")
                 print(f"Away - Pred: {away_implied*100:.2f}%, Odds: {odds_away:.2f}")
                 
                 home_ev = calculate_ev(home_implied*100, odds_home)
@@ -1391,7 +1365,7 @@ def display_market_values(home_team, away_team):
     """Display market values for both teams in a styled box"""
     try:
         logger.info(f"Starting to display market values for {home_team} vs {away_team}")
-        home_value, away_value = filter_storage.get_market_values(home_team, away_team)
+        home_value, away_value = get_market_values(home_team, away_team)
         
         # Format values for display
         def format_value(value):
@@ -1415,10 +1389,10 @@ def display_market_values(home_team, away_team):
                     return market_value
             return 'N/A'
         
-        formatted_home = format_value(home_value)
-        formatted_away = format_value(away_value)
+        formatted_home_value = format_value(home_value)
+        formatted_away_value = format_value(away_value)
         
-        logger.info(f"Retrieved market values - Home: {formatted_home}, Away: {formatted_away}")
+        logger.info(f"Retrieved market values - Home: {formatted_home_value}, Away: {formatted_away_value}")
         
         st.markdown(f"""
             <div style="
@@ -1450,7 +1424,7 @@ def display_market_values(home_team, away_team):
                             color: #0f172a;
                             font-weight: 600;
                             font-size: 1.1rem;">
-                            {formatted_home}
+                            {formatted_home_value}
                         </span>
                     </div>
                     <div>
@@ -1459,7 +1433,7 @@ def display_market_values(home_team, away_team):
                             color: #0f172a;
                             font-weight: 600;
                             font-size: 1.1rem;">
-                            {formatted_away}
+                            {formatted_away_value}
                         </span>
                     </div>
                 </div>
@@ -1476,7 +1450,7 @@ def get_market_values(home_team, away_team):
     """Get market values for both teams with caching"""
     logger.info(f"Fetching market values for {home_team} vs {away_team}")
     try:
-        api = filter_storage.TransfermarktAPI()
+        api = TransfermarktAPI()
         # Get market values using the new method
         market_values = api.get_both_teams_market_value(home_team, away_team)
         
@@ -1503,7 +1477,7 @@ def get_market_values(home_team, away_team):
 @st.cache_data(ttl=3600)  # Cache for 1 hour
 def get_multiple_market_values(teams):
     """Get market values for multiple teams with caching"""
-    api = filter_storage.TransfermarktAPI(max_workers=20)  # Increased to 20 worker threads for better parallelization
+    api = TransfermarktAPI(max_workers=40)  # Increased to 20 worker threads for better parallelization
     return api.get_multiple_teams_market_value(teams)
 
 def display_match_odds(match_data):
@@ -1909,103 +1883,6 @@ def process_match_prediction(match):
         logger.error(f"Error in process_match_prediction: {str(e)}")
         return None, None
 
-def get_team_logo_path(team_name):
-    """Get the logo path for a team from teams_data.json"""
-    try:
-        # Use relative path for teams_data.json
-        teams_data_path = 'teams_data.json'
-        if not os.path.exists(teams_data_path):
-            logger.error(f"teams_data.json not found at {teams_data_path}")
-            return None
-            
-        with open(teams_data_path, 'r') as f:
-            teams_data = json.load(f)
-        
-        original_name = team_name
-        
-        # Handle common variations in team names
-        variations = []
-        
-        # Original name
-        variations.append(team_name)
-        
-        # Remove common suffixes
-        team_name = team_name.replace(' FC', '').replace(' CF', '')
-        team_name = team_name.replace(' SAD', '').replace(' CD', '')
-        team_name = team_name.replace(' SC', '').replace(' SK', '')
-        team_name = team_name.replace(' FK', '').replace(' JK', '')
-        team_name = team_name.strip()
-        variations.append(team_name)
-        
-        # Try without accents
-        unaccented = unidecode_text(team_name)
-        if unaccented != team_name:
-            variations.append(unaccented)
-            
-        # Try with/without UD prefix
-        if team_name.startswith('UD '):
-            variations.append(team_name[3:])
-        else:
-            variations.append('UD ' + team_name)
-            
-        # Handle Turkish team variations
-        turkish_teams = {
-            'Gaziantep': [
-                'Gaziantep',
-                'Gaziantep FK',
-                'Gazişehir Gaziantep',
-                'Gazisehir Gaziantep',
-                'Gaziantep Football Club'
-            ],
-            'Galatasaray': [
-                'Galatasaray',
-                'Galatasaray SK',
-                'Galatasaray Istanbul'
-            ],
-            'Fenerbahce': [
-                'Fenerbahce',
-                'Fenerbahçe',
-                'Fenerbahce SK',
-                'Fenerbahce Istanbul'
-            ],
-            'Besiktas': [
-                'Besiktas',
-                'Beşiktaş',
-                'Besiktas JK',
-                'Besiktas Istanbul'
-            ],
-            'Trabzonspor': [
-                'Trabzonspor',
-                'Trabzon'
-            ]
-        }
-        
-        # Check if team name contains any Turkish team variation
-        for base_team, team_variations in turkish_teams.items():
-            if any(variant.lower() in team_name.lower() for variant in team_variations):
-                variations.extend(team_variations)
-                break
-            
-        # Try each variation
-        for variant in variations:
-            if variant in teams_data:
-                # Convert absolute path to relative path
-                logo_path = teams_data[variant]['logo_path']
-                relative_path = os.path.join('team_logos', os.path.basename(logo_path))
-                
-                if os.path.exists(relative_path):
-                    logger.info(f"Found logo for {original_name} using variant: {variant}")
-                    return relative_path
-                else:
-                    logger.warning(f"Logo file not found at {relative_path} for {variant}")
-                    
-        logger.error(f"No logo found for {original_name}. Tried variations: {variations}")
-        return None
-            
-    except Exception as e:
-        logger.error(f"Error getting logo path for {team_name}: {str(e)}")
-        return None
-
 def display_match_details(match, prediction_data, confidence):
     """Display match details, prediction, and odds"""
     try:
@@ -2161,7 +2038,7 @@ def display_match_details(match, prediction_data, confidence):
             
             # Create combined container with market values and odds
             html = f'''
-                <div style="width: 100%; max-width: 800px; margin: 5px auto;">
+                <div style="width: 100%; max-width: 800px; margin: 0 auto;">
                     <div style="background-color: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px; margin-bottom: 4px;">
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 4px;">
                             <div style="text-align: center;">
@@ -2350,7 +2227,7 @@ def display_odds_box(title, odds, implied_prob, ev):
     ev_color = get_ev_color(ev)
     
     st.markdown(f"""
-        <div style="background-color: {ev_color}; padding: 0.5rem; border-radius: 6px; margin: 0.25rem 0; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);">
+        <div style="background-color: {ev_color}; padding: 0.5rem; border-radius: 6px; margin: 0.25rem 0; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
             <h4 style="margin: 0; color: #1a1a1a; font-size: 0.9rem; font-weight: 600;">{title}</h4>
             <div style="display: flex; justify-content: space-between; margin-top: 0.25rem;">
                 <div>
@@ -2423,47 +2300,104 @@ def calculate_ev(predicted_prob, odds):
         logger.error(f"Error calculating EV: {str(e)}")
         return 0.0
 
-def load_filters():
-    """Load filters from JSON file"""
+def get_team_logo_path(team_name):
+    """Get the logo path for a team from teams_data.json"""
     try:
-        with open('filters.json', 'r') as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return []
-
-def save_filter(name, leagues, confidence_levels):
-    """Save filter to Supabase"""
-    try:
-        data = {
-            'name': name,
-            'leagues': leagues,
-            'confidence': confidence_levels,
-            'created_at': datetime.now().isoformat()
+        # Use relative path for teams_data.json
+        teams_data_path = 'teams_data.json'
+        if not os.path.exists(teams_data_path):
+            logger.error(f"teams_data.json not found at {teams_data_path}")
+            return None
+            
+        with open(teams_data_path, 'r') as f:
+            teams_data = json.load(f)
+        
+        original_name = team_name
+        
+        # Handle common variations in team names
+        variations = []
+        
+        # Original name
+        variations.append(team_name)
+        
+        # Remove common suffixes
+        team_name = team_name.replace(' FC', '').replace(' CF', '')
+        team_name = team_name.replace(' SAD', '').replace(' CD', '')
+        team_name = team_name.replace(' SC', '').replace(' SK', '')
+        team_name = team_name.replace(' FK', '').replace(' JK', '')
+        team_name = team_name.strip()
+        variations.append(team_name)
+        
+        # Try without accents
+        unaccented = unidecode_text(team_name)
+        if unaccented != team_name:
+            variations.append(unaccented)
+            
+        # Try with/without UD prefix
+        if team_name.startswith('UD '):
+            variations.append(team_name[3:])
+        else:
+            variations.append('UD ' + team_name)
+            
+        # Handle Turkish team variations
+        turkish_teams = {
+            'Gaziantep': [
+                'Gaziantep',
+                'Gaziantep FK',
+                'Gazişehir Gaziantep',
+                'Gazisehir Gaziantep',
+                'Gaziantep Football Club'
+            ],
+            'Galatasaray': [
+                'Galatasaray',
+                'Galatasaray SK',
+                'Galatasaray Istanbul'
+            ],
+            'Fenerbahce': [
+                'Fenerbahce',
+                'Fenerbahçe',
+                'Fenerbahce SK',
+                'Fenerbahce Istanbul'
+            ],
+            'Besiktas': [
+                'Besiktas',
+                'Beşiktaş',
+                'Besiktas JK',
+                'Besiktas Istanbul'
+            ],
+            'Trabzonspor': [
+                'Trabzonspor',
+                'Trabzon'
+            ]
         }
-        return filter_storage.save_filter(name, leagues, confidence_levels)
+        
+        # Check if team name contains any Turkish team variation
+        for base_team, team_variations in turkish_teams.items():
+            if any(variant.lower() in team_name.lower() for variant in team_variations):
+                variations.extend(team_variations)
+                break
+            
+        # Try each variation
+        for variant in variations:
+            if variant in teams_data:
+                # Convert absolute path to relative path
+                logo_path = teams_data[variant]['logo_path']
+                relative_path = os.path.join('team_logos', os.path.basename(logo_path))
+                
+                if os.path.exists(relative_path):
+                    logger.info(f"Found logo for {original_name} using variant: {variant}")
+                    return relative_path
+                else:
+                    logger.warning(f"Logo file not found at {relative_path} for {variant}")
+                    
+        logger.error(f"No logo found for {original_name}. Tried variations: {variations}")
+        return None
+            
     except Exception as e:
-        logger.error(f"Error saving filter: {str(e)}")
-        return []
-
-def delete_filter(filter_id):
-    """Delete filter from Supabase"""
-    try:
-        return filter_storage.delete_filter(filter_id)
-    except Exception as e:
-        logger.error(f"Error deleting filter: {str(e)}")
-        return []
+        logger.error(f"Error getting logo path for {team_name}: {str(e)}")
+        return None
 
 def show_main_app():
-    # Load filters at startup
-    if 'saved_filters' not in st.session_state:
-        st.session_state.saved_filters = filter_storage.load_saved_filters()  # Load from Supabase
-        
-    # Initialize filter selections in session state if not present
-    if 'selected_leagues' not in st.session_state:
-        st.session_state.selected_leagues = ["All Matches"]
-    if 'confidence_levels' not in st.session_state:
-        st.session_state.confidence_levels = ["All"]
-    
     # Update results automatically
     update_match_results()
     
@@ -2528,94 +2462,29 @@ def show_main_app():
         
         # League filter
         selected_leagues = st.multiselect(
-            "Select Leagues",
+            "Select Competitions",
             options=list(available_leagues.keys()),
-            default=st.session_state.selected_leagues,
-            key='leagues_select'
+            default=["All Matches"],
+            help="Filter matches by competitions (select multiple)"
         )
         
-        # Confidence level filter
+        # Confidence filter
         confidence_levels = st.multiselect(
-            "Filter by Confidence Level",
+            "Filter by Confidence Levels",
             options=["All", "High", "Medium", "Low"],
-            default=st.session_state.confidence_levels,
-            key='confidence_select'
+            default=["All"],
+            help="Filter predictions by confidence levels (High: ≥70%, Medium: 50-69%, Low: <50%)"
         )
-        
-        # Update session state with current selections
-        st.session_state.selected_leagues = selected_leagues
-        st.session_state.confidence_levels = confidence_levels
-        
-        # Filter saving section
-        with st.container():
-            st.markdown('<div class="filter-section">', unsafe_allow_html=True)
-            
-            col1, col2 = st.columns([2, 3])
-            with col1:
-                filter_name = st.text_input(" Save Filter", placeholder="Enter name", key="filter_name")
-            with col2:
-                if st.button(" Save", use_container_width=True, type="primary"):
-                    if filter_name:
-                        st.session_state.saved_filters = save_filter(
-                            filter_name,
-                            selected_leagues,
-                            confidence_levels
-                        )
-                        st.success(f" Filter saved: {filter_name}")
-                    else:
-                        st.error(" Enter filter name")
-            
-            # Show saved filters
-            if st.session_state.saved_filters:
-                st.markdown("#### Saved Filters")
-                for idx, saved_filter in enumerate(st.session_state.saved_filters):
-                    with st.container():
-                        st.markdown(f"""
-                        <div class="saved-filter">
-                            <div style="font-weight: 600; font-size: 1.1em; margin-bottom: 4px;">{saved_filter['name']}</div>
-                            <div style="color: #666; font-size: 0.9em;">
-                                <span style="color: #2d3748;"> Leagues:</span> {', '.join(saved_filter['leagues'])}<br>
-                                <span style="color: #2d3748;"> Confidence:</span> {', '.join(saved_filter['confidence'])}
-                            </div>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            if st.button(" Apply", key=f"apply_filter_{idx}", use_container_width=True):
-                                # Only update the session state values
-                                st.session_state.selected_leagues = saved_filter['leagues']
-                                st.session_state.confidence_levels = saved_filter['confidence']
-                                st.rerun()
-                        with col2:
-                            if st.button(" Delete", key=f"delete_filter_{idx}", use_container_width=True):
-                                st.session_state.saved_filters = delete_filter(saved_filter['id'])
-                                st.rerun()
-
-            st.markdown('</div>', unsafe_allow_html=True)
         
         # Filter matches by selected leagues
         if "All Matches" not in selected_leagues:
             matches = [m for m in matches if get_league_name(m) in selected_leagues]
-
-        # Filter by confidence levels
-        if "All" not in confidence_levels:
-            filtered_matches = []
-            for match in matches:
-                prediction = match.get('prediction', {})
-                confidence = prediction.get('confidence', 0)
-                
-                if ("High" in confidence_levels and confidence >= 70) or \
-                   ("Medium" in confidence_levels and 50 <= confidence < 70) or \
-                   ("Low" in confidence_levels and confidence < 50):
-                    filtered_matches.append(match)
-            matches = filtered_matches
-
+        
         if not matches:
-            st.info("No matches found for the selected filters.")
+            st.info(f"No matches found for selected competitions between {start_date} and {end_date}.")
             return
-
-        # Group matches by league
+        
+        # Group matches by league for better organization
         matches_by_league = {}
         for match in matches:
             league_name = get_league_name(match)
@@ -2659,157 +2528,44 @@ def show_main_app():
             else:
                 st.info(f"No matches with selected confidence levels found in {league_name}.")
                 
-    # Add saved filters display and functionality
-    st.markdown("""
-    <script>
-        // Initialize filters container if not exists
-        if (!window.filtersInitialized) {
-            window.filtersInitialized = true;
-            
-            // Create container for saved filters if it doesn't exist
-            let container = document.getElementById('savedFiltersContainer');
-            if (!container) {
-                container = document.createElement('div');
-                container.id = 'savedFiltersContainer';
-                container.className = 'saved-filters-container';
-                document.body.insertBefore(container, document.body.firstChild);
-            }
-            
-            // Load saved filters immediately
-            loadSavedFilters();
-        }
+# Add Navigation JavaScript
+st.markdown("""
+<script>
+    function handleLogout() {
+        // Clear session state
+        localStorage.clear();
+        sessionStorage.clear();
         
-        function loadSavedFilters() {
-            const savedFilters = JSON.parse(localStorage.getItem('savedFilters') || '[]');
-            const container = document.getElementById('savedFiltersContainer');
-            if (!container) return;
-            
-            container.innerHTML = '';
-            if (savedFilters.length > 0) {
-                container.style.display = 'flex';
-                savedFilters.forEach((filter, index) => {
-                    const button = document.createElement('button');
-                    button.className = 'saved-filter-button';
-                    button.innerHTML = `
-                        ${filter.name}
-                        <span onclick="event.stopPropagation(); deleteFilter(${index})" style="color: #e53e3e; margin-left: 0.5rem;">&times;</span>
-                    `;
-                    button.onclick = () => applyFilter(filter);
-                    container.appendChild(button);
-                });
-            }
-        }
-        
-        function deleteFilter(index) {
-            let savedFilters = JSON.parse(localStorage.getItem('savedFilters') || '[]');
-            savedFilters.splice(index, 1);
-            localStorage.setItem('savedFilters', JSON.stringify(savedFilters));
-            loadSavedFilters();
-        }
-        
-        function applyFilter(filter) {
-            const selects = Array.from(document.querySelectorAll('[data-testid="stMultiSelect"]'));
-            if (selects.length < 2) return;
-            
-            // Clear existing selections first
-            selects.forEach(select => {
-                const clearBtn = select.querySelector('button[aria-label="Clear all"]');
-                if (clearBtn) clearBtn.click();
-            });
-            
-            // Small delay to ensure clear is complete
-            setTimeout(() => {
-                // Apply league selections
-                const leagueSelect = selects[0];
-                filter.leagues.forEach(league => {
-                    const option = Array.from(leagueSelect.querySelectorAll('div[role="option"]'))
-                        .find(opt => opt.textContent.trim() === league);
-                    if (option) option.click();
-                });
-                
-                // Apply confidence selections
-                const confidenceSelect = selects[1];
-                filter.confidence.forEach(conf => {
-                    const option = Array.from(confidenceSelect.querySelectorAll('div[role="option"]'))
-                        .find(opt => opt.textContent.trim() === conf);
-                    if (option) option.click();
-                });
-            }, 100);
-        }
-    </script>
-    """, unsafe_allow_html=True)
-    
-    # Add CSS for the modal and filters
-    st.markdown("""
-    <style>
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-        }
-        
-        .save-filter-modal {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: white;
-            border-radius: 8px;
-            z-index: 1001;
-            width: 90%;
-            max-width: 400px;
-        }
-        
-        .saved-filters-container {
-            display: none;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            margin: 1rem 0;
-            padding: 0.5rem;
-            background: #f8fafc;
-            border-radius: 4px;
-        }
-        
-        .saved-filter-button {
-            background: white;
-            border: 1px solid #e2e8f0;
-            border-radius: 4px;
-            padding: 0.25rem 0.75rem;
-            font-size: 0.875rem;
-            color: #2d3748;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            transition: all 0.2s;
-        }
-        
-        .saved-filter-button:hover {
-            background: #f1f5f9;
-        }
-    </style>
-    """, unsafe_allow_html=True)
+        // Redirect to home page
+        window.location.href = '/';
+    }
 
+    function navigateToHome() {
+        window.location.href = '/';
+    }
+
+    function navigateToHistory() {
+        window.location.href = '/?page=history';
+    }
+</script>
+""", unsafe_allow_html=True)
+
+# Add Navigation Buttons
 def add_navigation_buttons():
     col1, col2, col3 = st.columns([2,2,2])
     
     with col1:
-        if st.button(" Home", key="home"):
+        if st.button("🏠 Home", key="home"):
             st.query_params["page"] = "main"
             st.rerun()
             
     with col2:
-        if st.button(" History", key="history"):
+        if st.button("📊 History", key="history"):
             st.query_params["page"] = "history"
             st.rerun()
             
     with col3:
-        if st.button(" Logout", key="logout"):
+        if st.button("🚪 Logout", key="logout"):
             st.session_state.logged_in = False
             st.query_params.clear()
             st.rerun()
