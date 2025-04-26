@@ -576,8 +576,12 @@ def show_history_page():
             history_filter_name = st.text_input("Save History Filter Preset", key="history_filter_name")
             if st.button("Save History Filter Preset", key="save_history_filter"):
                 if history_filter_name:
-                    # Only save the actual user-selected leagues (not 'All')
-                    leagues_to_save = [l for l in st.session_state.selected_leagues if l != "All"]
+                    # Save exactly what the user selected, even if it's only one league
+                    leagues_to_save = st.session_state.selected_leagues.copy()
+                    if "All" in leagues_to_save and len(leagues_to_save) > 1:
+                        leagues_to_save.remove("All")  # Remove 'All' if other leagues are selected
+                    if leagues_to_save == ["All"]:
+                        leagues_to_save = []  # If only 'All' is selected, treat as no specific filter
                     st.session_state.history_saved_filters = filter_storage.save_history_filter(
                         history_filter_name,
                         st.session_state.start_date.strftime("%Y-%m-%d"),
@@ -664,11 +668,12 @@ def show_history_page():
         selected_leagues = st.sidebar.multiselect(
             "Select Competitions",
             options=["All"] + unique_leagues,
-            default=st.session_state.selected_leagues if 'selected_leagues' in st.session_state and st.session_state.selected_leagues else ["All"],
+            default=["All"],
             help="Filter predictions by competition. Select multiple competitions or 'All'"
         )
-        # Always update session state to reflect UI
-        st.session_state.selected_leagues = selected_leagues if selected_leagues else ["All"]
+        
+        if not selected_leagues:
+            selected_leagues = ["All"]
         
         # Confidence level multiselect
         confidence_levels = st.sidebar.multiselect(
