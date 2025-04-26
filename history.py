@@ -576,12 +576,16 @@ def show_history_page():
             history_filter_name = st.text_input("Save History Filter Preset", key="history_filter_name")
             if st.button("Save History Filter Preset", key="save_history_filter"):
                 if history_filter_name:
-                    # Save the current filter state to the history_saved_filters table
+                    # Only save the currently selected leagues, not all
+                    leagues_to_save = st.session_state.selected_leagues
+                    # Remove 'All' if present, so only user-selected leagues are stored
+                    if "All" in leagues_to_save:
+                        leagues_to_save = [l for l in leagues_to_save if l != "All"]
                     st.session_state.history_saved_filters = filter_storage.save_history_filter(
                         history_filter_name,
                         st.session_state.start_date.strftime("%Y-%m-%d"),
                         st.session_state.end_date.strftime("%Y-%m-%d"),
-                        st.session_state.selected_leagues if (st.session_state.selected_leagues and "All" not in st.session_state.selected_leagues) else [],
+                        leagues_to_save,
                         st.session_state.get('confidence_levels', ["All"]),
                         st.session_state.get('selected_status', "All")
                     )
@@ -663,11 +667,12 @@ def show_history_page():
         selected_leagues = st.sidebar.multiselect(
             "Select Competitions",
             options=["All"] + unique_leagues,
-            default=st.session_state.selected_leagues if 'selected_leagues' in st.session_state else ["All"],
+            default=["All"],
             help="Filter predictions by competition. Select multiple competitions or 'All'"
         )
-        # Always update session state with the current selection
-        st.session_state.selected_leagues = selected_leagues
+        
+        if not selected_leagues:
+            selected_leagues = ["All"]
         
         # Confidence level multiselect
         confidence_levels = st.sidebar.multiselect(
