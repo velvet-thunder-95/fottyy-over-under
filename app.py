@@ -637,6 +637,52 @@ st.markdown("""
         cursor: pointer !important;
     }
     
+    /* Filter preset UI */
+    .filter-preset-section h4 {
+        margin-bottom: 0.3rem;
+        color: #2c5282;
+        font-size: 1.05rem;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+    }
+    .saved-filters-list {
+        margin-top: 0.3rem;
+        margin-bottom: 0.1rem;
+        color: #2c5282;
+        font-size: 0.97rem;
+    }
+    .filter-preset {
+        background: #f7fafc;
+        border-radius: 7px;
+        padding: 0.4rem 0.7rem;
+        margin-bottom: 0.18rem;
+        font-size: 0.95rem;
+        box-shadow: 0 1px 2px rgba(44,82,130,0.03);
+    }
+    .filter-leagues, .filter-confidence {
+        color: #3182ce;
+        font-weight: 600;
+    }
+    /* Make Streamlit buttons smaller in height */
+    .stButton > button {
+        padding-top: 0.42rem !important;
+        padding-bottom: 0.42rem !important;
+        font-size: 0.97rem !important;
+        min-height: 2.1rem !important;
+        height: 2.2rem !important;
+        line-height: 2.2rem !important;
+        background-color: #2563eb !important; /* Blue-600 */
+        color: #fff !important;
+        border: none !important;
+        border-radius: 6px !important;
+        font-weight: 600 !important;
+        box-shadow: 0 1px 2px rgba(44,82,130,0.06);
+        transition: background 0.15s;
+    }
+    .stButton > button:hover, .stButton > button:active, .stButton > button:focus {
+        background-color: #1d4ed8 !important; /* Blue-700 */
+        color: #fff !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -917,11 +963,11 @@ def create_match_features_from_api(match_data):
                 
                 # Debug prints
                 print(f"Home - Pred: {home_implied*100:.2f}%, Odds: {odds_home:.2f}")
-                print(f"Draw - Pred: {draw_implied*100:.2f}%, Odds: {odds_draw:.2f}")
+                print(f"Draw - Pred: {draw_implied*100:.2f}%, Odds: {draw_odds:.2f}")
                 print(f"Away - Pred: {away_implied*100:.2f}%, Odds: {odds_away:.2f}")
                 
                 home_ev = calculate_ev(home_implied*100, odds_home)
-                draw_ev = calculate_ev(draw_implied*100, odds_draw)
+                draw_ev = calculate_ev(draw_implied*100, draw_odds)
                 away_ev = calculate_ev(away_implied*100, odds_away)
                 
                 # Debug prints
@@ -2212,7 +2258,7 @@ def display_odds_box(title, odds, implied_prob, ev):
     ev_color = get_ev_color(ev)
     
     st.markdown(f"""
-        <div style="background-color: {ev_color}; padding: 0.5rem; border-radius: 6px; margin: 0.25rem 0; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);">
+        <div style="background-color: {ev_color}; padding: 0.5rem; border-radius: 6px; margin: 0.25rem 0; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
             <h4 style="margin: 0; color: #1a1a1a; font-size: 0.9rem; font-weight: 600;">{title}</h4>
             <div style="display: flex; justify-content: space-between; margin-top: 0.25rem;">
                 <div>
@@ -2471,7 +2517,7 @@ def show_main_app():
         st.markdown('<div class="filter-preset-section"><h4>Save & Load Filter Presets</h4></div>', unsafe_allow_html=True)
         inline_cols = st.columns([3, 1])
         filter_name = inline_cols[0].text_input("Name your filter preset", key="main_filter_name", placeholder="e.g. Weekend Favs")
-        save_btn = inline_cols[1].button("Save", key="save_main_filter", help="Save the current filter selections as a preset")
+        save_btn = inline_cols[1].button("Save Filter", key="save_main_filter", help="Save the current filter selections as a preset")
         if save_btn:
             if filter_name:
                 st.session_state.saved_filters = filter_storage.save_filter(
