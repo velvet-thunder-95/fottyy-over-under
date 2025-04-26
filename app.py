@@ -2475,7 +2475,7 @@ def show_main_app():
         st.markdown('''
         <style>
         /* Make only the Save Filter button blue and double height */
-        [data-testid="stButton"][aria-label="save_main_filter"] button {
+        .save-filter-inline-row .stButton > button {
             background-color: #2563eb !important; /* Streamlit blue */
             color: #fff !important;
             border: none !important;
