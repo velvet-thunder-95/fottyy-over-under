@@ -599,15 +599,18 @@ def show_history_page():
                     st.write(f"**{sf['name']}** | {sf['start_date']} to {sf['end_date']} | Leagues: {', '.join(sf['leagues'])} | Confidence: {', '.join(sf['confidence'])} | Status: {sf['status'] if sf['status'] else 'All'}")
                     cols = st.columns([1,1])
                     if cols[0].button("Apply", key=f"apply_hist_filter_{idx}"):
+                        # Clear all relevant filter-related session state before applying
+                        st.session_state.selected_leagues = []
+                        st.session_state.confidence_levels = []
+                        st.session_state.selected_status = "All"
+                        st.session_state.start_date = None
+                        st.session_state.end_date = None
                         # Apply all filter fields from the preset
                         st.session_state['selected_leagues'] = sf['leagues']
                         st.session_state['confidence_levels'] = sf['confidence']
                         st.session_state['selected_status'] = sf['status']
-                        # Set date inputs
                         st.session_state['start_date'] = pd.to_datetime(sf['start_date']).date()
                         st.session_state['end_date'] = pd.to_datetime(sf['end_date']).date()
-                        # Force widget values to update by clearing query params and rerunning
-                        st.experimental_set_query_params()
                         st.rerun()
                     if cols[1].button("Delete", key=f"delete_hist_filter_{idx}"):
                         st.session_state.history_saved_filters = filter_storage.delete_history_filter(sf['id'])
