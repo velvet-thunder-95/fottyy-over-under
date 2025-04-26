@@ -668,7 +668,7 @@ def show_history_page():
         selected_leagues = st.sidebar.multiselect(
             "Select Competitions",
             options=["All"] + unique_leagues,
-            default=["All"],
+            default=st.session_state.get("selected_leagues", ["All"]),
             help="Filter predictions by competition. Select multiple competitions or 'All'"
         )
         if not selected_leagues:
@@ -679,7 +679,7 @@ def show_history_page():
         confidence_levels = st.sidebar.multiselect(
             "Confidence Levels",
             options=["All", "High", "Medium", "Low"],
-            default=["All"],
+            default=st.session_state.get("confidence_levels", ["All"]),
             help="Filter predictions by confidence level: High (≥70%), Medium (50-69%), Low (<50%). Select multiple levels or 'All'"
         )
         if not confidence_levels:
