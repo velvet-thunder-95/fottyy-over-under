@@ -581,7 +581,7 @@ def show_history_page():
                         history_filter_name,
                         st.session_state.start_date.strftime("%Y-%m-%d"),
                         st.session_state.end_date.strftime("%Y-%m-%d"),
-                        st.session_state.selected_leagues,
+                        st.session_state.selected_leagues if (st.session_state.selected_leagues and "All" not in st.session_state.selected_leagues) else [],
                         st.session_state.get('confidence_levels', ["All"]),
                         st.session_state.get('selected_status', "All")
                     )
@@ -663,12 +663,11 @@ def show_history_page():
         selected_leagues = st.sidebar.multiselect(
             "Select Competitions",
             options=["All"] + unique_leagues,
-            default=["All"],
+            default=st.session_state.selected_leagues if 'selected_leagues' in st.session_state else ["All"],
             help="Filter predictions by competition. Select multiple competitions or 'All'"
         )
-        
-        if not selected_leagues:
-            selected_leagues = ["All"]
+        # Always update session state with the current selection
+        st.session_state.selected_leagues = selected_leagues
         
         # Confidence level multiselect
         confidence_levels = st.sidebar.multiselect(
