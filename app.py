@@ -2023,7 +2023,7 @@ def display_match_details(match, prediction_data, confidence):
             
             # Create combined container with market values and odds
             html = f'''
-                <div style="width: 100%; max-width: 800px; margin: 5px auto;">
+                <div style="width: 100%; max-width: 800px; margin: 0 auto;">
                     <div style="background-color: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px; margin-bottom: 4px;">
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 4px;">
                             <div style="text-align: center;">
@@ -2500,7 +2500,8 @@ def show_main_app():
         # Minimal CSS for filter preset UI and smaller buttons
         st.markdown('''
         <style>
-        .stButton > button {
+        /* Make Save Filter button blue and consistent, using its key for specificity */
+        div[data-testid="stButton"][id*="save_main_filter"] button {
             background-color: #2c5282 !important;
             color: white !important;
             border: none !important;
@@ -2512,7 +2513,7 @@ def show_main_app():
             padding: 0.5rem 1.2rem !important;
             transition: background 0.2s;
         }
-        .stButton > button:hover {
+        div[data-testid="stButton"][id*="save_main_filter"] button:hover {
             background-color: #1a365d !important;
         }
         .stTextInput > div > div {
