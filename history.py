@@ -635,6 +635,10 @@ def show_history_page():
             help="Filter predictions until this date"
         )
 
+        # Ensure session_state always has start_date and end_date
+        st.session_state.start_date = start_date
+        st.session_state.end_date = end_date
+
         # Validate dates
         if start_date > end_date:
             st.sidebar.error("Error: End date must be after start date")
