@@ -615,7 +615,7 @@ def show_history_page():
 
         # Initialize session state for filter controls if not already set
         if 'selected_leagues' not in st.session_state:
-            st.session_state.selected_leagues = unique_leagues.copy() if unique_leagues else []
+            st.session_state.selected_leagues = ["All"]
         if 'confidence_levels' not in st.session_state:
             st.session_state.confidence_levels = ["All"]
         if 'selected_status' not in st.session_state:
