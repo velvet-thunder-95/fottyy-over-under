@@ -578,8 +578,11 @@ def show_history_page():
                 if history_filter_name:
                     # Only save the currently selected leagues, not all
                     leagues_to_save = st.session_state.selected_leagues
-                    # Remove 'All' if present, so only user-selected leagues are stored
-                    if "All" in leagues_to_save:
+                    # If only 'All' is selected or nothing is selected, save as ['All']
+                    if not leagues_to_save or leagues_to_save == ["All"]:
+                        leagues_to_save = ["All"]
+                    else:
+                        # Remove 'All' if present, so only user-selected leagues are stored
                         leagues_to_save = [l for l in leagues_to_save if l != "All"]
                     st.session_state.history_saved_filters = filter_storage.save_history_filter(
                         history_filter_name,
@@ -598,8 +601,12 @@ def show_history_page():
                     st.write(f"**{sf['name']}** | {sf['start_date']} to {sf['end_date']} | Leagues: {', '.join(sf['leagues'])} | Confidence: {', '.join(sf['confidence'])} | Status: {sf['status'] if sf['status'] else 'All'}")
                     cols = st.columns([1,1])
                     if cols[0].button("Apply", key=f"apply_hist_filter_{idx}"):
-                        # Apply all filter fields from the preset
-                        st.session_state['selected_leagues'] = sf['leagues']
+                        # When applying, if saved leagues is empty or only 'All', set to ['All']
+                        leagues_to_apply = sf['leagues']
+                        if not leagues_to_apply or leagues_to_apply == ["All"]:
+                            st.session_state['selected_leagues'] = ["All"]
+                        else:
+                            st.session_state['selected_leagues'] = leagues_to_apply
                         st.session_state['confidence_levels'] = sf['confidence']
                         st.session_state['selected_status'] = sf['status']
                         # Set date inputs
