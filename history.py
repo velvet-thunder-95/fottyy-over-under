@@ -649,12 +649,20 @@ def show_history_page():
         end_date_str = (end_date + timedelta(days=1)).strftime("%Y-%m-%d")  # Include end date
         
         # Get unique leagues from predictions
-        available_leagues = ["All"] + sorted(all_predictions['league'].unique().tolist()) if not all_predictions.empty else ["All"]
-        
+        unique_leagues = sorted(all_predictions['league'].unique()) if not all_predictions.empty else []
+
+        # Initialize session state for filter controls if not already set
+        if 'selected_leagues' not in st.session_state:
+            st.session_state.selected_leagues = unique_leagues.copy() if unique_leagues else []
+        if 'confidence_levels' not in st.session_state:
+            st.session_state.confidence_levels = ["All"]
+        if 'selected_status' not in st.session_state:
+            st.session_state.selected_status = "All"
+
         # League multiselect
         selected_leagues = st.sidebar.multiselect(
             "Select Competitions",
-            options=available_leagues,
+            options=["All"] + unique_leagues,
             default=["All"],
             help="Filter predictions by competition. Select multiple competitions or 'All'"
         )
