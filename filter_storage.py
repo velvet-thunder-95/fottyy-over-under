@@ -63,3 +63,57 @@ def delete_filter(filter_id):
     except Exception as e:
         st.error(f"Error deleting filter: {str(e)}")
         return []
+
+def load_history_saved_filters():
+    """Load history page filters from Supabase"""
+    try:
+        response = supabase.table('history_saved_filters') \
+            .select('*') \
+            .order('created_at', desc=True) \
+            .execute()
+        if response.data:
+            return [{
+                'id': f['id'],
+                'name': f['name'],
+                'start_date': f['start_date'],
+                'end_date': f['end_date'],
+                'leagues': f['leagues'],
+                'confidence': f['confidence'],
+                'status': f['status'],
+                'created': f['created_at']
+            } for f in response.data]
+        return []
+    except Exception as e:
+        st.error(f"Error loading history filters: {str(e)}")
+        return []
+
+def save_history_filter(name, start_date, end_date, leagues, confidence, status):
+    """Save a new history page filter to Supabase"""
+    try:
+        data = {
+            'name': name,
+            'start_date': start_date,
+            'end_date': end_date,
+            'leagues': leagues,
+            'confidence': confidence,
+            'status': status
+        }
+        response = supabase.table('history_saved_filters').insert(data).execute()
+        if response.data:
+            return load_history_saved_filters()
+        return []
+    except Exception as e:
+        st.error(f"Error saving history filter: {str(e)}")
+        return []
+
+def delete_history_filter(filter_id):
+    """Delete a history page filter from Supabase"""
+    try:
+        supabase.table('history_saved_filters') \
+            .delete() \
+            .eq('id', filter_id) \
+            .execute()
+        return load_history_saved_filters()
+    except Exception as e:
+        st.error(f"Error deleting history filter: {str(e)}")
+        return []

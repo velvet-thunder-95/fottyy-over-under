@@ -2531,7 +2531,7 @@ def show_main_app():
             font-size: 0.97rem !important;
             min-height: 2.1rem !important;
             height: 2.2rem !important;
-            line-height: 1.3rem !important;
+            line-height: 2.2rem !important;  /* Match line-height to height for perfect vertical centering */
         }
         </style>
         ''', unsafe_allow_html=True)
@@ -2615,17 +2615,17 @@ def add_navigation_buttons():
     col1, col2, col3 = st.columns([2,2,2])
     
     with col1:
-        if st.button("🏠 Home", key="home"):
+        if st.button("Home", key="home"):
             st.query_params["page"] = "main"
             st.rerun()
             
     with col2:
-        if st.button("📊 History", key="history"):
+        if st.button("History", key="history"):
             st.query_params["page"] = "history"
             st.rerun()
             
     with col3:
-        if st.button("🚪 Logout", key="logout"):
+        if st.button("Logout", key="logout"):
             st.session_state.logged_in = False
             st.query_params.clear()
             st.rerun()

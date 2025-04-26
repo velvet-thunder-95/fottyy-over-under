@@ -566,35 +566,57 @@ def show_history_page():
         history = PredictionHistory()
         
         # --- Savable Filters UI ---
-        if 'saved_filters' not in st.session_state:
-            st.session_state.saved_filters = filter_storage.load_saved_filters()
-        
-        st.sidebar.markdown('### Save & Load Filter Presets', help="Save your favorite filter combinations for quick access.")
-        with st.sidebar.container():
-            filter_name = st.text_input("Save Filter Preset", key="history_filter_name")
-            if st.button("Save Filter Preset", key="save_history_filter"):
-                if filter_name:
-                    st.session_state.saved_filters = filter_storage.save_filter(
+        if 'history_saved_filters' not in st.session_state:
+            st.session_state.history_saved_filters = filter_storage.load_history_saved_filters()
+        if 'selected_history_leagues' not in st.session_state:
+            st.session_state.selected_history_leagues = []
+        if 'selected_history_confidence' not in st.session_state:
+            st.session_state.selected_history_confidence = []
+        if 'selected_history_status' not in st.session_state:
+            st.session_state.selected_history_status = 'All'
+        if 'history_filter_start_date' not in st.session_state:
+            st.session_state.history_filter_start_date = datetime.now().date() - timedelta(days=30)
+        if 'history_filter_end_date' not in st.session_state:
+            st.session_state.history_filter_end_date = datetime.now().date()
+
+        with st.sidebar:
+            st.markdown('---')
+            st.markdown('### Savable Filter Presets (History)')
+            filter_name = st.text_input('Preset Name', key='history_filter_name')
+            # Save new preset
+            if st.button('Save Preset', key='save_history_filter'):
+                if filter_name and st.session_state.selected_history_leagues and st.session_state.selected_history_confidence:
+                    st.session_state.history_saved_filters = filter_storage.save_history_filter(
                         filter_name,
-                        st.session_state.selected_leagues,
-                        st.session_state.confidence_levels
+                        str(st.session_state.history_filter_start_date),
+                        str(st.session_state.history_filter_end_date),
+                        st.session_state.selected_history_leagues,
+                        st.session_state.selected_history_confidence,
+                        st.session_state.selected_history_status
                     )
-                    st.success(f"Saved filter preset '{filter_name}'!")
+                    st.success('Preset saved!')
                 else:
-                    st.error("Please enter a filter name.")
-            if st.session_state.saved_filters:
-                st.markdown("#### Saved Filters")
-                for idx, sf in enumerate(st.session_state.saved_filters):
-                    st.write(f"**{sf['name']}** | Leagues: {', '.join(sf['leagues'])} | Confidence: {', '.join(sf['confidence'])}")
-                    cols = st.columns([1,1])
-                    if cols[0].button("Apply", key=f"apply_history_filter_{idx}"):
-                        st.session_state.selected_leagues = sf['leagues']
-                        st.session_state.confidence_levels = sf['confidence']
-                        st.rerun()
-                    if cols[1].button("Delete", key=f"delete_history_filter_{idx}"):
-                        st.session_state.saved_filters = filter_storage.delete_filter(sf['id'])
-                        st.rerun()
-        
+                    st.error('Please provide a name and select at least one league and confidence level.')
+            # Show all presets
+            if st.session_state.history_saved_filters:
+                for idx, sf in enumerate(st.session_state.history_saved_filters):
+                    cols = st.columns([3,1,1])
+                    with cols[0]:
+                        st.markdown(f"**{sf['name']}**<br>Leagues: {', '.join(sf['leagues'])}<br>Conf: {', '.join(sf['confidence'])}<br>Status: {sf['status']}<br>Dates: {sf['start_date']} to {sf['end_date']}", unsafe_allow_html=True)
+                    with cols[1]:
+                        if st.button('Apply', key=f'apply_history_filter_{idx}'):
+                            st.session_state.selected_history_leagues = sf['leagues']
+                            st.session_state.selected_history_confidence = sf['confidence']
+                            st.session_state.selected_history_status = sf['status']
+                            st.session_state.history_filter_start_date = datetime.strptime(sf['start_date'], '%Y-%m-%d').date()
+                            st.session_state.history_filter_end_date = datetime.strptime(sf['end_date'], '%Y-%m-%d').date()
+                            st.rerun()
+                    with cols[2]:
+                        if st.button('Delete', key=f'delete_history_filter_{idx}'):
+                            st.session_state.history_saved_filters = filter_storage.delete_history_filter(sf['id'])
+                            st.rerun()
+            st.markdown('---')
+
         # Add date filter in sidebar
         st.sidebar.markdown("## Filters", help="Filter your prediction history")
         
@@ -608,62 +630,71 @@ def show_history_page():
             max_date = datetime.now().date()
 
         # Date filters with dynamic min/max dates
-        start_date = st.sidebar.date_input(
+        st.session_state.history_filter_start_date = st.sidebar.date_input(
             "Start Date",
-            value=min_date,
+            value=st.session_state.history_filter_start_date,
             min_value=min_date,
             max_value=max_date,
             help="Filter predictions from this date"
         )
         
-        end_date = st.sidebar.date_input(
+        st.session_state.history_filter_end_date = st.sidebar.date_input(
             "End Date",
-            value=max_date,
+            value=st.session_state.history_filter_end_date,
             min_value=min_date,
             max_value=max_date,
             help="Filter predictions until this date"
         )
 
         # Validate dates
-        if start_date > end_date:
+        if st.session_state.history_filter_start_date > st.session_state.history_filter_end_date:
             st.sidebar.error("Error: End date must be after start date")
-            start_date, end_date = end_date, start_date
+            st.session_state.history_filter_start_date, st.session_state.history_filter_end_date = st.session_state.history_filter_end_date, st.session_state.history_filter_start_date
 
         # Format dates for database query
-        start_date_str = start_date.strftime("%Y-%m-%d")
-        end_date_str = (end_date + timedelta(days=1)).strftime("%Y-%m-%d")  # Include end date
+        start_date_str = st.session_state.history_filter_start_date.strftime("%Y-%m-%d")
+        end_date_str = (st.session_state.history_filter_end_date + timedelta(days=1)).strftime("%Y-%m-%d")  # Include end date
         
         # Get unique leagues from predictions
         available_leagues = ["All"] + sorted(all_predictions['league'].unique().tolist()) if not all_predictions.empty else ["All"]
         
         # League multiselect
-        selected_leagues = st.sidebar.multiselect(
+        st.session_state.selected_history_leagues = st.sidebar.multiselect(
             "Select Competitions",
             options=available_leagues,
-            default=["All"],
+            default=st.session_state.selected_history_leagues,
             help="Filter predictions by competition. Select multiple competitions or 'All'"
         )
         
-        if not selected_leagues:
-            selected_leagues = ["All"]
+        if not st.session_state.selected_history_leagues:
+            st.session_state.selected_history_leagues = ["All"]
         
         # Confidence level multiselect
-        confidence_levels = st.sidebar.multiselect(
+        st.session_state.selected_history_confidence = st.sidebar.multiselect(
             "Confidence Levels",
             options=["All", "High", "Medium", "Low"],
-            default=["All"],
+            default=st.session_state.selected_history_confidence,
             help="Filter predictions by confidence level: High (≥70%), Medium (50-69%), Low (<50%). Select multiple levels or 'All'"
         )
         
-        if not confidence_levels:
-            confidence_levels = ["All"]
+        if not st.session_state.selected_history_confidence:
+            st.session_state.selected_history_confidence = ["All"]
         
+        # Status selectbox
+        st.session_state.selected_history_status = st.sidebar.selectbox(
+            "Status",
+            options=["All", "Completed", "Pending"],
+            index=["All", "Completed", "Pending"].index(st.session_state.selected_history_status),
+            help="Filter predictions by status"
+        )
+
         # Get filtered predictions
         predictions = history.get_predictions(
             start_date=start_date_str,
             end_date=end_date_str,
-            confidence_levels=None if "All" in confidence_levels else confidence_levels,
-            leagues=None if "All" in selected_leagues else selected_leagues
+            status=None if st.session_state.selected_history_status == 'All' else st.session_state.selected_history_status,
+            confidence_levels=None if "All" in st.session_state.selected_history_confidence else st.session_state.selected_history_confidence,
+            leagues=None if "All" in st.session_state.selected_history_leagues else st.session_state.selected_history_leagues
         )
         
         # Debug info
@@ -683,13 +714,14 @@ def show_history_page():
             predictions = history.get_predictions(
                 start_date=start_date_str,
                 end_date=end_date_str,
-                confidence_levels=None if "All" in confidence_levels else confidence_levels,
-                leagues=None if "All" in selected_leagues else selected_leagues
+                status=None if st.session_state.selected_history_status == 'All' else st.session_state.selected_history_status,
+                confidence_levels=None if "All" in st.session_state.selected_history_confidence else st.session_state.selected_history_confidence,
+                leagues=None if "All" in st.session_state.selected_history_leagues else st.session_state.selected_history_leagues
             )
             
             # Calculate statistics
-            current_confidence = None if "All" in confidence_levels else confidence_levels
-            current_leagues = None if "All" in selected_leagues else selected_leagues
+            current_confidence = None if "All" in st.session_state.selected_history_confidence else st.session_state.selected_history_confidence
+            current_leagues = None if "All" in st.session_state.selected_history_leagues else st.session_state.selected_history_leagues
             stats, pending_count = history.calculate_statistics(
                 confidence_levels=current_confidence,
                 leagues=current_leagues,
