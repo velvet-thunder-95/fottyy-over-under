@@ -606,6 +606,8 @@ def show_history_page():
                         # Set date inputs
                         st.session_state['start_date'] = pd.to_datetime(sf['start_date']).date()
                         st.session_state['end_date'] = pd.to_datetime(sf['end_date']).date()
+                        # Force widget values to update by clearing query params and rerunning
+                        st.experimental_set_query_params()
                         st.rerun()
                     if cols[1].button("Delete", key=f"delete_hist_filter_{idx}"):
                         st.session_state.history_saved_filters = filter_storage.delete_history_filter(sf['id'])
