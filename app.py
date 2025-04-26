@@ -24,24 +24,9 @@ from transfermarkt_api import TransfermarktAPI
 from odds_generator import OddsGenerator
 import base64
 from unidecode import unidecode as unidecode_text
-import logging
-import xgboost as xgb
 from sklearn.impute import SimpleImputer
-import joblib
-from sklearn.preprocessing import StandardScaler
-import logging
-import xgboost as xgb
-from history import show_history_page, PredictionHistory
-from session_state import init_session_state, check_login_state
-import json
-from scipy.stats import poisson
-import pytz
-from zoneinfo import ZoneInfo
-import time
 from transfermarkt_api import TransfermarktAPI
-import base64
-from unidecode import unidecode as unidecode_text
-from odds_generator import OddsGenerator  # Import the odds generator
+from odds_generator import OddsGenerator
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
