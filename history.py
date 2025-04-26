@@ -567,7 +567,8 @@ def show_history_page():
         # Initialize PredictionHistory
         history = PredictionHistory()
         
-        # --- Filters UI ---
+        # --- Filters section should appear above savable filters ---
+        # Add date filter in sidebar
         st.sidebar.markdown("## Filters", help="Filter your prediction history")
         
         # Get all predictions first to determine date range
@@ -642,7 +643,7 @@ def show_history_page():
             confidence_levels = ["All"]
         st.session_state.confidence_levels = confidence_levels
         
-        # --- Savable Filters UI ---
+        # --- History Savable Filters UI ---
         st.sidebar.markdown('### History Page Filter Presets', help="Save and apply filter combinations for the history page.")
         with st.sidebar.container():
             history_filter_name = st.text_input("Save History Filter Preset", key="history_filter_name")
