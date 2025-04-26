@@ -917,7 +917,7 @@ def create_match_features_from_api(match_data):
                 
                 # Debug prints
                 print(f"Home - Pred: {home_implied*100:.2f}%, Odds: {odds_home:.2f}")
-                print(f"Draw - Pred: {draw_implied*100:.2f}%, Odds: {odds_draw:.2f}")
+                print(f"Draw - Pred: {draw_implied*100:.2f}%, Odds: {draw_odds:.2f}")
                 print(f"Away - Pred: {away_implied*100:.2f}%, Odds: {odds_away:.2f}")
                 
                 home_ev = calculate_ev(home_implied*100, odds_home)
@@ -2023,7 +2023,7 @@ def display_match_details(match, prediction_data, confidence):
             
             # Create combined container with market values and odds
             html = f'''
-                <div style="width: 100%; max-width: 800px; margin: 0 auto;">
+                <div style="width: 100%; max-width: 800px; margin: 5px auto;">
                     <div style="background-color: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px; margin-bottom: 4px;">
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 4px;">
                             <div style="text-align: center;">
@@ -2212,7 +2212,7 @@ def display_odds_box(title, odds, implied_prob, ev):
     ev_color = get_ev_color(ev)
     
     st.markdown(f"""
-        <div style="background-color: {ev_color}; padding: 0.5rem; border-radius: 6px; margin: 0.25rem 0; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);">
+        <div style="background-color: {ev_color}; padding: 0.5rem; border-radius: 6px; margin: 0.25rem 0; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
             <h4 style="margin: 0; color: #1a1a1a; font-size: 0.9rem; font-weight: 600;">{title}</h4>
             <div style="display: flex; justify-content: space-between; margin-top: 0.25rem;">
                 <div>
@@ -2471,6 +2471,7 @@ def show_main_app():
         st.markdown('<div class="filter-preset-section"><h4>Save & Load Filter Presets</h4></div>', unsafe_allow_html=True)
         inline_cols = st.columns([3, 1])
         filter_name = inline_cols[0].text_input("Name your filter preset", key="main_filter_name", placeholder="e.g. Weekend Favs")
+        # Blue button, same style as other buttons
         save_btn = inline_cols[1].button("Save Filter", key="save_main_filter", help="Save the current filter selections as a preset")
         if save_btn:
             if filter_name:
@@ -2499,59 +2500,45 @@ def show_main_app():
         # Minimal CSS for filter preset UI and smaller buttons
         st.markdown('''
         <style>
-        .filter-preset-section h4 {
-            margin-bottom: 0.3rem;
-            color: #2c5282;
-            font-size: 1.05rem;
-            font-weight: 700;
-            letter-spacing: 0.3px;
-        }
-        .saved-filters-list {
-            margin-top: 0.3rem;
-            margin-bottom: 0.1rem;
-            color: #2c5282;
-            font-size: 0.97rem;
-        }
-        .filter-preset {
-            background: #f7fafc;
-            border-radius: 7px;
-            padding: 0.4rem 0.7rem;
-            margin-bottom: 0.18rem;
-            font-size: 0.95rem;
-            box-shadow: 0 1px 2px rgba(44,82,130,0.03);
-        }
-        .filter-leagues, .filter-confidence {
-            color: #3182ce;
-            font-weight: 600;
-        }
-        /* Make Streamlit buttons smaller in height */
         .stButton > button {
-            padding-top: 0.42rem !important;
-            padding-bottom: 0.42rem !important;
-            font-size: 0.97rem !important;
-            min-height: 2.1rem !important;
-            height: 2.2rem !important;
-            line-height: 2.2rem !important;  /* Match line-height to height for perfect vertical centering */
-        }
-        /* Savable Filter Buttons Styling */
-        .stButton > button[kind="secondary"], .stButton > button {
-            background-color: #2c5282 !important; /* Blue */
+            background-color: #2c5282 !important;
             color: white !important;
             border: none !important;
             border-radius: 8px !important;
-            font-size: 0.97rem !important;
+            font-size: 1rem !important;
             font-weight: 600 !important;
-            padding-top: 0.42rem !important;
-            padding-bottom: 0.42rem !important;
-            min-height: 2.1rem !important;
-            height: 2.2rem !important;
-            line-height: 2.2rem !important;
-            margin: 0 0.1rem 0 0 !important;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.08) !important;
+            margin: 0 0 0 0.25rem !important;
+            height: 2.5rem !important;
+            padding: 0.5rem 1.2rem !important;
             transition: background 0.2s;
         }
         .stButton > button:hover {
             background-color: #1a365d !important;
+        }
+        .stTextInput > div > div {
+            margin-bottom: 0 !important;
+        }
+        .filter-preset-section h4 {
+            margin-bottom: 0.5rem !important;
+        }
+        .saved-filters-list {
+            margin-top: 1rem !important;
+            margin-bottom: 0.5rem !important;
+        }
+        .filter-preset {
+            background: #f5f7fa;
+            border-radius: 6px;
+            padding: 0.5rem 1rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.98rem;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+        }
+        .filter-leagues, .filter-confidence {
+            color: #2c5282; font-weight: 600;
+        }
+        .stTextInput input {
+            height: 2.5rem !important;
+            font-size: 1rem !important;
         }
         </style>
         ''', unsafe_allow_html=True)
