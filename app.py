@@ -2212,7 +2212,7 @@ def display_odds_box(title, odds, implied_prob, ev):
     ev_color = get_ev_color(ev)
     
     st.markdown(f"""
-        <div style="background-color: {ev_color}; padding: 0.5rem; border-radius: 6px; margin: 0.25rem 0; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+        <div style="background-color: {ev_color}; padding: 0.5rem; border-radius: 6px; margin: 0.25rem 0; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);">
             <h4 style="margin: 0; color: #1a1a1a; font-size: 0.9rem; font-weight: 600;">{title}</h4>
             <div style="display: flex; justify-content: space-between; margin-top: 0.25rem;">
                 <div>
@@ -2469,9 +2469,9 @@ def show_main_app():
             st.session_state.saved_filters = filter_storage.load_saved_filters()
 
         st.markdown('<div class="filter-preset-section"><h4>Save & Load Filter Presets</h4></div>', unsafe_allow_html=True)
-        filter_name = st.text_input("Name your filter preset", key="main_filter_name", placeholder="e.g. Weekend Favs")
-        save_col, apply_col, delete_col = st.columns([2, 1, 1])
-        save_btn = save_col.button("Save Filter", key="save_main_filter", help="Save the current filter selections as a preset")
+        inline_cols = st.columns([3, 1])
+        filter_name = inline_cols[0].text_input("Name your filter preset", key="main_filter_name", placeholder="e.g. Weekend Favs")
+        save_btn = inline_cols[1].button("Save", key="save_main_filter", help="Save the current filter selections as a preset")
         if save_btn:
             if filter_name:
                 st.session_state.saved_filters = filter_storage.save_filter(
