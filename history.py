@@ -573,8 +573,8 @@ def show_history_page():
         
         st.sidebar.markdown('### Save & Load Filter Presets', help="Save your favorite filter combinations for quick access.")
         with st.sidebar.container():
-            filter_name = st.text_input("Save Filter Preset", key="history_filter_name")
-            if st.button("Save Filter Preset", key="save_history_filter"):
+            filter_name = st.text_input("Save Filter Preset", key="main_history_filter_name")
+            if st.button("Save Filter Preset", key="save_main_history_filter"):
                 if filter_name:
                     st.session_state.saved_filters = filter_storage.save_filter(
                         filter_name,
