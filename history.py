@@ -600,7 +600,7 @@ def show_history_page():
                     cols = st.columns([1,1])
                     if cols[0].button("Apply", key=f"apply_hist_filter_{idx}"):
                         # Apply all filter fields from the preset
-                        st.session_state['selected_leagues'] = sf['leagues'] if sf['leagues'] else ["All"]
+                        st.session_state['selected_leagues'] = sf['leagues']
                         st.session_state['confidence_levels'] = sf['confidence']
                         st.session_state['selected_status'] = sf['status']
                         # Set date inputs
@@ -665,16 +665,12 @@ def show_history_page():
             st.session_state.selected_status = "All"
 
         # League multiselect
-        league_default = st.session_state.selected_leagues if st.session_state.selected_leagues else ["All"]
-        # Ensure 'All' is always present in options
-        league_options = ["All"] + [l for l in unique_leagues if l != "All"]
         selected_leagues = st.sidebar.multiselect(
             "Select Competitions",
-            options=league_options,
-            default=league_default,
+            options=["All"] + unique_leagues,
+            default=["All"],
             help="Filter predictions by competition. Select multiple competitions or 'All'"
         )
-        
         if not selected_leagues:
             selected_leagues = ["All"]
         st.session_state.selected_leagues = selected_leagues
@@ -686,18 +682,16 @@ def show_history_page():
             default=["All"],
             help="Filter predictions by confidence level: High (≥70%), Medium (50-69%), Low (<50%). Select multiple levels or 'All'"
         )
-        
         if not confidence_levels:
             confidence_levels = ["All"]
+        st.session_state.confidence_levels = confidence_levels
         
         # Get filtered predictions
-        leagues_filter = None if not selected_leagues or "All" in selected_leagues else selected_leagues
-        confidence_filter = None if not confidence_levels or "All" in confidence_levels else confidence_levels
         predictions = history.get_predictions(
             start_date=start_date_str,
             end_date=end_date_str,
-            confidence_levels=confidence_filter,
-            leagues=leagues_filter
+            confidence_levels=None if "All" in confidence_levels else confidence_levels,
+            leagues=None if "All" in selected_leagues else selected_leagues
         )
         
         # Debug info
@@ -717,8 +711,8 @@ def show_history_page():
             predictions = history.get_predictions(
                 start_date=start_date_str,
                 end_date=end_date_str,
-                confidence_levels=confidence_filter,
-                leagues=leagues_filter
+                confidence_levels=None if "All" in confidence_levels else confidence_levels,
+                leagues=None if "All" in selected_leagues else selected_leagues
             )
             
             # Calculate statistics
