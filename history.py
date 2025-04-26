@@ -645,8 +645,10 @@ def show_history_page():
         # --- Savable Filters UI ---
         st.sidebar.markdown('### History Page Filter Presets', help="Save and apply filter combinations for the history page.")
         with st.sidebar.container():
-            history_filter_name = st.text_input("Save History Filter Preset", key="history_filter_name")
-            if st.button("Save History Filter Preset", key="save_history_filter"):
+            row = st.columns([2,1])
+            history_filter_name = row[0].text_input("Save History Filter Preset", key="history_filter_name")
+            save_btn = row[1].button("Save", key="save_history_filter", help="Save the current filter selections as a preset")
+            if save_btn:
                 if history_filter_name:
                     # Save exactly what the user selected, even if it's only one league
                     leagues_to_save = st.session_state.selected_leagues.copy()
