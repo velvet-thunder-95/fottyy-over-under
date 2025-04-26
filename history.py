@@ -8,6 +8,10 @@ from session_state import init_session_state, check_login_state
 from match_analyzer import MatchAnalyzer
 from supabase_db import SupabaseDB
 import logging
+import sys
+sys.path.append('.')
+import importlib
+filter_storage = importlib.import_module('filter_storage')
 
 class PredictionHistory:
     def __init__(self):
@@ -560,6 +564,36 @@ def show_history_page():
     try:
         # Initialize PredictionHistory
         history = PredictionHistory()
+        
+        # --- Savable Filters UI ---
+        if 'saved_filters' not in st.session_state:
+            st.session_state.saved_filters = filter_storage.load_saved_filters()
+        
+        st.sidebar.markdown('### Save & Load Filter Presets', help="Save your favorite filter combinations for quick access.")
+        with st.sidebar.container():
+            filter_name = st.text_input("Save Filter Preset", key="history_filter_name")
+            if st.button("Save Filter Preset", key="save_history_filter"):
+                if filter_name:
+                    st.session_state.saved_filters = filter_storage.save_filter(
+                        filter_name,
+                        st.session_state.selected_leagues,
+                        st.session_state.confidence_levels
+                    )
+                    st.success(f"Saved filter preset '{filter_name}'!")
+                else:
+                    st.error("Please enter a filter name.")
+            if st.session_state.saved_filters:
+                st.markdown("#### Saved Filters")
+                for idx, sf in enumerate(st.session_state.saved_filters):
+                    st.write(f"**{sf['name']}** | Leagues: {', '.join(sf['leagues'])} | Confidence: {', '.join(sf['confidence'])}")
+                    cols = st.columns([1,1])
+                    if cols[0].button("Apply", key=f"apply_history_filter_{idx}"):
+                        st.session_state.selected_leagues = sf['leagues']
+                        st.session_state.confidence_levels = sf['confidence']
+                        st.rerun()
+                    if cols[1].button("Delete", key=f"delete_history_filter_{idx}"):
+                        st.session_state.saved_filters = filter_storage.delete_filter(sf['id'])
+                        st.rerun()
         
         # Add date filter in sidebar
         st.sidebar.markdown("## Filters", help="Filter your prediction history")

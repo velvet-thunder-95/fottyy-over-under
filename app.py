@@ -20,8 +20,6 @@ from scipy.stats import poisson
 import pytz
 from zoneinfo import ZoneInfo
 import time
-from transfermarkt_api import TransfermarktAPI
-from odds_generator import OddsGenerator
 import base64
 from unidecode import unidecode as unidecode_text
 from sklearn.impute import SimpleImputer
@@ -917,7 +915,7 @@ def create_match_features_from_api(match_data):
                 
                 # Debug prints
                 print(f"Home - Pred: {home_implied*100:.2f}%, Odds: {odds_home:.2f}")
-                print(f"Draw - Pred: {draw_implied*100:.2f}%, Odds: {odds_draw:.2f}")
+                print(f"Draw - Pred: {draw_implied*100:.2f}%, Odds: {draw_odds:.2f}")
                 print(f"Away - Pred: {away_implied*100:.2f}%, Odds: {odds_away:.2f}")
                 
                 home_ev = calculate_ev(home_implied*100, odds_home)
@@ -2461,6 +2459,81 @@ def show_main_app():
             help="Filter predictions by confidence levels (High: ≥70%, Medium: 50-69%, Low: <50%)"
         )
         
+        # Savable Filters UI
+        import importlib
+        filter_storage = importlib.import_module('filter_storage')
+
+        if 'saved_filters' not in st.session_state:
+            st.session_state.saved_filters = filter_storage.load_saved_filters()
+
+        st.markdown('<div class="filter-preset-section"><h4>Save & Load Filter Presets</h4></div>', unsafe_allow_html=True)
+        filter_name = st.text_input("Name your filter preset", key="main_filter_name", placeholder="e.g. Weekend Favs")
+        save_col, apply_col, delete_col = st.columns([2, 1, 1])
+        save_btn = save_col.button("Save Filter", key="save_main_filter", help="Save the current filter selections as a preset")
+        if save_btn:
+            if filter_name:
+                st.session_state.saved_filters = filter_storage.save_filter(
+                    filter_name,
+                    selected_leagues,
+                    confidence_levels
+                )
+                st.success(f"Saved filter preset '{filter_name}'!")
+            else:
+                st.error("Please enter a filter name.")
+        if st.session_state.saved_filters:
+            st.markdown("<div class='saved-filters-list'><b>Presets:</b></div>", unsafe_allow_html=True)
+            for idx, sf in enumerate(st.session_state.saved_filters):
+                st.markdown(f"<div class='filter-preset'><b>{sf['name']}</b> | Leagues: <span class='filter-leagues'>{', '.join(sf['leagues'])}</span> | Confidence: <span class='filter-confidence'>{', '.join(sf['confidence'])}</span></div>", unsafe_allow_html=True)
+                preset_cols = st.columns([1, 1])
+                apply_btn = preset_cols[0].button("Apply", key=f"apply_main_filter_{idx}")
+                delete_btn = preset_cols[1].button("Delete", key=f"delete_main_filter_{idx}")
+                if apply_btn:
+                    st.session_state.selected_leagues = sf['leagues']
+                    st.session_state.confidence_levels = sf['confidence']
+                    st.rerun()
+                if delete_btn:
+                    st.session_state.saved_filters = filter_storage.delete_filter(sf['id'])
+                    st.rerun()
+        # Minimal CSS for filter preset UI and smaller buttons
+        st.markdown('''
+        <style>
+        .filter-preset-section h4 {
+            margin-bottom: 0.3rem;
+            color: #2c5282;
+            font-size: 1.05rem;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+        .saved-filters-list {
+            margin-top: 0.3rem;
+            margin-bottom: 0.1rem;
+            color: #2c5282;
+            font-size: 0.97rem;
+        }
+        .filter-preset {
+            background: #f7fafc;
+            border-radius: 7px;
+            padding: 0.4rem 0.7rem;
+            margin-bottom: 0.18rem;
+            font-size: 0.95rem;
+            box-shadow: 0 1px 2px rgba(44,82,130,0.03);
+        }
+        .filter-leagues, .filter-confidence {
+            color: #3182ce;
+            font-weight: 600;
+        }
+        /* Make Streamlit buttons smaller in height */
+        .stButton > button {
+            padding-top: 0.25rem !important;
+            padding-bottom: 0.25rem !important;
+            font-size: 0.92rem !important;
+            min-height: 1.5rem !important;
+            height: 1.6rem !important;
+            line-height: 1.1rem !important;
+        }
+        </style>
+        ''', unsafe_allow_html=True)
+        
         # Filter matches by selected leagues
         if "All Matches" not in selected_leagues:
             matches = [m for m in matches if get_league_name(m) in selected_leagues]
@@ -2513,8 +2586,8 @@ def show_main_app():
             else:
                 st.info(f"No matches with selected confidence levels found in {league_name}.")
                 
-# Add Navigation JavaScript
-st.markdown("""
+    # Add Navigation JavaScript
+    st.markdown("""
 <script>
     function handleLogout() {
         // Clear session state
