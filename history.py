@@ -666,6 +666,9 @@ def show_history_page():
                     st.success(f"Saved history filter preset '{history_filter_name}'!")
                 else:
                     st.error("Please enter a filter name.")
+            # --- Ensure history_saved_filters is initialized before use ---
+            if 'history_saved_filters' not in st.session_state:
+                st.session_state.history_saved_filters = filter_storage.load_history_saved_filters()
             if st.session_state.history_saved_filters:
                 st.markdown("#### Saved History Filters")
                 for idx, sf in enumerate(st.session_state.history_saved_filters):
