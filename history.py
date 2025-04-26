@@ -666,9 +666,11 @@ def show_history_page():
 
         # League multiselect
         league_default = st.session_state.selected_leagues if st.session_state.selected_leagues else ["All"]
+        # Ensure 'All' is always present in options
+        league_options = ["All"] + [l for l in unique_leagues if l != "All"]
         selected_leagues = st.sidebar.multiselect(
             "Select Competitions",
-            options=["All"] + unique_leagues,
+            options=league_options,
             default=league_default,
             help="Filter predictions by competition. Select multiple competitions or 'All'"
         )
