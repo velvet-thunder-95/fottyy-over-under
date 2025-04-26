@@ -2526,12 +2526,12 @@ def show_main_app():
         }
         /* Make Streamlit buttons smaller in height */
         .stButton > button {
-            padding-top: 0.25rem !important;
-            padding-bottom: 0.25rem !important;
-            font-size: 0.92rem !important;
-            min-height: 1.5rem !important;
-            height: 1.6rem !important;
-            line-height: 1.1rem !important;
+            padding-top: 0.32rem !important;
+            padding-bottom: 0.32rem !important;
+            font-size: 0.93rem !important;
+            min-height: 1.8rem !important;
+            height: 1.9rem !important;
+            line-height: 1.2rem !important;
         }
         </style>
         ''', unsafe_allow_html=True)
