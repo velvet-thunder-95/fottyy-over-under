@@ -567,56 +567,7 @@ def show_history_page():
         # Initialize PredictionHistory
         history = PredictionHistory()
         
-        # --- History Savable Filters UI ---
-        if 'history_saved_filters' not in st.session_state:
-            st.session_state.history_saved_filters = filter_storage.load_history_saved_filters()
-
-        st.sidebar.markdown('### History Page Filter Presets', help="Save and apply filter combinations for the history page.")
-        with st.sidebar.container():
-            history_filter_name = st.text_input("Save History Filter Preset", key="history_filter_name")
-            if st.button("Save History Filter Preset", key="save_history_filter"):
-                if history_filter_name:
-                    # Save exactly what the user selected, even if it's only one league
-                    leagues_to_save = st.session_state.selected_leagues.copy()
-                    if "All" in leagues_to_save and len(leagues_to_save) > 1:
-                        leagues_to_save.remove("All")  # Remove 'All' if other leagues are selected
-                    if leagues_to_save == ["All"]:
-                        leagues_to_save = []  # If only 'All' is selected, treat as no specific filter
-                    st.session_state.history_saved_filters = filter_storage.save_history_filter(
-                        history_filter_name,
-                        st.session_state.start_date.strftime("%Y-%m-%d"),
-                        st.session_state.end_date.strftime("%Y-%m-%d"),
-                        leagues_to_save,
-                        st.session_state.get('confidence_levels', ["All"]),
-                        st.session_state.get('selected_status', "All")
-                    )
-                    st.success(f"Saved history filter preset '{history_filter_name}'!")
-                else:
-                    st.error("Please enter a filter name.")
-            if st.session_state.history_saved_filters:
-                st.markdown("#### Saved History Filters")
-                for idx, sf in enumerate(st.session_state.history_saved_filters):
-                    st.write(f"**{sf['name']}** | {sf['start_date']} to {sf['end_date']} | Leagues: {', '.join(sf['leagues'])} | Confidence: {', '.join(sf['confidence'])} | Status: {sf['status'] if sf['status'] else 'All'}")
-                    cols = st.columns([1,1])
-                    if cols[0].button("Apply", key=f"apply_hist_filter_{idx}"):
-                        # Clear all relevant filter-related session state before applying
-                        st.session_state.selected_leagues = []
-                        st.session_state.confidence_levels = []
-                        st.session_state.selected_status = "All"
-                        st.session_state.start_date = None
-                        st.session_state.end_date = None
-                        # Apply all filter fields from the preset
-                        st.session_state['selected_leagues'] = sf['leagues']
-                        st.session_state['confidence_levels'] = sf['confidence']
-                        st.session_state['selected_status'] = sf['status']
-                        st.session_state['start_date'] = pd.to_datetime(sf['start_date']).date()
-                        st.session_state['end_date'] = pd.to_datetime(sf['end_date']).date()
-                        st.rerun()
-                    if cols[1].button("Delete", key=f"delete_hist_filter_{idx}"):
-                        st.session_state.history_saved_filters = filter_storage.delete_history_filter(sf['id'])
-                        st.rerun()
-        
-        # Add date filter in sidebar
+        # --- Filters UI ---
         st.sidebar.markdown("## Filters", help="Filter your prediction history")
         
         # Get all predictions first to determine date range
@@ -690,6 +641,52 @@ def show_history_page():
         if not confidence_levels:
             confidence_levels = ["All"]
         st.session_state.confidence_levels = confidence_levels
+        
+        # --- Savable Filters UI ---
+        st.sidebar.markdown('### History Page Filter Presets', help="Save and apply filter combinations for the history page.")
+        with st.sidebar.container():
+            history_filter_name = st.text_input("Save History Filter Preset", key="history_filter_name")
+            if st.button("Save History Filter Preset", key="save_history_filter"):
+                if history_filter_name:
+                    # Save exactly what the user selected, even if it's only one league
+                    leagues_to_save = st.session_state.selected_leagues.copy()
+                    if "All" in leagues_to_save and len(leagues_to_save) > 1:
+                        leagues_to_save.remove("All")  # Remove 'All' if other leagues are selected
+                    if leagues_to_save == ["All"]:
+                        leagues_to_save = []  # If only 'All' is selected, treat as no specific filter
+                    st.session_state.history_saved_filters = filter_storage.save_history_filter(
+                        history_filter_name,
+                        st.session_state.start_date.strftime("%Y-%m-%d"),
+                        st.session_state.end_date.strftime("%Y-%m-%d"),
+                        leagues_to_save,
+                        st.session_state.get('confidence_levels', ["All"]),
+                        st.session_state.get('selected_status', "All")
+                    )
+                    st.success(f"Saved history filter preset '{history_filter_name}'!")
+                else:
+                    st.error("Please enter a filter name.")
+            if st.session_state.history_saved_filters:
+                st.markdown("#### Saved History Filters")
+                for idx, sf in enumerate(st.session_state.history_saved_filters):
+                    st.write(f"**{sf['name']}** | {sf['start_date']} to {sf['end_date']} | Leagues: {', '.join(sf['leagues'])} | Confidence: {', '.join(sf['confidence'])} | Status: {sf['status'] if sf['status'] else 'All'}")
+                    cols = st.columns([1,1])
+                    if cols[0].button("Apply", key=f"apply_hist_filter_{idx}"):
+                        # Clear all relevant filter-related session state before applying
+                        st.session_state.selected_leagues = []
+                        st.session_state.confidence_levels = []
+                        st.session_state.selected_status = "All"
+                        st.session_state.start_date = None
+                        st.session_state.end_date = None
+                        # Apply all filter fields from the preset
+                        st.session_state['selected_leagues'] = sf['leagues']
+                        st.session_state['confidence_levels'] = sf['confidence']
+                        st.session_state['selected_status'] = sf['status']
+                        st.session_state['start_date'] = pd.to_datetime(sf['start_date']).date()
+                        st.session_state['end_date'] = pd.to_datetime(sf['end_date']).date()
+                        st.rerun()
+                    if cols[1].button("Delete", key=f"delete_hist_filter_{idx}"):
+                        st.session_state.history_saved_filters = filter_storage.delete_history_filter(sf['id'])
+                        st.rerun()
         
         # Get filtered predictions
         predictions = history.get_predictions(
