@@ -917,7 +917,7 @@ def create_match_features_from_api(match_data):
                 
                 # Debug prints
                 print(f"Home - Pred: {home_implied*100:.2f}%, Odds: {odds_home:.2f}")
-                print(f"Draw - Pred: {draw_implied*100:.2f}%, Odds: {odds_draw:.2f}")
+                print(f"Draw - Pred: {draw_implied*100:.2f}%, Odds: {draw_odds:.2f}")
                 print(f"Away - Pred: {away_implied*100:.2f}%, Odds: {odds_away:.2f}")
                 
                 home_ev = calculate_ev(home_implied*100, odds_home)
@@ -2540,7 +2540,11 @@ def show_main_app():
         # --- PATCH: Handle savable filter apply BEFORE widgets are rendered ---
         if "apply_filter_idx" in st.session_state:
             sf = st.session_state.saved_filters[st.session_state.apply_filter_idx]
-            st.session_state.selected_leagues = sf['leagues']
+            # Only use leagues that are currently available
+            valid_leagues = [l for l in sf['leagues'] if l in available_leagues.keys()]
+            if not valid_leagues:
+                valid_leagues = ["All Matches"]
+            st.session_state.selected_leagues = valid_leagues
             st.session_state.confidence_levels = sf['confidence']
             del st.session_state.apply_filter_idx
             st.rerun()
