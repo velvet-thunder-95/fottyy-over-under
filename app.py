@@ -2543,12 +2543,15 @@ def show_main_app():
             valid_leagues = [l for l in sf['leagues'] if l in available_leagues.keys()]
             if not valid_leagues:
                 valid_leagues = ["All Matches"]
+            # Clear previous session state for these keys
+            st.session_state.pop("selected_leagues", None)
+            st.session_state.pop("confidence_levels", None)
             st.session_state.selected_leagues = valid_leagues
             st.session_state.confidence_levels = sf['confidence']
             del st.session_state.pending_filter
             st.rerun()
         # ---------------------------------------------------------------
-
+        
         # Filter matches by selected leagues
         if "All Matches" not in selected_leagues:
             matches = [m for m in matches if get_league_name(m) in selected_leagues]
