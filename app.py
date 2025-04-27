@@ -917,7 +917,7 @@ def create_match_features_from_api(match_data):
                 
                 # Debug prints
                 print(f"Home - Pred: {home_implied*100:.2f}%, Odds: {odds_home:.2f}")
-                print(f"Draw - Pred: {draw_implied*100:.2f}%, Odds: {draw_odds:.2f}")
+                print(f"Draw - Pred: {draw_implied*100:.2f}%, Odds: {odds_draw:.2f}")
                 print(f"Away - Pred: {away_implied*100:.2f}%, Odds: {odds_away:.2f}")
                 
                 home_ev = calculate_ev(home_implied*100, odds_home)
@@ -2492,7 +2492,7 @@ def show_main_app():
                 apply_btn = preset_cols[0].button("Apply", key=f"apply_main_filter_{idx}")
                 delete_btn = preset_cols[1].button("Delete", key=f"delete_main_filter_{idx}")
                 if apply_btn:
-                    st.session_state.apply_filter_idx = idx
+                    st.session_state.pending_filter = sf
                     st.rerun()
                 if delete_btn:
                     st.session_state.saved_filters = filter_storage.delete_filter(sf['id'])
@@ -2536,20 +2536,19 @@ def show_main_app():
         }
         </style>
         ''', unsafe_allow_html=True)
-        
-        # --- PATCH: Handle savable filter apply BEFORE widgets are rendered ---
-        if "apply_filter_idx" in st.session_state:
-            sf = st.session_state.saved_filters[st.session_state.apply_filter_idx]
-            # Only use leagues that are currently available
+
+        # After building available_leagues, but BEFORE rendering widgets:
+        if "pending_filter" in st.session_state:
+            sf = st.session_state.pending_filter
             valid_leagues = [l for l in sf['leagues'] if l in available_leagues.keys()]
             if not valid_leagues:
                 valid_leagues = ["All Matches"]
             st.session_state.selected_leagues = valid_leagues
             st.session_state.confidence_levels = sf['confidence']
-            del st.session_state.apply_filter_idx
+            del st.session_state.pending_filter
             st.rerun()
         # ---------------------------------------------------------------
-        
+
         # Filter matches by selected leagues
         if "All Matches" not in selected_leagues:
             matches = [m for m in matches if get_league_name(m) in selected_leagues]
