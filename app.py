@@ -2450,6 +2450,7 @@ def show_main_app():
             "Select Competitions",
             options=list(available_leagues.keys()),
             default=["All Matches"],
+            key="selected_leagues",
             help="Filter matches by competitions (select multiple)"
         )
         
@@ -2458,6 +2459,7 @@ def show_main_app():
             "Filter by Confidence Levels",
             options=["All", "High", "Medium", "Low"],
             default=["All"],
+            key="confidence_levels",
             help="Filter predictions by confidence levels (High: ≥70%, Medium: 50-69%, Low: <50%)"
         )
         
