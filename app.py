@@ -2212,7 +2212,7 @@ def display_odds_box(title, odds, implied_prob, ev):
     ev_color = get_ev_color(ev)
     
     st.markdown(f"""
-        <div style="background-color: {ev_color}; padding: 0.5rem; border-radius: 6px; margin: 0.25rem 0; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+        <div style="background-color: {ev_color}; padding: 0.5rem; border-radius: 6px; margin: 0.25rem 0; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);">
             <h4 style="margin: 0; color: #1a1a1a; font-size: 0.9rem; font-weight: 600;">{title}</h4>
             <div style="display: flex; justify-content: space-between; margin-top: 0.25rem;">
                 <div>
@@ -2492,8 +2492,7 @@ def show_main_app():
                 apply_btn = preset_cols[0].button("Apply", key=f"apply_main_filter_{idx}")
                 delete_btn = preset_cols[1].button("Delete", key=f"delete_main_filter_{idx}")
                 if apply_btn:
-                    st.session_state.selected_leagues = sf['leagues']
-                    st.session_state.confidence_levels = sf['confidence']
+                    st.session_state.apply_filter_idx = idx
                     st.rerun()
                 if delete_btn:
                     st.session_state.saved_filters = filter_storage.delete_filter(sf['id'])
@@ -2537,6 +2536,15 @@ def show_main_app():
         }
         </style>
         ''', unsafe_allow_html=True)
+        
+        # --- PATCH: Handle savable filter apply BEFORE widgets are rendered ---
+        if "apply_filter_idx" in st.session_state:
+            sf = st.session_state.saved_filters[st.session_state.apply_filter_idx]
+            st.session_state.selected_leagues = sf['leagues']
+            st.session_state.confidence_levels = sf['confidence']
+            del st.session_state.apply_filter_idx
+            st.rerun()
+        # ---------------------------------------------------------------
         
         # Filter matches by selected leagues
         if "All Matches" not in selected_leagues:
