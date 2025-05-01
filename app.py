@@ -2631,8 +2631,8 @@ def add_navigation_buttons():
     col1, col2, col3 = st.columns([2,2,2])
     
     with col1:
-        if st.button("Home", key="home"):
-            st.query_params["page"] = "main"
+        if st.button("Graph Page", key="graph"):
+            st.query_params["page"] = "graph"
             st.rerun()
             
     with col2:
@@ -2686,6 +2686,8 @@ def auto_predict_matches():
         logger.error(f"Error in auto prediction: {str(e)}")
         return False
 
+from graph_page import render_graph_page
+
 def main():
     # Auto-predict endpoint for GitHub Actions
     params = dict(st.query_params)
@@ -2722,8 +2724,11 @@ def main():
         show_login_page()
     elif page == "history":
         show_history_page()
+    elif page == "graph":
+        render_graph_page()
     else:
         show_main_app()
 
 if __name__ == "__main__":
     main()
+    
