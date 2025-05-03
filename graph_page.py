@@ -82,8 +82,31 @@ def style_league_table(df):
     styled = df.style.apply(lambda x: [highlight(v, c) for v, c in zip(x, x.index)], axis=1)
     return styled
 
+def add_navigation_buttons():
+    col1, col2, col3 = st.columns([2,2,2])
+    
+    with col1:
+        if st.button("Home", key="main"):
+            st.query_params["page"] = "main"
+            st.rerun()
+            
+    with col2:
+        if st.button("History", key="history"):
+            st.query_params["page"] = "history"
+            st.rerun()
+            
+    with col3:
+        if st.button("Logout", key="logout"):
+            st.session_state.logged_in = False
+            st.query_params.clear()
+            st.rerun()
+
 def render_graph_page():
     st.title('League & Confidence Analytics')
+    
+    # Add navigation buttons
+    add_navigation_buttons()
+    
     st.markdown('''
     <style>
     .block-container {padding: 0 0 0 0;}
@@ -107,9 +130,10 @@ def render_graph_page():
     df['correct'] = (df['predicted_outcome'] == df['actual_outcome']).astype(int)
     if 'confidence' in df.columns:
         df['conf_band'] = df['confidence'].apply(get_confidence_band)
-        st.write(df['conf_band'].value_counts(dropna=False))
+        # st.write(df['conf_band'].value_counts(dropna=False))  # Debug output
     else:
-        st.write('No confidence column found!')
+        # st.write('No confidence column found!')  # Debug output
+        pass
     agg = league_table_agg(df)
     # Pivot for display with MultiIndex columns
     pivot = agg.pivot(index=['country', 'league'], columns='conf_band', values=['Games','Correct','RatePct','Profit','ROI'])
@@ -271,8 +295,8 @@ def render_graph_page():
                 styler = styler.format({(band,stat): '{:.2f}'})
         return styler
 
-    # Display the styled table
-    st.dataframe(style_dataframe(full_df), use_container_width=True)
+    # Remove the first table display - we'll only keep the last one
+    # st.dataframe(style_dataframe(full_df), use_container_width=True)
 
     # Alternative: Apply custom style_func (duplicate styling logic, kept for user request)
     def style_func(df):

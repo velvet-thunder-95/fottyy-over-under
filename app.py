@@ -2631,7 +2631,7 @@ def add_navigation_buttons():
     col1, col2, col3 = st.columns([2,2,2])
     
     with col1:
-        if st.button("Graph Page", key="graph"):
+        if st.button("Trends History", key="graph"):
             st.query_params["page"] = "graph"
             st.rerun()
             
@@ -2731,4 +2731,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
