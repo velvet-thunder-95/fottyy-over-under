@@ -97,7 +97,8 @@ def add_navigation_buttons():
             st.rerun()
 
 def render_graph_page():
-    st.title('League & Confidence Analytics')
+    st.title('------------------------------------------------------------')
+    st.title('--------- League & Confidence Analytics Page ---------------')
     
     # Add navigation buttons
     add_navigation_buttons()
