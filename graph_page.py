@@ -236,7 +236,7 @@ def render_graph_page():
         # RatePct
         if col[1]=='RatePct':
             if pd.isna(val) or val=='': return ''
-            if val >= 70: return 'background-color:#34c759;color:#fff;'
+            if val >= 70: return 'background-color:#34c759;color:#000;'
             if val >= 60: return 'background-color:#b6fcb6;'
             if val >= 50: return ''
             if val >= 40: return 'background-color:#ffe0b2;'
@@ -245,7 +245,7 @@ def render_graph_page():
         # Correct
         if col[1]=='Correct':
             if pd.isna(val) or val=='': return ''
-            if val == 100: return 'background-color:#34c759;color:#fff;'
+            if val == 100: return 'background-color:#34c759;color:#000;'
             if val >= 50: return 'background-color:#ffe0b2;'
             if val < 50: return 'background-color:#ffb3b3;'
             return ''
