@@ -109,27 +109,48 @@ def render_graph_page():
     .stDataFrame {font-size: 13px !important;}
     .stDataFrame th, .stDataFrame td {text-align: center !important;}
     .stDataFrame tbody tr:last-child {background: #e6f4ea !important; font-weight: bold;}
-    /* Make dataframe take full width and center it */
+    
+    /* Center the dataframe and make it take full width */
     .element-container:has(div.stDataFrame) {
         width: 100% !important;
         max-width: 100% !important;
         margin: 0 auto !important;
         display: flex !important;
         justify-content: center !important;
+        align-items: center !important;
     }
+    
+    /* Ensure the dataframe itself is centered */
+    .stDataFrame {
+        margin: 0 auto !important;
+        display: flex !important;
+        justify-content: center !important;
+        width: 100% !important;
+    }
+    
     .stDataFrame > div {
         width: 100% !important;
         max-width: 100% !important;
+        margin: 0 auto !important;
     }
+    
     .dataframe-container {
         width: 100% !important;
         max-width: 100% !important;
+        margin: 0 auto !important;
     }
+    
     /* Adjust main container padding */
     .main .block-container {
         padding-top: 1rem !important;
-        max-width: 95% !important;
-        width: 95% !important;
+        max-width: 98% !important;
+        width: 98% !important;
+        margin: 0 auto !important;
+    }
+    
+    /* Center table content */
+    table {
+        margin: 0 auto !important;
     }
     </style>
     ''', unsafe_allow_html=True)
@@ -252,24 +273,24 @@ def render_graph_page():
         # Profit/ROI
         if col[1] in ['Profit','ROI']:
             if pd.isna(val) or val=='': return ''
-            if val > 0: return 'background-color:#b6fcb6;color:#1a4d1a;'
-            if val < 0: return 'background-color:#ffb3b3;color:#b71c1c;'
+            if val > 0: return 'background-color: #b6fcb6; color: #1a4d1a;'
+            if val < 0: return 'background-color: #ffb3b3; color: #b71c1c;'
             return ''
         # RatePct
         if col[1]=='RatePct':
             if pd.isna(val) or val=='': return ''
-            if val >= 70: return 'background-color:#34c759;color:#000;'
-            if val >= 60: return 'background-color:#b6fcb6;'
+            if val >= 70: return 'background-color: #34c759; color: #000;'
+            if val >= 60: return 'background-color: #b6fcb6;'
             if val >= 50: return ''
-            if val >= 40: return 'background-color:#ffe0b2;'
-            if val < 40: return 'background-color:#ffb3b3;'
+            if val >= 40: return 'background-color: #ffe0b2;'
+            if val < 40: return 'background-color: #ffb3b3;'
             return ''
         # Correct
         if col[1]=='Correct':
             if pd.isna(val) or val=='': return ''
-            if val == 100: return 'background-color:#34c759;color:#000;'
-            if val >= 50: return 'background-color:#ffe0b2;'
-            if val < 50: return 'background-color:#ffb3b3;'
+            if val == 100: return 'background-color: #34c759; color: #000;'
+            if val >= 50: return 'background-color: #ffe0b2;'
+            if val < 50: return 'background-color: #ffb3b3;'
             return ''
         return ''
 
@@ -347,7 +368,7 @@ def render_graph_page():
         use_container_width=True, 
         hide_index=True, 
         width=2800,
-        height=1000
+        height=1500
     )
     st.markdown('</div>', unsafe_allow_html=True)
 
