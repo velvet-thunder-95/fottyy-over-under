@@ -109,10 +109,13 @@ def render_graph_page():
     .stDataFrame {font-size: 13px !important;}
     .stDataFrame th, .stDataFrame td {text-align: center !important;}
     .stDataFrame tbody tr:last-child {background: #e6f4ea !important; font-weight: bold;}
-    /* Make dataframe take full width */
+    /* Make dataframe take full width and center it */
     .element-container:has(div.stDataFrame) {
         width: 100% !important;
         max-width: 100% !important;
+        margin: 0 auto !important;
+        display: flex !important;
+        justify-content: center !important;
     }
     .stDataFrame > div {
         width: 100% !important;
@@ -121,6 +124,12 @@ def render_graph_page():
     .dataframe-container {
         width: 100% !important;
         max-width: 100% !important;
+    }
+    /* Adjust main container padding */
+    .main .block-container {
+        padding-top: 1rem !important;
+        max-width: 95% !important;
+        width: 95% !important;
     }
     </style>
     ''', unsafe_allow_html=True)
@@ -332,13 +341,13 @@ def render_graph_page():
     
     # Display the dataframe at full width with expanded size
     st.markdown("### League Performance Analysis")
-    st.markdown('<div style="width:100%; overflow-x:auto;">', unsafe_allow_html=True)
+    st.markdown('<div style="width:100%; overflow-x:auto; display:flex; justify-content:center;">', unsafe_allow_html=True)
     st.dataframe(
         styled, 
         use_container_width=True, 
         hide_index=True, 
-        width=3000,
-        height=800
+        width=2800,
+        height=1000
     )
     st.markdown('</div>', unsafe_allow_html=True)
 
