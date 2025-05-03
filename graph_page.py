@@ -1,11 +1,6 @@
 # graph_page.py
-"""
-Streamlit page for league-wise, confidence-segmented prediction analytics table (like the provided image)
-- Reads all predictions from Supabase (via PredictionHistory)
-- Aggregates by Country/League and Confidence Band
-- Computes Games, Correct, Rate%, Profit, ROI for each segment
-- Renders a styled, color-coded table with the same design as the image
-"""
+
+
 import streamlit as st
 import pandas as pd
 import numpy as np
