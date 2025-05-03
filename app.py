@@ -46,10 +46,14 @@ src_dir = os.path.join(project_root, 'src')
 sys.path.insert(0, src_dir)
 
 
-# Set page title and favicon
+# Get current page from query parameters (moved this up to set page config based on page)
+page = st.query_params.get("page", "main")
+
+# Set page title and favicon with layout based on current page
 st.set_page_config(
     page_title="Fottyy - Football Prediction",
-    page_icon="assets/favicon.png"
+    page_icon="assets/favicon.png",
+    layout="wide" if page == "graph" else "centered"  # Use wide layout only for graph page
 )
 
 # Custom CSS
@@ -917,7 +921,7 @@ def create_match_features_from_api(match_data):
                 
                 # Debug prints
                 print(f"Home - Pred: {home_implied*100:.2f}%, Odds: {odds_home:.2f}")
-                print(f"Draw - Pred: {draw_implied*100:.2f}%, Odds: {odds_draw:.2f}")
+                print(f"Draw - Pred: {draw_implied*100:.2f}%, Odds: {draw_odds:.2f}")
                 print(f"Away - Pred: {away_implied*100:.2f}%, Odds: {odds_away:.2f}")
                 
                 home_ev = calculate_ev(home_implied*100, odds_home)
@@ -2023,7 +2027,7 @@ def display_match_details(match, prediction_data, confidence):
             
             # Create combined container with market values and odds
             html = f'''
-                <div style="width: 100%; max-width: 800px; margin: 0 auto;">
+                <div style="width: 100%; max-width: 800px; margin: 5px auto;">
                     <div style="background-color: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px; margin-bottom: 4px;">
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 4px;">
                             <div style="text-align: center;">
@@ -2472,7 +2476,7 @@ def show_main_app():
 
         st.markdown('<div class="filter-preset-section"><h4>Save & Load Filter Presets</h4></div>', unsafe_allow_html=True)
         filter_name = st.text_input("Name your filter preset", key="main_filter_name", placeholder="e.g. Weekend Favs")
-        save_col, apply_col, delete_col = st.columns([2, 1, 1])
+        save_col, apply_col, delete_col = st.columns([2,1,1])
         save_btn = save_col.button("Save Filter", key="save_main_filter", help="Save the current filter selections as a preset")
         if save_btn:
             if filter_name:
@@ -2488,7 +2492,7 @@ def show_main_app():
             st.markdown("<div class='saved-filters-list'><b>Presets:</b></div>", unsafe_allow_html=True)
             for idx, sf in enumerate(st.session_state.saved_filters):
                 st.markdown(f"<div class='filter-preset'><b>{sf['name']}</b> | Leagues: <span class='filter-leagues'>{', '.join(sf['leagues'])}</span> | Confidence: <span class='filter-confidence'>{', '.join(sf['confidence'])}</span></div>", unsafe_allow_html=True)
-                preset_cols = st.columns([1, 1])
+                preset_cols = st.columns([1,1])
                 apply_btn = preset_cols[0].button("Apply", key=f"apply_main_filter_{idx}")
                 delete_btn = preset_cols[1].button("Delete", key=f"delete_main_filter_{idx}")
                 if apply_btn:
@@ -2712,9 +2716,7 @@ def main():
     # Initialize session state
     init_session_state()
     
-    # Get current page from query parameters
-    page = st.query_params.get("page", "main")
-    
+    # Use the page parameter that was already extracted at the top of the file
     if not st.session_state.logged_in and page != "login":
         st.query_params["page"] = "login"
         st.rerun()
