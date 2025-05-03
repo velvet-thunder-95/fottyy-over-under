@@ -277,18 +277,24 @@ def render_graph_page():
 
         styler = df.style.apply(row_style, axis=1)
         for band in ['High','Mid','Low','All']:
-            for stat in ['Profit','ROI','RatePct','Correct']:
+            for stat in ['Games', 'Correct', 'Profit','ROI','RatePct']:
                 styler = styler.applymap(lambda v: color_cell(v, (band,stat)), subset=pd.IndexSlice[:, (band,stat)])
+        
         # Ensure numeric columns are properly typed as floats
         for band in ['High','Mid','Low','All']:
-            for stat in ['Profit','ROI','RatePct']:
+            for stat in ['Games', 'Correct', 'Profit','ROI','RatePct']:
                 col = (band, stat)
                 if col in df.columns:
+                    # Convert empty strings to NaN first, then to numeric
+                    df[col] = df[col].replace('', np.nan)
                     df[col] = pd.to_numeric(df[col], errors='coerce')
         # Format floats
         for band in ['High','Mid','Low','All']:
             for stat in ['Profit','ROI','RatePct']:
                 styler = styler.format({(band,stat): '{:.2f}'})
+            # Format Games and Correct as integers
+            for stat in ['Games', 'Correct']:
+                styler = styler.format({(band,stat): '{:.0f}'})
         return styler
 
     # Remove the first table display - we'll only keep the last one
