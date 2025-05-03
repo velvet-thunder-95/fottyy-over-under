@@ -97,6 +97,9 @@ def add_navigation_buttons():
             st.rerun()
 
 def render_graph_page():
+    # Remove the set_page_config call as it can only be used once at the beginning of the app
+    # st.set_page_config(layout="wide", page_title="Fottyy - League Analytics")
+    
     st.title('-------------------------------------------------')
     st.title('League & Confidence Analytics Page ')
     
@@ -109,6 +112,16 @@ def render_graph_page():
     .stDataFrame {font-size: 13px !important;}
     .stDataFrame th, .stDataFrame td {text-align: center !important;}
     .stDataFrame tbody tr:last-child {background: #e6f4ea !important; font-weight: bold;}
+    
+    /* Force full width layout for this page */
+    .main .block-container {
+        max-width: 100% !important;
+        width: 100% !important;
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+        padding-top: 1rem !important;
+        margin: 0 auto !important;
+    }
     
     /* Center the dataframe and make it take full width */
     .element-container:has(div.stDataFrame) {
@@ -367,8 +380,8 @@ def render_graph_page():
         styled, 
         use_container_width=True, 
         hide_index=True, 
-        width=2800,
-        height=1500
+        width=3000,
+        height=2000
     )
     st.markdown('</div>', unsafe_allow_html=True)
 
