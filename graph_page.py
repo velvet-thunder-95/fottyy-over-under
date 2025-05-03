@@ -316,26 +316,7 @@ def render_graph_page():
         {'selector': 'th.col_heading.level1', 'props': [('border-bottom', '2px solid #bbb')]},
         {'selector': 'th.row_heading', 'props': [('border-right', '2px solid #bbb')]},
     ], overwrite=False)
-    
-    # Add custom CSS to make the dataframe larger
-    st.markdown("""
-    <style>
-    .stDataFrame {
-        height: 600px !important;
-        width: 100% !important;
-    }
-    .stDataFrame > div {
-        max-height: 600px !important;
-    }
-    .stDataFrame [data-testid="stDataFrameResizable"] {
-        height: 600px !important;
-        width: 100% !important;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-    
-    # Display the dataframe with increased height
-    st.dataframe(styled, use_container_width=True, hide_index=True, height=600)
+    st.dataframe(styled, use_container_width=True, hide_index=True, width=2000)
 
 
 # For Streamlit navigation
