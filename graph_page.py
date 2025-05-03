@@ -109,6 +109,19 @@ def render_graph_page():
     .stDataFrame {font-size: 13px !important;}
     .stDataFrame th, .stDataFrame td {text-align: center !important;}
     .stDataFrame tbody tr:last-child {background: #e6f4ea !important; font-weight: bold;}
+    /* Make dataframe take full width */
+    .element-container:has(div.stDataFrame) {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    .stDataFrame > div {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    .dataframe-container {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
     </style>
     ''', unsafe_allow_html=True)
 
@@ -316,7 +329,18 @@ def render_graph_page():
         {'selector': 'th.col_heading.level1', 'props': [('border-bottom', '2px solid #bbb')]},
         {'selector': 'th.row_heading', 'props': [('border-right', '2px solid #bbb')]},
     ], overwrite=False)
-    st.dataframe(styled, use_container_width=True, hide_index=True, width=2000)
+    
+    # Display the dataframe at full width with expanded size
+    st.markdown("### League Performance Analysis")
+    st.markdown('<div style="width:100%; overflow-x:auto;">', unsafe_allow_html=True)
+    st.dataframe(
+        styled, 
+        use_container_width=True, 
+        hide_index=True, 
+        width=3000,
+        height=800
+    )
+    st.markdown('</div>', unsafe_allow_html=True)
 
 
 # For Streamlit navigation
