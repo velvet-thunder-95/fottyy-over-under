@@ -17,15 +17,19 @@ def get_confidence_band(confidence):
         return 'Low'
 
 def calc_profit(row):
-    # $1 fixed bet, profit if correct (odds - 1), else -1
+    # $1 fixed bet, profit if correct (odds * bet_amount - bet_amount), else -bet_amount
+    bet_amount = 1.0  # Fixed $1 bet amount
+    
     if row['predicted_outcome'] == row['actual_outcome']:
+        # Won: Calculate profit based on the predicted outcome's odds
         if row['predicted_outcome'] == 'HOME':
-            return row['home_odds'] - 1
+            return float(round((row['home_odds'] * bet_amount) - bet_amount, 2))
         elif row['predicted_outcome'] == 'AWAY':
-            return row['away_odds'] - 1
+            return float(round((row['away_odds'] * bet_amount) - bet_amount, 2))
         elif row['predicted_outcome'] == 'DRAW':
-            return row['draw_odds'] - 1
-    return -1
+            return float(round((row['draw_odds'] * bet_amount) - bet_amount, 2))
+    # Lost: Lose the bet amount
+    return float(-bet_amount)
 
 def league_table_agg(df):
     # Do NOT assign conf_band here; it is assigned in render_graph_page
