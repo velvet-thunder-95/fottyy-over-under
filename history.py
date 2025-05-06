@@ -855,15 +855,20 @@ def show_history_page():
 
     # Add navigation buttons
     def add_navigation_buttons():
-        col1, col2 = st.columns([1, 1])
+        col1, col2, col3 = st.columns([1, 1, 1])
         
         with col1:
-            if st.button("🏠 Home", key="home"):
+            if st.button("Home", key="home"):
                 st.query_params["page"] = "main"
                 st.rerun()
                 
         with col2:
-            if st.button("🔄 Refresh", key="refresh"):
+            if st.button("Trend history", key="graph"):
+                st.query_params["page"] = "graph"
+                st.rerun()
+                
+        with col3:
+            if st.button("Refresh", key="refresh"):
                 st.rerun()
         
     add_navigation_buttons()
