@@ -288,13 +288,14 @@ def render_graph_page():
                     # Convert empty strings to NaN first, then to numeric
                     df[col] = df[col].replace('', np.nan)
                     df[col] = pd.to_numeric(df[col], errors='coerce')
-        # Format floats
+        # Format floats with comma as decimal separator and appropriate decimal places
         for band in ['High','Mid','Low','All']:
             for stat in ['Profit','ROI','RatePct']:
-                styler = styler.format({(band,stat): '{:.2f}'})
-            # Format Games and Correct as integers
+                # Custom formatter to replace dot with comma for decimal separator
+                styler = styler.format({(band,stat): lambda x: f"{x:.2f}".replace('.', ',') if pd.notnull(x) else ''})
+            # Format Games and Correct as integers with no decimal places
             for stat in ['Games', 'Correct']:
-                styler = styler.format({(band,stat): '{:.0f}'})
+                styler = styler.format({(band,stat): lambda x: f"{int(x)}" if pd.notnull(x) else ''})
         return styler
 
     # Remove the first table display - we'll only keep the last one
