@@ -288,14 +288,15 @@ def render_graph_page():
                     # Convert empty strings to NaN first, then to numeric
                     df[col] = df[col].replace('', np.nan)
                     df[col] = pd.to_numeric(df[col], errors='coerce')
-        # Format floats with comma as decimal separator and appropriate decimal places
+        # Format ALL numeric columns with appropriate formatting
         for band in ['High','Mid','Low','All']:
-            for stat in ['Profit','ROI','RatePct']:
-                # Custom formatter to replace dot with comma for decimal separator
-                styler = styler.format({(band,stat): lambda x: f"{x:.2f}".replace('.', ',') if pd.notnull(x) else ''})
-            # Format Games and Correct as integers with no decimal places
+            # Apply formatting to ALL columns
             for stat in ['Games', 'Correct']:
+                # Integer columns (no decimal places)
                 styler = styler.format({(band,stat): lambda x: f"{int(x)}" if pd.notnull(x) else ''})
+            for stat in ['RatePct', 'Profit', 'ROI']:
+                # Float columns (2 decimal places with comma separator)
+                styler = styler.format({(band,stat): lambda x: f"{x:.2f}".replace('.', ',') if pd.notnull(x) else ''})
         return styler
 
     # Remove the first table display - we'll only keep the last one
@@ -312,6 +313,18 @@ def render_graph_page():
                 if metric_style:
                     styles.iloc[i, j] += metric_style
                 styles.iloc[i, j] += row_styles[j]
+                
+                # Format the values for display
+                if col[1] in ['Games', 'Correct'] and pd.notnull(row[col]) and row[col] != '':
+                    try:
+                        df.iloc[i, j] = f"{int(row[col])}"
+                    except:
+                        pass
+                elif col[1] in ['RatePct', 'Profit', 'ROI'] and pd.notnull(row[col]) and row[col] != '':
+                    try:
+                        df.iloc[i, j] = f"{float(row[col]):.2f}".replace('.', ',')
+                    except:
+                        pass
         return styles
 
     styled = full_df.style.apply(style_func, axis=None)
