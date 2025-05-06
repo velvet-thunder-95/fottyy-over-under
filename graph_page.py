@@ -119,9 +119,6 @@ def render_graph_page():
     # Add navigation buttons
     add_navigation_buttons()
     
-    # Debug option
-    debug_mode = st.sidebar.checkbox("Debug Mode", value=False)
-    
     st.markdown('''
     <style>
     .block-container {padding: 0 0 0 0;}
@@ -133,21 +130,6 @@ def render_graph_page():
 
     ph = PredictionHistory()
     df = ph.get_predictions(status='Completed')
-    
-    # Debug mode to show raw data
-    if debug_mode:
-        st.subheader("Raw Data from Database")
-        st.write("Columns in dataframe:", df.columns.tolist())
-        st.write("Sample data:")
-        st.dataframe(df.head())
-        
-        if 'profit_loss' in df.columns:
-            st.subheader("Profit/Loss Summary")
-            total_profit = df['profit_loss'].sum()
-            total_games = len(df)
-            st.write(f"Total games: {total_games}")
-            st.write(f"Total profit from database: {total_profit:.2f}")
-            st.write(f"ROI from database: {(total_profit/total_games*100):.2f}%")
     
     # Drop unwanted columns if they exist
     for col in ['home_market_value', 'away_market_value', 'prediction_type']:
@@ -166,26 +148,6 @@ def render_graph_page():
         # st.write('No confidence column found!')  # Debug output
         pass
     agg = league_table_agg(df)
-    
-    # Debug mode to show aggregation results
-    if debug_mode:
-        st.subheader("Aggregation Results")
-        st.write("League table aggregation:")
-        st.dataframe(agg)
-        
-        # Calculate overall totals for comparison with history page
-        st.subheader("Overall Totals")
-        total_games = agg[agg['conf_band'] == 'All']['Games'].sum()
-        total_correct = agg[agg['conf_band'] == 'All']['Correct'].sum()
-        total_profit = agg[agg['conf_band'] == 'All']['Profit'].sum()
-        success_rate = (total_correct / total_games * 100) if total_games > 0 else 0
-        roi = (total_profit / total_games * 100) if total_games > 0 else 0
-        
-        st.write(f"Total Games: {total_games}")
-        st.write(f"Total Correct: {total_correct}")
-        st.write(f"Success Rate: {success_rate:.2f}%")
-        st.write(f"Total Profit: {total_profit:.2f}")
-        st.write(f"ROI: {roi:.2f}%")
     
     # Pivot for display with MultiIndex columns
     pivot = agg.pivot(index=['country', 'league'], columns='conf_band', values=['Games','Correct','RatePct','Profit','ROI'])
