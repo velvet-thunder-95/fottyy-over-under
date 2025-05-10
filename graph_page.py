@@ -201,10 +201,11 @@ def render_graph_page():
                 else:
                     row[col] = ''
         return row
+    # Create a single row with all calculations and two blank rows
     summary_rows = [
-        summary_row_combined(['High','Mid'], 'Mid/High Confidence', ['High','Mid']),
-        summary_row_combined(['Low'], 'Low Confidence', ['Low']),
-        summary_row_combined(['High','Mid','Low'], 'All Confidences', ['All'])
+        summary_row_combined(['High','Mid','Low'], 'Performance Summary', ['High','Mid','Low','All']),
+        {("country", ""): "", ("league", ""): ""},  # Empty row
+        {("country", ""): "", ("league", ""): ""}   # Empty row
     ]
     # Convert summary rows to DataFrame with MultiIndex columns and reindex to match pivot
     summary_df = pd.DataFrame(summary_rows)
