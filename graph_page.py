@@ -203,10 +203,17 @@ def render_graph_page():
         return row
     # Create a single row with all calculations and two blank rows
     summary_rows = [
-        summary_row_combined(['High','Mid','Low'], 'Performance Summary', ['High','Mid','Low','All']),
-        {("country", ""): "", ("league", ""): ""},  # Empty row
-        {("country", ""): "", ("league", ""): ""}   # Empty row
+        summary_row_combined(['High','Mid','Low'], 'Performance Summary', ['High','Mid','Low','All'])
     ]
+    
+    # Create completely empty rows
+    empty_row = {}
+    for col in multi_cols:
+        empty_row[col] = ''
+    
+    # Add two empty rows
+    summary_rows.append(empty_row.copy())
+    summary_rows.append(empty_row.copy())
     # Convert summary rows to DataFrame with MultiIndex columns and reindex to match pivot
     summary_df = pd.DataFrame(summary_rows)
     summary_df = summary_df.reindex(columns=multi_cols, fill_value='')
@@ -220,7 +227,7 @@ def render_graph_page():
         last_country = None
         start = 0
         for i, country in enumerate(df[('country', '')]):
-            if country in ['Mid/High Confidence','Low Confidence','All Confidences']:
+            if country in ['Performance Summary', '']:
                 break
             if country != last_country:
                 if last_country is not None:
@@ -240,7 +247,7 @@ def render_graph_page():
     def row_style(row):
         idx = row.name
         # Summary rows
-        if row[('country', '')] in ['Mid/High Confidence','Low Confidence','All Confidences']:
+        if row[('country', '')] == 'Performance Summary':
             return ['background-color:#e6f4ea;font-weight:bold;border-top:3px solid #222;' for _ in row]
         # International/cup section
         if intl_start is not None and idx >= intl_start:
@@ -285,7 +292,7 @@ def render_graph_page():
         def row_style(row):
             idx = row.name
             # Summary rows
-            if row[('country', '')] in ['Mid/High Confidence','Low Confidence','All Confidences']:
+            if row[('country', '')] == 'Performance Summary':
                 return ['background-color:#e6f4ea;font-weight:bold;border-top:3px solid #222;' for _ in row]
             # International/cup section
             if intl_start is not None and idx >= intl_start:
