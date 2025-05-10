@@ -138,8 +138,17 @@ def render_graph_page():
     if df.empty:
         st.info('No completed predictions to display.')
         return
+    # Split league names that contain hyphens into country and league parts
     if 'country' not in df.columns:
-        df['country'] = df['league']
+        # Create a function to split league names
+        def split_league_name(league_name):
+            if isinstance(league_name, str) and ' - ' in league_name:
+                parts = league_name.split(' - ', 1)
+                return parts[0], parts[1]
+            return league_name, league_name
+        
+        # Apply the function to extract country and league
+        df['country'], df['league'] = zip(*df['league'].apply(split_league_name))
     df['correct'] = (df['predicted_outcome'] == df['actual_outcome']).astype(int)
     if 'confidence' in df.columns:
         df['conf_band'] = df['confidence'].apply(get_confidence_band)
