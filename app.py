@@ -586,7 +586,7 @@ st.markdown("""
         position: fixed;
         bottom: 110px; /* Position above the back-to-top button */
         right: 20px;
-        display: none; /* Hidden by default, shown by JavaScript */
+        display: flex; /* Always visible for now */
         width: 40px;
         height: 40px;
         border-radius: 50%;
@@ -2420,9 +2420,8 @@ def show_main_app():
     
     # Add navigation buttons and both navigation buttons
     add_navigation_buttons()
-    add_navigation_buttons_js()  # Add JavaScript for button visibility
-    add_go_to_bottom_button()   # Add go-to-bottom button
-    add_back_to_top_button()    # Add back-to-top button
+    add_navigation_buttons_js()     # Add JavaScript for button visibility
+    add_navigation_buttons_html()   # Add both navigation buttons in a single HTML block
     
     st.markdown('<div id="top"></div>', unsafe_allow_html=True)
     
@@ -2687,35 +2686,49 @@ def add_navigation_buttons_js():
     """Add JavaScript for both navigation buttons"""
     st.markdown("""
         <script>
+            // Initialize both buttons when the page loads
+            document.addEventListener('DOMContentLoaded', function() {
+                // Make sure both buttons exist
+                console.log('Initializing navigation buttons');
+                var backToTopButton = document.querySelector('.back-to-top');
+                var goToBottomButton = document.querySelector('.go-to-bottom');
+                
+                if (backToTopButton) {
+                    console.log('Back to top button found');
+                    backToTopButton.style.display = 'flex';
+                }
+                
+                if (goToBottomButton) {
+                    console.log('Go to bottom button found');
+                    goToBottomButton.style.display = 'flex';
+                }
+            });
+            
             // Show/hide navigation buttons based on scroll position
             window.onscroll = function() {
                 var backToTopButton = document.querySelector('.back-to-top');
                 var goToBottomButton = document.querySelector('.go-to-bottom');
                 
-                if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
-                    backToTopButton.style.display = 'flex';
-                    goToBottomButton.style.display = 'flex';
-                } else {
-                    backToTopButton.style.display = 'none';
-                    goToBottomButton.style.display = 'none';
+                if (backToTopButton && goToBottomButton) {
+                    if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
+                        backToTopButton.style.display = 'flex';
+                        goToBottomButton.style.display = 'flex';
+                    } else {
+                        backToTopButton.style.display = 'none';
+                        goToBottomButton.style.display = 'none';
+                    }
                 }
             };
         </script>
     """, unsafe_allow_html=True)
 
-def add_go_to_bottom_button():
-    """Add a go to bottom button with arrow icon"""
+def add_navigation_buttons_html():
+    """Add both navigation buttons in a single HTML block"""
     st.markdown("""
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
         <a href="#bottom" class="go-to-bottom" title="Go to Bottom">
             <i class="fas fa-arrow-down"></i>
         </a>
-    """, unsafe_allow_html=True)
-
-def add_back_to_top_button():
-    """Add a back to top button with arrow icon"""
-    st.markdown("""
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
         <a href="#top" class="back-to-top" title="Back to Top">
             <i class="fas fa-arrow-up"></i>
         </a>
