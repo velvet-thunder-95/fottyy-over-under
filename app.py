@@ -582,6 +582,38 @@ st.markdown("""
     }
     
     /* Back to Top Button */
+    .go-to-bottom {
+        position: fixed;
+        top: 60px;
+        right: 20px;
+        display: flex;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: white;
+        color: #000000;
+        text-align: center;
+        font-size: 20px;
+        text-decoration: none;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+        transition: all 0.3s ease;
+    }
+    
+    .go-to-bottom:hover {
+        transform: translateY(3px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        color: #000000;
+    }
+    
+    .go-to-bottom i {
+        line-height: 40px;
+        display: inline-block;
+        color: #000000;
+    }
+    
     .back-to-top {
         position: fixed;
         bottom: 60px;
@@ -2386,9 +2418,10 @@ def show_main_app():
     # Update results automatically
     update_match_results()
     
-    # Add navigation buttons and back to top button
+    # Add navigation buttons and both navigation buttons
     add_navigation_buttons()
-    add_back_to_top_button()
+    add_go_to_bottom_button()  # Add go-to-bottom button at the top
+    add_back_to_top_button()   # Keep back-to-top button at the bottom
     
     st.markdown('<div id="top"></div>', unsafe_allow_html=True)
     
@@ -2604,6 +2637,9 @@ def show_main_app():
             else:
                 st.info(f"No matches with selected confidence levels found in {league_name}.")
                 
+    # Add bottom marker for the go-to-bottom button
+    st.markdown('<div id="bottom"></div>', unsafe_allow_html=True)
+    
     # Add Navigation JavaScript
     st.markdown("""
 <script>
@@ -2645,6 +2681,15 @@ def add_navigation_buttons():
             st.session_state.logged_in = False
             st.query_params.clear()
             st.rerun()
+
+def add_go_to_bottom_button():
+    """Add a go to bottom button with arrow icon"""
+    st.markdown("""
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+        <a href="#bottom" class="go-to-bottom" title="Go to Bottom">
+            <i class="fas fa-arrow-down"></i>
+        </a>
+    """, unsafe_allow_html=True)
 
 def add_back_to_top_button():
     """Add a back to top button with arrow icon"""
