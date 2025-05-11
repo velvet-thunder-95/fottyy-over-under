@@ -582,38 +582,6 @@ st.markdown("""
     }
     
     /* Back to Top Button */
-    .go-to-bottom {
-        position: fixed;
-        bottom: 110px; /* Position above the back-to-top button */
-        right: 20px;
-        display: flex; /* Always visible for now */
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background-color: white;
-        color: #000000;
-        text-align: center;
-        font-size: 20px;
-        text-decoration: none;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        z-index: 1000;
-        justify-content: center;
-        align-items: center;
-        transition: all 0.3s ease;
-    }
-    
-    .go-to-bottom:hover {
-        transform: translateY(3px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        color: #000000;
-    }
-    
-    .go-to-bottom i {
-        line-height: 40px;
-        display: inline-block;
-        color: #000000;
-    }
-    
     .back-to-top {
         position: fixed;
         bottom: 60px;
@@ -2418,10 +2386,9 @@ def show_main_app():
     # Update results automatically
     update_match_results()
     
-    # Add navigation buttons and both navigation buttons
+    # Add navigation buttons and back to top button
     add_navigation_buttons()
-    add_navigation_buttons_js()     # Add JavaScript for button visibility
-    add_navigation_buttons_html()   # Add both navigation buttons in a single HTML block
+    add_back_to_top_button()
     
     st.markdown('<div id="top"></div>', unsafe_allow_html=True)
     
@@ -2637,9 +2604,6 @@ def show_main_app():
             else:
                 st.info(f"No matches with selected confidence levels found in {league_name}.")
                 
-    # Add bottom marker for the go-to-bottom button
-    st.markdown('<div id="bottom"></div>', unsafe_allow_html=True)
-    
     # Add Navigation JavaScript
     st.markdown("""
 <script>
@@ -2682,70 +2646,23 @@ def add_navigation_buttons():
             st.query_params.clear()
             st.rerun()
 
-def add_navigation_buttons_js():
-    """Add JavaScript for both navigation buttons"""
-    st.markdown("""
-        <script>
-            // Initialize both buttons when the page loads
-            document.addEventListener('DOMContentLoaded', function() {
-                // Make sure both buttons exist
-                console.log('Initializing navigation buttons');
-                var backToTopButton = document.querySelector('.back-to-top');
-                var goToBottomButton = document.querySelector('.go-to-bottom');
-                
-                if (backToTopButton) {
-                    console.log('Back to top button found');
-                    backToTopButton.style.display = 'flex';
-                }
-                
-                if (goToBottomButton) {
-                    console.log('Go to bottom button found');
-                    goToBottomButton.style.display = 'flex';
-                }
-            });
-            
-            // Show/hide navigation buttons based on scroll position
-            window.onscroll = function() {
-                var backToTopButton = document.querySelector('.back-to-top');
-                var goToBottomButton = document.querySelector('.go-to-bottom');
-                
-                if (backToTopButton && goToBottomButton) {
-                    if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
-                        backToTopButton.style.display = 'flex';
-                        goToBottomButton.style.display = 'flex';
-                    } else {
-                        backToTopButton.style.display = 'none';
-                        goToBottomButton.style.display = 'none';
-                    }
-                }
-            };
-        </script>
-    """, unsafe_allow_html=True)
-
-def add_navigation_buttons_html():
-    """Add both navigation buttons in a single HTML block with JavaScript for smooth scrolling"""
+def add_back_to_top_button():
+    """Add a back to top button with arrow icon"""
     st.markdown("""
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-        <a href="javascript:void(0);" onclick="scrollToBottom();" class="go-to-bottom" title="Go to Bottom">
-            <i class="fas fa-arrow-down"></i>
-        </a>
-        <a href="javascript:void(0);" onclick="scrollToTop();" class="back-to-top" title="Back to Top">
+        <a href="#top" class="back-to-top" title="Back to Top">
             <i class="fas fa-arrow-up"></i>
         </a>
         <script>
-            function scrollToBottom() {
-                window.scrollTo({
-                    top: document.body.scrollHeight,
-                    behavior: 'smooth'
-                });
-            }
-            
-            function scrollToTop() {
-                window.scrollTo({
-                    top: 0,
-                    behavior: 'smooth'
-                });
-            }
+            // Show/hide back to top button based on scroll position
+            window.onscroll = function() {
+                var button = document.querySelector('.back-to-top');
+                if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
+                    button.style.display = 'flex';
+                } else {
+                    button.style.display = 'none';
+                }
+            };
         </script>
     """, unsafe_allow_html=True)
 
