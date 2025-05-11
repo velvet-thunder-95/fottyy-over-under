@@ -2723,15 +2723,30 @@ def add_navigation_buttons_js():
     """, unsafe_allow_html=True)
 
 def add_navigation_buttons_html():
-    """Add both navigation buttons in a single HTML block"""
+    """Add both navigation buttons in a single HTML block with JavaScript for smooth scrolling"""
     st.markdown("""
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-        <a href="#bottom" class="go-to-bottom" title="Go to Bottom">
+        <a href="javascript:void(0);" onclick="scrollToBottom();" class="go-to-bottom" title="Go to Bottom">
             <i class="fas fa-arrow-down"></i>
         </a>
-        <a href="#top" class="back-to-top" title="Back to Top">
+        <a href="javascript:void(0);" onclick="scrollToTop();" class="back-to-top" title="Back to Top">
             <i class="fas fa-arrow-up"></i>
         </a>
+        <script>
+            function scrollToBottom() {
+                window.scrollTo({
+                    top: document.body.scrollHeight,
+                    behavior: 'smooth'
+                });
+            }
+            
+            function scrollToTop() {
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            }
+        </script>
     """, unsafe_allow_html=True)
 
 def convert_to_cet(kickoff):
