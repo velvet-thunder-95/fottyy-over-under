@@ -584,9 +584,9 @@ st.markdown("""
     /* Back to Top Button */
     .go-to-bottom {
         position: fixed;
-        top: 60px;
+        bottom: 110px; /* Position above the back-to-top button */
         right: 20px;
-        display: flex;
+        display: none; /* Hidden by default, shown by JavaScript */
         width: 40px;
         height: 40px;
         border-radius: 50%;
@@ -2420,8 +2420,9 @@ def show_main_app():
     
     # Add navigation buttons and both navigation buttons
     add_navigation_buttons()
-    add_go_to_bottom_button()  # Add go-to-bottom button at the top
-    add_back_to_top_button()   # Keep back-to-top button at the bottom
+    add_navigation_buttons_js()  # Add JavaScript for button visibility
+    add_go_to_bottom_button()   # Add go-to-bottom button
+    add_back_to_top_button()    # Add back-to-top button
     
     st.markdown('<div id="top"></div>', unsafe_allow_html=True)
     
@@ -2682,6 +2683,26 @@ def add_navigation_buttons():
             st.query_params.clear()
             st.rerun()
 
+def add_navigation_buttons_js():
+    """Add JavaScript for both navigation buttons"""
+    st.markdown("""
+        <script>
+            // Show/hide navigation buttons based on scroll position
+            window.onscroll = function() {
+                var backToTopButton = document.querySelector('.back-to-top');
+                var goToBottomButton = document.querySelector('.go-to-bottom');
+                
+                if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
+                    backToTopButton.style.display = 'flex';
+                    goToBottomButton.style.display = 'flex';
+                } else {
+                    backToTopButton.style.display = 'none';
+                    goToBottomButton.style.display = 'none';
+                }
+            };
+        </script>
+    """, unsafe_allow_html=True)
+
 def add_go_to_bottom_button():
     """Add a go to bottom button with arrow icon"""
     st.markdown("""
@@ -2698,17 +2719,6 @@ def add_back_to_top_button():
         <a href="#top" class="back-to-top" title="Back to Top">
             <i class="fas fa-arrow-up"></i>
         </a>
-        <script>
-            // Show/hide back to top button based on scroll position
-            window.onscroll = function() {
-                var button = document.querySelector('.back-to-top');
-                if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
-                    button.style.display = 'flex';
-                } else {
-                    button.style.display = 'none';
-                }
-            };
-        </script>
     """, unsafe_allow_html=True)
 
 def convert_to_cet(kickoff):
