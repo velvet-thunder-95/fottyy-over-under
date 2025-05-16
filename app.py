@@ -657,8 +657,11 @@ if 'login_submitted' not in st.session_state:
 
 def login(username, password):
     """Validate login credentials"""
-    return (username == VALID_USERNAME and password == VALID_PASSWORD) or \
-           (username == VALID_USERNAME_2 and password == VALID_PASSWORD_2)
+    if (username == VALID_USERNAME and password == VALID_PASSWORD) or \
+       (username == VALID_USERNAME_2 and password == VALID_PASSWORD_2):
+        st.session_state.logged_in = True
+        return True
+    return False
 
 def logout():
     st.session_state.logged_in = False
