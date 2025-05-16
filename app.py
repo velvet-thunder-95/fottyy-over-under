@@ -668,27 +668,25 @@ def logout():
 
 def show_login_page():
     """Display the login page"""
-    st.markdown('<div class="login-container">', unsafe_allow_html=True)
-    st.title("Login to Fottyy")
-    
-    username = st.text_input("Username", placeholder="Enter your username")
-    password = st.text_input("Password", type="password", placeholder="Enter your password")
-    
-    if st.button("Login"):
-        if login(username, password):
-            st.session_state.logged_in = True
-            st.query_params.clear()
-            st.rerun()
-        else:
-            st.error("Invalid username or password")
-    
-    st.markdown("<div style='text-align: center; color: #666; margin-top: 20px;'>"
-                "<p>Demo Credentials:</p>"
-                f"<p>Username: {VALID_USERNAME} or {VALID_USERNAME_2}</p>"
-                "<p>Password: (Check documentation)</p>"
-                "</div>", unsafe_allow_html=True)
-    
-    st.markdown('</div>', unsafe_allow_html=True)
+    with st.container():
+        st.markdown("""<div class="login-container">
+            <h2 style="color: #1a1a1a; text-align: center; margin-bottom: 2rem;">Welcome Back!</h2>
+        </div>""", unsafe_allow_html=True)
+        
+        with st.form("login_form", clear_on_submit=False):
+            username = st.text_input("Username", placeholder="Enter your username")
+            password = st.text_input("Password", type="password", placeholder="Enter your password")
+            
+            submitted = st.form_submit_button("Login", use_container_width=True)
+            
+            if submitted:
+                if login(username, password):
+                    st.session_state.logged_in = True
+                    st.query_params["page"] = "main"
+                    st.rerun()
+                else:
+                    st.error("Invalid username or password")
+        
 
 def get_league_name(match):
     """Get league name from match data using LEAGUE_IDS mapping"""
