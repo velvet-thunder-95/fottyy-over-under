@@ -107,7 +107,9 @@ class OddsFetcher:
                 'Boca Juniors': 'Boca Juniors',
                 'Independiente': 'CA Independiente',
                 'River Plate': 'CA River Plate',
-                'Platense': 'CA Platense'
+                'Platense': 'CA Platense',
+                'ARG': 'Argentinos Jrs.',
+                'SAN': 'CA San Lorenzo'
             }
             
             # League name mappings
@@ -127,7 +129,11 @@ class OddsFetcher:
                 'Romania - Liga I': 'Liga I, Romania',
                 'Liga I': 'Liga I, Romania',
                 'Argentina - Liga Profesional': 'Liga Profesional, Argentina',
-                'Liga Profesional': 'Liga Profesional, Argentina'
+                'Liga Profesional': 'Liga Profesional, Argentina',
+                'Argentine football league - Primera Nacional': 'Liga Profesional, Argentina',
+                'Argentine football league': 'Liga Profesional, Argentina',
+                'Primera Nacional': 'Liga Profesional, Argentina',
+                'Argentina': 'Liga Profesional, Argentina'
             }
             
             # Apply mappings if available
@@ -181,8 +187,12 @@ class OddsFetcher:
                 # Check if league matches
                 league_match = True
                 if normalized_league and db_league:
+                    # Special case for Argentine league
+                    if ('argentina' in normalized_league or 'argentine' in normalized_league) and \
+                       ('argentina' in db_league or 'profesional' in db_league):
+                        league_match = True
                     # Extract country names for comparison
-                    if ',' in db_league:
+                    elif ',' in db_league:
                         db_country = db_league.split(',')[1].strip().lower() if len(db_league.split(',')) > 1 else ''
                         db_league_name = db_league.split(',')[0].strip().lower()
                         
@@ -192,9 +202,23 @@ class OddsFetcher:
                             league_match = (country in db_country or db_country in country) and \
                                           (league in db_league_name or db_league_name in league)
                         else:
-                            league_match = normalized_league in db_league or db_league in normalized_league
+                            # Check if any part of the league name matches
+                            words_in_normalized = set(normalized_league.split())
+                            words_in_db = set(db_league.split())
+                            common_words = words_in_normalized.intersection(words_in_db)
+                            if len(common_words) > 0:
+                                league_match = True
+                            else:
+                                league_match = normalized_league in db_league or db_league in normalized_league
                     else:
-                        league_match = normalized_league in db_league or db_league in normalized_league
+                        # Check if any part of the league name matches
+                        words_in_normalized = set(normalized_league.split())
+                        words_in_db = set(db_league.split())
+                        common_words = words_in_normalized.intersection(words_in_db)
+                        if len(common_words) > 0:
+                            league_match = True
+                        else:
+                            league_match = normalized_league in db_league or db_league in normalized_league
                 
                 if home_match and away_match and league_match:
                     return {
