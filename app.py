@@ -1484,7 +1484,7 @@ def display_match_odds(match_data):
         logger.info(f"Displaying odds from Swisslos for {match_data.get('home_name', '')} vs {match_data.get('away_name', '')}")
     else:
         st.markdown("""
-            <h3 style="text-align: center; color: #1f2937; margin: 20px 0; font-size: 1.5rem;">Odds from System</h3>
+            <h3 style="text-align: center; color: #1f2937; margin: 20px 0; font-size: 1.5rem;">Odds from fotty</h3>
         """, unsafe_allow_html=True)
         logger.info(f"Displaying odds from system for {match_data.get('home_name', '')} vs {match_data.get('away_name', '')}")
     
@@ -1632,29 +1632,11 @@ def get_match_prediction(match_data):
                 away_team = match_data.get('away_name', '')
                 league_name = get_league_name(match_data)
                 
-                # Special case for Swedish teams - direct mapping to database names
-                swedish_teams_db_mapping = {
-                    'Mjällby': 'Mjallby AIF',
-                    'Brommapojkarna': 'IF Brommapojkarna',
-                    'Sirius': 'Sirius',
-                    'Norrköping': 'IFK Norrkoping',
-                    'Degerfors': 'Degerfors IF',
-                    'IFK Göteborg': 'IFK Goteborg',
-                    'Elfsborg': 'IF Elfsborg',
-                    'Djurgården': 'Djurgardens IF'
-                }
-                
-                # Map team names to database names if they're in the mapping
-                db_home_team = swedish_teams_db_mapping.get(home_team, home_team)
-                db_away_team = swedish_teams_db_mapping.get(away_team, away_team)
-                
                 # Try to get odds from Supabase
-                logger.info(f"Trying to get odds from Supabase for {db_home_team} vs {db_away_team} in {league_name}")
+                logger.info(f"Trying to get odds from Supabase for {home_team} vs {away_team} in {league_name}")
                 
-                # For Swedish league, use fixed league name
-                db_league_name = 'Allsvenskan, Sweden' if 'Sweden' in league_name or 'Allsvenskan' in league_name else league_name
-                
-                odds_data = odds_fetcher.get_odds_from_db(db_home_team, db_away_team, db_league_name)
+                # The team name and league mapping is now handled in odds_fetcher.py
+                odds_data = odds_fetcher.get_odds_from_db(home_team, away_team, league_name)
                 
                 if odds_data:
                     logger.info(f"Found odds in Supabase: {odds_data}")
