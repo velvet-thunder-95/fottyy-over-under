@@ -27,6 +27,7 @@ from unidecode import unidecode as unidecode_text
 from sklearn.impute import SimpleImputer
 from transfermarkt_api import TransfermarktAPI
 from odds_generator import OddsGenerator
+from odds_fetcher import OddsFetcher
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -728,6 +729,7 @@ def load_model():
 predictor = load_model()
 transfermarkt_api = TransfermarktAPI()
 odds_generator = OddsGenerator(transfermarkt_api)  # Pass the transfermarkt_api instance
+odds_fetcher = OddsFetcher()  # Initialize the odds fetcher for Supabase football_odds table
 
 def create_match_features_from_api(match_data):
     """Create features DataFrame from match data with error handling"""
@@ -1472,9 +1474,18 @@ def get_multiple_market_values(teams):
 
 def display_match_odds(match_data):
     """Display FootyStats match odds in an organized box."""
-    st.markdown("""
-        <h3 style="text-align: center; color: #1f2937; margin: 20px 0; font-size: 1.5rem;"></h3>
-    """, unsafe_allow_html=True)
+    # Check if odds are from Supabase (Swisslos)
+    odds_source = match_data.get('odds_source', '')
+    
+    # Display header with source information if from Swisslos
+    if odds_source == 'supabase':
+        st.markdown("""
+            <h3 style="text-align: center; color: #1f2937; margin: 20px 0; font-size: 1.5rem;">Odds from Swisslos</h3>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown("""
+            <h3 style="text-align: center; color: #1f2937; margin: 20px 0; font-size: 1.5rem;"></h3>
+        """, unsafe_allow_html=True)
     
     # Get predicted probabilities for all markets
     home_pred = float(match_data.get('home_prob', 0)) 
@@ -1607,10 +1618,51 @@ def get_match_prediction(match_data):
         draw_prob = match_data.get('draw_prob')
         away_prob = match_data.get('away_prob')
         
-        # If we have valid probabilities from odds generator, use those
-        if (home_prob is not None and draw_prob is not None and away_prob is not None and
+        # Check if we have valid probabilities already
+        valid_probs = (home_prob is not None and draw_prob is not None and away_prob is not None and
             all(isinstance(p, (int, float)) for p in [home_prob, draw_prob, away_prob]) and
-            all(0 <= p <= 1 for p in [home_prob, draw_prob, away_prob])):
+            all(0 <= p <= 1 for p in [home_prob, draw_prob, away_prob]))
+        
+        # If we don't have valid probabilities, try to get them from Supabase football_odds table
+        if not valid_probs:
+            try:
+                # Get team names and league name
+                home_team = match_data.get('home_name', '')
+                away_team = match_data.get('away_name', '')
+                league_name = get_league_name(match_data)
+                
+                # Try to get odds from Supabase
+                odds_data = odds_fetcher.get_odds_from_db(home_team, away_team, league_name)
+                
+                if odds_data:
+                    # Convert odds to probabilities
+                    probs = odds_fetcher.convert_odds_to_probabilities(odds_data)
+                    
+                    if probs:
+                        logger.info(f"Using probabilities from Supabase: {probs}")
+                        home_prob = probs['home_prob']
+                        draw_prob = probs['draw_prob']
+                        away_prob = probs['away_prob']
+                        valid_probs = True
+                        
+                        # Store the odds in match_data for later use
+                        match_data['odds_ft_1'] = odds_data['home_odds']
+                        match_data['odds_ft_x'] = odds_data['draw_odds']
+                        match_data['odds_ft_2'] = odds_data['away_odds']
+                        
+                        # Also store probabilities in match_data
+                        match_data['home_prob'] = home_prob
+                        match_data['draw_prob'] = draw_prob
+                        match_data['away_prob'] = away_prob
+                        
+                        # Set the odds source to 'supabase' to indicate these are from Swisslos
+                        match_data['odds_source'] = 'supabase'
+            except Exception as e:
+                logger.error(f"Error getting odds from Supabase: {str(e)}")
+                # Continue with existing odds system if there's an error
+        
+        # If we have valid probabilities (either from match_data or from Supabase), use those
+        if valid_probs:
             
             # Convert to float and normalize
             home_prob = float(home_prob)
