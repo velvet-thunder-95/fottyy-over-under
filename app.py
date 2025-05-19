@@ -1353,88 +1353,93 @@ def display_probability_bars(home_prob, draw_prob, away_prob, home_team, away_te
     """, unsafe_allow_html=True)
 
 def display_market_values(home_team, away_team):
-    """Display market values for both teams in a styled box"""
-    try:
-        logger.info(f"Starting to display market values for {home_team} vs {away_team}")
-        home_value, away_value = get_market_values(home_team, away_team)
-        
-        # Format values for display
-        def format_value(value):
-            if value is None:  
-                return 'N/A'
-            # Handle integer values (in euros)
-            if isinstance(value, (int, float)):
-                return f"€{value/1000000:.1f}M"
-            # Handle dict format for backward compatibility
-            if isinstance(value, dict):
-                market_value = value.get('market_value', 'N/A')
-                if market_value == 'N/A':
-                    return market_value
+    """Display a button to load market values for both teams"""
+    button_key = f"load_market_values_{home_team}_{away_team}".replace(" ", "_")
+    
+    # Use session state to track if market values should be shown
+    if button_key not in st.session_state:
+        st.session_state[button_key] = False
+    
+    # Show the load button if values aren't loaded yet
+    if not st.session_state[button_key]:
+        if st.button(f"💰 Show Market Values", key=f"btn_{button_key}"):
+            st.session_state[button_key] = True
+            st.rerun()
+        return
+    
+    # If button was clicked, show loading and fetch values
+    with st.spinner("Loading market values..."):
+        try:
+            logger.info(f"Fetching market values for {home_team} vs {away_team}")
+            home_value, away_value = get_market_values(home_team, away_team)
+            
+            # Format values for display
+            def format_value(value):
+                if value is None:  
+                    return 'N/A'
+                # Handle integer values (in euros)
                 try:
+                    market_value = value.get('market_value', 'N/A') if isinstance(value, dict) else value
+                    if market_value == 'N/A':
+                        return market_value
                     if isinstance(market_value, (int, float)):
                         return f"€{market_value/1000000:.1f}M"
-                    # Legacy string format handling
+                    # Handle string values like '10.5m €'
                     num_value = float(market_value.replace('m €', '').strip())
                     return f"€{num_value:.1f}M"
-                except (ValueError, AttributeError):
-                    return market_value
-            return 'N/A'
-        
-        formatted_home_value = format_value(home_value)
-        formatted_away_value = format_value(away_value)
-        
-        logger.info(f"Retrieved market values - Home: {formatted_home_value}, Away: {formatted_away_value}")
-        
-        st.markdown(f"""
-            <div style="
-                background-color: #f8fafc;
-                border: 2px solid #64748b;
-                border-radius: 8px;
-                padding: 16px;
-                margin: 12px 0;
-                font-family: 'SF Mono', monospace;
-                font-size: 0.95rem;
-                font-weight: 500;
-                color: #0369a1;
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
-                <h4 style="
-                    color: #334155;
-                    margin: 0 0 12px 0;
-                    font-size: 1.1rem;
-                    font-weight: 600;">
-                    Team Market Values
-                </h4>
-                <div style="
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    margin-top: 8px;">
-                    <div>
-                        <span style="color: #64748b; font-size: 0.9rem;">Home Market Value</span><br/>
-                        <span style="
-                            color: #0f172a;
-                            font-weight: 600;
-                            font-size: 1.1rem;">
-                            {formatted_home_value}
-                        </span>
-                    </div>
-                    <div>
-                        <span style="color: #64748b; font-size: 0.9rem;">Away Market Value</span><br/>
-                        <span style="
-                            color: #0f172a;
-                            font-weight: 600;
-                            font-size: 1.1rem;">
-                            {formatted_away_value}
-                        </span>
+                except (AttributeError, ValueError, TypeError):
+                    return market_value if market_value != 'N/A' else 'N/A'
+                    
+            formatted_home_value = format_value(home_value)
+            formatted_away_value = format_value(away_value)
+            
+            st.markdown(f"""
+                <div style="background: #ffffff; 
+                            padding: 1rem; 
+                            border-radius: 8px; 
+                            margin: 1rem 0;
+                            box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="text-align: center; flex: 1;">
+                            <div style="font-weight: 600; color: #4a5568; margin-bottom: 0.5rem; font-size: 0.9rem;">
+                                {home_team}
+                            </div>
+                            <span style="font-weight: 700; 
+                                       color: #2c5282;
+                                       font-size: 1.1rem;">
+                                {formatted_home_value}
+                            </span>
+                        </div>
+                        <div style="font-weight: 600; color: #4a5568;">vs</div>
+                        <div style="text-align: center; flex: 1;">
+                            <div style="font-weight: 600; color: #4a5568; margin-bottom: 0.5rem; font-size: 0.9rem;">
+                                {away_team}
+                            </div>
+                            <span style="font-weight: 700; 
+                                       color: #2c5282;
+                                       font-size: 1.1rem;">
+                                {formatted_away_value}
+                            </span>
+                        </div>
                     </div>
                 </div>
-            </div>
-        """, unsafe_allow_html=True)
-        logger.info("Successfully displayed market values")
-    except Exception as e:
-        st.warning("Market values not available")
-        logger.error(f"Error displaying market values: {str(e)}")
-        logger.exception("Full traceback:")
+            """, unsafe_allow_html=True)
+            
+            # Add a button to hide the values
+            if st.button("❌ Hide Market Values", key=f"hide_{button_key}"):
+                st.session_state[button_key] = False
+                st.rerun()
+                
+            logger.info("Successfully displayed market values")
+            
+        except Exception as e:
+            st.error("❌ Failed to load market values. Please try again.")
+            logger.error(f"Error displaying market values: {str(e)}")
+            logger.exception("Full traceback:")
+            
+            # Reset the button state on error
+            st.session_state[button_key] = False
+            st.rerun()
 
 @st.cache_data(ttl=3600)  # Cache for 1 hour
 def get_market_values(home_team, away_team):
