@@ -85,9 +85,42 @@ class OddsFetcher:
                 
                 logger.info(f"DB Record: Home='{db_home}', Away='{db_away}', League='{db_league}'")
                 
-                # Check if team names match - use more flexible matching
-                home_match = db_home == normalized_home or normalized_home in db_home or db_home in normalized_home
-                away_match = db_away == normalized_away or normalized_away in db_away or db_away in normalized_away
+                # Check if team names match - use more flexible matching with special cases for Swedish teams
+                
+                # Special cases for Swedish teams
+                swedish_team_mappings = {
+                    'djurgarden': ['djurgardens', 'djurgarden', 'djurgårdens', 'djurgården'],
+                    'norrkoping': ['norrkoping', 'norrköping', 'ifk norrkoping'],
+                    'goteborg': ['goteborg', 'göteborg', 'ifk goteborg', 'ifk göteborg'],
+                    'elfsborg': ['elfsborg', 'if elfsborg'],
+                    'mjallby': ['mjallby', 'mjällby', 'mjallby aif', 'mjällby aif'],
+                    'brommapojkarna': ['brommapojkarna', 'if brommapojkarna'],
+                    'sirius': ['sirius', 'ik sirius'],
+                    'degerfors': ['degerfors', 'degerfors if']
+                }
+                
+                # Check for special case matches
+                home_match = False
+                for key, variations in swedish_team_mappings.items():
+                    if normalized_home in variations or any(var in normalized_home for var in variations):
+                        if db_home in variations or any(var in db_home for var in variations):
+                            home_match = True
+                            break
+                
+                away_match = False
+                for key, variations in swedish_team_mappings.items():
+                    if normalized_away in variations or any(var in normalized_away for var in variations):
+                        if db_away in variations or any(var in db_away for var in variations):
+                            away_match = True
+                            break
+                
+                # If no special case match, try standard matching
+                if not home_match:
+                    home_match = db_home == normalized_home or normalized_home in db_home or db_home in normalized_home
+                
+                if not away_match:
+                    away_match = db_away == normalized_away or normalized_away in db_away or db_away in normalized_away
+                
                 teams_match = home_match and away_match
                 
                 logger.info(f"Team matching: home_match={home_match}, away_match={away_match}")

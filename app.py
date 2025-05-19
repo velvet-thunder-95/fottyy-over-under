@@ -1650,18 +1650,22 @@ def get_match_prediction(match_data):
                         match_data['odds_ft_1'] = odds_data['home_odds']
                         match_data['odds_ft_x'] = odds_data['draw_odds']
                         match_data['odds_ft_2'] = odds_data['away_odds']
+                        
+                        # Set the odds source to 'supabase' to indicate these are from Swisslos
+                        match_data['odds_source'] = 'supabase'
+                        logger.info(f"Set odds_source to 'supabase' for {home_team} vs {away_team}")
                 else:
                     logger.info(f"No odds found in Supabase for {home_team} vs {away_team}")
                 
-                # If we found valid odds from Supabase, also store probabilities and source
-                if valid_probs and odds_data and 'source' in odds_data and odds_data['source'] == 'supabase':
-                    # Also store probabilities in match_data
-                    match_data['home_prob'] = home_prob
-                    match_data['draw_prob'] = draw_prob
-                    match_data['away_prob'] = away_prob
-                    
-                    # Set the odds source to 'supabase' to indicate these are from Swisslos
-                    match_data['odds_source'] = 'supabase'
+                # Print debug info about odds_data and valid_probs
+                logger.info(f"odds_data: {odds_data if odds_data else 'None'}")
+                logger.info(f"valid_probs: {valid_probs}")
+                if odds_data:
+                    logger.info(f"'source' in odds_data: {'source' in odds_data}")
+                    if 'source' in odds_data:
+                        logger.info(f"odds_data['source'] == 'supabase': {odds_data['source'] == 'supabase'}")
+                
+                # We've already set the odds_source in the code above, so we don't need to do it again here
             except Exception as e:
                 logger.error(f"Error getting odds from Supabase: {str(e)}")
                 # Continue with existing odds system if there's an error
