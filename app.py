@@ -2076,29 +2076,12 @@ def display_match_details(match, prediction_data, confidence):
         prediction = f"{match.get('home_name', 'Home Team')} vs {match.get('away_name', 'Away Team')} - {prediction_data.get('predicted_outcome', 'No Prediction')}"
         display_prediction(prediction, confidence or 0)
         
-        # Display market values and odds in a single container
+        # Display market values with lazy loading
         try:
-            # Get market values
-            home_value, away_value = get_market_values(home_team, away_team)
+            # Display market values with the new lazy loading button
+            display_market_values(home_team, away_team)
             
-            # Format market values
-            def format_market_value(value):
-                if not value or value == 'N/A':
-                    return 'N/A'
-                try:
-                    value = float(value.replace('€', '').replace('m', '').strip())
-                    if value >= 1:
-                        return f'€{value:.1f}m'
-                    else:
-                        value_k = value * 1000
-                        return f'€{value_k:.0f}k'
-                except:
-                    return value
-            
-            formatted_home_value = format_market_value(home_value)
-            formatted_away_value = format_market_value(away_value)
-            
-            # Get probabilities
+            # Get probabilities for the match outcome
             home_prob = float(match.get('home_prob', 0))
             draw_prob = float(match.get('draw_prob', 0))
             away_prob = float(match.get('away_prob', 0))
@@ -2110,48 +2093,34 @@ def display_match_details(match, prediction_data, confidence):
                 draw_prob = (draw_prob / total) * 100
                 away_prob = (away_prob / total) * 100
             
-            # Create combined container with market values and odds
-            html = f'''
-                <div style="width: 100%; max-width: 800px; margin: 0 auto;">
-                    <div style="background-color: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px; margin-bottom: 4px;">
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 4px;">
-                            <div style="text-align: center;">
-                                <div style="color: #4a5568; font-size: 0.8rem; font-weight: 500; margin-bottom: 0px;">Home Market Value</div>
-                                <div style="color: #2d3748; font-size: 1rem; font-weight: 600; line-height: 1.2;">{formatted_home_value}</div>
-                            </div>
-                            <div style="text-align: center;">
-                                <div style="color: #4a5568; font-size: 0.8rem; font-weight: 500; margin-bottom: 0px;">Away Market Value</div>
-                                <div style="color: #2d3748; font-size: 1rem; font-weight: 600; line-height: 1.2;">{formatted_away_value}</div>
-                            </div>
+            # Display match outcome probabilities
+            st.markdown(f'''
+                <div style="margin: 10px 0 20px 0;">
+                    <div style="font-weight: 600; color: #4a5568; margin-bottom: 8px; text-align: center;">Match Outcome Probabilities</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0; background: white; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0;">
+                        <div style="padding: 8px; text-align: center; border-right: 1px solid #e2e8f0;">
+                            <div style="color: #2d3748; font-weight: 600; font-size: 0.8rem; margin-bottom: 4px;">Home</div>
+                            <div style="color: #48bb78; font-size: 1rem; font-weight: 700;">{home_prob:.1f}%</div>
                         </div>
-                        <div style="height: 1px; background-color: #e2e8f0; margin: 1px 0;"></div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0; margin-top: 4px;">
-                            <div style="text-align: center;">
-                                <div style="color: #2d3748; font-weight: 600; font-size: 0.8rem; margin-bottom: 0px; line-height: 1.2;">Home</div>
-                                <div style="color: #48bb78; font-size: 1rem; font-weight: 700; line-height: 1.2;">{home_prob:.1f}%</div>
-                            </div>
-                            <div style="text-align: center; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
-                                <div style="color: #2d3748; font-weight: 600; font-size: 0.8rem; margin-bottom: 0px; line-height: 1.2;">Draw</div>
-                                <div style="color: #ed8936; font-size: 1rem; font-weight: 700; line-height: 1.2;">{draw_prob:.1f}%</div>
-                            </div>
-                            <div style="text-align: center;">
-                                <div style="color: #2d3748; font-weight: 600; font-size: 0.8rem; margin-bottom: 0px; line-height: 1.2;">Away</div>
-                                <div style="color: #3182ce; font-size: 1rem; font-weight: 700; line-height: 1.2;">{away_prob:.1f}%</div>
-                            </div>
+                        <div style="padding: 8px; text-align: center; border-right: 1px solid #e2e8f0;">
+                            <div style="color: #2d3748; font-weight: 600; font-size: 0.8rem; margin-bottom: 4px;">Draw</div>
+                            <div style="color: #ed8936; font-size: 1rem; font-weight: 700;">{draw_prob:.1f}%</div>
                         </div>
-                        <div style="width: 100%; height: 2px; background: #edf2f7; border-radius: 1px; overflow: hidden; display: flex; margin-top: 4px;">
-                            <div style="width: {home_prob}%; height: 100%; background-color: #48bb78;"></div>
-                            <div style="width: {draw_prob}%; height: 100%; background-color: #ed8936;"></div>
-                            <div style="width: {away_prob}%; height: 100%; background-color: #3182ce;"></div>
+                        <div style="padding: 8px; text-align: center;">
+                            <div style="color: #2d3748; font-weight: 600; font-size: 0.8rem; margin-bottom: 4px;">Away</div>
+                            <div style="color: #3182ce; font-size: 1rem; font-weight: 700;">{away_prob:.1f}%</div>
                         </div>
                     </div>
+                    <div style="width: 100%; height: 4px; background: #edf2f7; border-radius: 2px; overflow: hidden; display: flex; margin-top: 8px;">
+                        <div style="width: {home_prob}%; height: 100%; background-color: #48bb78;"></div>
+                        <div style="width: {draw_prob}%; height: 100%; background-color: #ed8936;"></div>
+                        <div style="width: {away_prob}%; height: 100%; background-color: #3182ce;"></div>
+                    </div>
                 </div>
-            '''
-            
-            st.markdown(html, unsafe_allow_html=True)
+            ''', unsafe_allow_html=True)
             
         except Exception as e:
-            logger.error(f"Error displaying market values and odds: {str(e)}")
+            logger.error(f"Error displaying match probabilities: {str(e)}")
             
         # Display kickoff time
         try:
