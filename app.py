@@ -1479,12 +1479,14 @@ def display_match_odds(match_data):
     # Display header with source information if from Swisslos
     if odds_source == 'supabase':
         st.markdown("""
-            <h3 style="text-align: center; color: #1f2937; margin: 20px 0; font-size: 1.5rem;">Odds from Swisslos</h3>
+            <h3 style="text-align: center; color: #1f2937; margin: 20px 0; font-size: 1.5rem; background-color: #e6f7ff; padding: 10px; border-radius: 5px;">Odds from Swisslos</h3>
         """, unsafe_allow_html=True)
+        logger.info(f"Displaying odds from Swisslos for {match_data.get('home_name', '')} vs {match_data.get('away_name', '')}")
     else:
         st.markdown("""
-            <h3 style="text-align: center; color: #1f2937; margin: 20px 0; font-size: 1.5rem;"></h3>
+            <h3 style="text-align: center; color: #1f2937; margin: 20px 0; font-size: 1.5rem;">Odds from System</h3>
         """, unsafe_allow_html=True)
+        logger.info(f"Displaying odds from system for {match_data.get('home_name', '')} vs {match_data.get('away_name', '')}")
     
     # Get predicted probabilities for all markets
     home_pred = float(match_data.get('home_prob', 0)) 
@@ -1632,6 +1634,12 @@ def get_match_prediction(match_data):
                 
                 # Try to get odds from Supabase
                 logger.info(f"Trying to get odds from Supabase for {home_team} vs {away_team} in {league_name}")
+                # Add team abbreviations to help with matching
+                home_abbr = match_data.get('home_abbr', '')
+                away_abbr = match_data.get('away_abbr', '')
+                if home_abbr or away_abbr:
+                    logger.info(f"Team abbreviations: Home={home_abbr}, Away={away_abbr}")
+                
                 odds_data = odds_fetcher.get_odds_from_db(home_team, away_team, league_name)
                 
                 if odds_data:
@@ -1654,6 +1662,16 @@ def get_match_prediction(match_data):
                         # Set the odds source to 'supabase' to indicate these are from Swisslos
                         match_data['odds_source'] = 'supabase'
                         logger.info(f"Set odds_source to 'supabase' for {home_team} vs {away_team}")
+                        
+                        # Also set additional odds data
+                        if 'over25_odds' in odds_data:
+                            match_data['odds_over'] = odds_data['over25_odds']
+                        if 'under25_odds' in odds_data:
+                            match_data['odds_under'] = odds_data['under25_odds']
+                        if 'btts_yes_odds' in odds_data:
+                            match_data['odds_btts_yes'] = odds_data['btts_yes_odds']
+                        if 'btts_no_odds' in odds_data:
+                            match_data['odds_btts_no'] = odds_data['btts_no_odds']
                 else:
                     logger.info(f"No odds found in Supabase for {home_team} vs {away_team}")
                 
@@ -1664,6 +1682,10 @@ def get_match_prediction(match_data):
                     logger.info(f"'source' in odds_data: {'source' in odds_data}")
                     if 'source' in odds_data:
                         logger.info(f"odds_data['source'] == 'supabase': {odds_data['source'] == 'supabase'}")
+                
+                # Additional debug info for match data
+                logger.info(f"match_data['odds_source']: {match_data.get('odds_source', 'not set')}")
+                logger.info(f"Final odds for {home_team} vs {away_team}: Home={match_data.get('odds_ft_1', 'N/A')}, Draw={match_data.get('odds_ft_x', 'N/A')}, Away={match_data.get('odds_ft_2', 'N/A')}")
                 
                 # We've already set the odds_source in the code above, so we don't need to do it again here
             except Exception as e:

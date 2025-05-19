@@ -89,15 +89,17 @@ class OddsFetcher:
                 
                 # Special cases for Swedish teams
                 swedish_team_mappings = {
-                    'djurgarden': ['djurgardens', 'djurgarden', 'djurgårdens', 'djurgården'],
-                    'norrkoping': ['norrkoping', 'norrköping', 'ifk norrkoping'],
-                    'goteborg': ['goteborg', 'göteborg', 'ifk goteborg', 'ifk göteborg'],
-                    'elfsborg': ['elfsborg', 'if elfsborg'],
-                    'mjallby': ['mjallby', 'mjällby', 'mjallby aif', 'mjällby aif'],
-                    'brommapojkarna': ['brommapojkarna', 'if brommapojkarna'],
-                    'sirius': ['sirius', 'ik sirius'],
-                    'degerfors': ['degerfors', 'degerfors if']
+                    'djurgarden': ['djurgardens', 'djurgarden', 'djurgårdens', 'djurgården', 'djurgårdens if', 'djurgården', 'dju'],
+                    'norrkoping': ['norrkoping', 'norrköping', 'ifk norrkoping', 'ifk norrköping', 'nor'],
+                    'goteborg': ['goteborg', 'göteborg', 'ifk goteborg', 'ifk göteborg', 'ifk'],
+                    'elfsborg': ['elfsborg', 'if elfsborg', 'elf'],
+                    'mjallby': ['mjallby', 'mjällby', 'mjallby aif', 'mjällby aif', 'mjä'],
+                    'brommapojkarna': ['brommapojkarna', 'if brommapojkarna', 'bro'],
+                    'sirius': ['sirius', 'ik sirius', 'sir'],
+                    'degerfors': ['degerfors', 'degerfors if', 'deg']
                 }
+                
+                logger.info(f"Checking team matches for {normalized_home} vs {normalized_away}")
                 
                 # Check for special case matches
                 home_match = False
@@ -105,6 +107,7 @@ class OddsFetcher:
                     if normalized_home in variations or any(var in normalized_home for var in variations):
                         if db_home in variations or any(var in db_home for var in variations):
                             home_match = True
+                            logger.info(f"Special case match found for home team: {normalized_home} matches with {db_home} via {key}")
                             break
                 
                 away_match = False
@@ -112,14 +115,19 @@ class OddsFetcher:
                     if normalized_away in variations or any(var in normalized_away for var in variations):
                         if db_away in variations or any(var in db_away for var in variations):
                             away_match = True
+                            logger.info(f"Special case match found for away team: {normalized_away} matches with {db_away} via {key}")
                             break
                 
                 # If no special case match, try standard matching
                 if not home_match:
                     home_match = db_home == normalized_home or normalized_home in db_home or db_home in normalized_home
+                    if home_match:
+                        logger.info(f"Standard match found for home team: {normalized_home} matches with {db_home}")
                 
                 if not away_match:
                     away_match = db_away == normalized_away or normalized_away in db_away or db_away in normalized_away
+                    if away_match:
+                        logger.info(f"Standard match found for away team: {normalized_away} matches with {db_away}")
                 
                 teams_match = home_match and away_match
                 
@@ -131,9 +139,11 @@ class OddsFetcher:
                     normalized_league = self.normalize_team_name(league_name)
                     
                     # Handle special cases for league names
-                    if 'sweden - allsvenskan' in normalized_league and 'allsvenskan, sweden' in db_league:
+                    if 'allsvenskan' in normalized_league and 'allsvenskan' in db_league:
+                        logger.info(f"League match found: Both contain 'allsvenskan'")
                         league_match = True
-                    elif 'allsvenskan' in normalized_league and 'allsvenskan' in db_league:
+                    elif 'sweden' in normalized_league and 'sweden' in db_league:
+                        logger.info(f"League match found: Both contain 'sweden'")
                         league_match = True
                     # Extract country name for comparison
                     elif ' - ' in normalized_league and ',' in db_league:
@@ -149,6 +159,22 @@ class OddsFetcher:
                         league_match = False
                         
                     logger.info(f"League comparison: '{normalized_league}' vs '{db_league}' = {league_match}")
+                    
+                        # Special case for Swedish Allsvenskan
+                    if not league_match and ('allsvenskan' in normalized_league or 'sweden' in normalized_league):
+                        logger.info(f"Checking special case for Swedish Allsvenskan")
+                        if 'allsvenskan' in db_league or 'sweden' in db_league:
+                            logger.info(f"Special case match found for Swedish Allsvenskan")
+                            league_match = True
+                    
+                    # Always match Swedish Allsvenskan if both teams are Swedish
+                    if not league_match and home_match and away_match:
+                        for key in swedish_team_mappings.keys():
+                            if (key in normalized_home or key in db_home) and (key in normalized_away or key in db_away):
+                                if 'allsvenskan' in db_league or 'sweden' in db_league:
+                                    logger.info(f"Forced league match for Swedish teams in Allsvenskan")
+                                    league_match = True
+                                    break
                 
                 logger.info(f"Match result: teams_match={teams_match}, league_match={league_match}")
                 
