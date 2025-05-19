@@ -1,9 +1,4 @@
-"""
-Odds Fetcher - Fetches odds data from Supabase football_odds table
 
-This module provides functions to fetch odds data from the Supabase football_odds table
-and integrate it with the existing odds system in the application.
-"""
 
 import logging
 from supabase_db import SupabaseDB
