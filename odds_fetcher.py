@@ -23,7 +23,30 @@ class OddsFetcher:
         """Normalize team name for comparison by removing accents and converting to lowercase"""
         if not team_name:
             return ""
-        return unidecode(team_name).lower().strip()
+            
+        # Remove common prefixes
+        name = team_name
+        prefixes = ['IF ', 'FC ', 'CD ', 'CA ', 'IFK ', 'UMF ']
+        for prefix in prefixes:
+            if name.startswith(prefix):
+                name = name[len(prefix):]
+        
+        # Remove common suffixes that might cause mismatches
+        suffixes = [' FC', ' IF', ' AIF', ' United', ' City', ' CF', ' UBK', ' Jrs.']
+        for suffix in suffixes:
+            if name.endswith(suffix):
+                name = name[:-len(suffix)]
+        
+        # Remove accents and convert to lowercase
+        normalized = unidecode(name).lower().strip()
+        
+        # Log the normalization for debugging
+        if name != team_name:
+            logger.info(f"Normalized team name: '{team_name}' -> '{name}' -> '{normalized}'")
+        else:
+            logger.info(f"Normalized team name: '{team_name}' -> '{normalized}'")
+            
+        return normalized
     
     def get_odds_from_db(self, home_team, away_team, league_name=None):
         """
@@ -57,19 +80,31 @@ class OddsFetcher:
                 return None
             
             # Find the match by comparing normalized team names
+            logger.info(f"Searching for match in {len(result.data)} database records")
+            logger.info(f"Looking for: Home='{normalized_home}', Away='{normalized_away}', League='{league_name}'")
+            
             for odds in result.data:
                 db_home = self.normalize_team_name(odds.get('team1'))
                 db_away = self.normalize_team_name(odds.get('team2'))
                 db_league = self.normalize_team_name(odds.get('league_name'))
                 
-                # Check if team names match
-                teams_match = (db_home == normalized_home and db_away == normalized_away)
+                logger.info(f"DB Record: Home='{db_home}', Away='{db_away}', League='{db_league}'")
+                
+                # Check if team names match - use more flexible matching
+                home_match = db_home == normalized_home or normalized_home in db_home or db_home in normalized_home
+                away_match = db_away == normalized_away or normalized_away in db_away or db_away in normalized_away
+                teams_match = home_match and away_match
+                
+                logger.info(f"Team matching: home_match={home_match}, away_match={away_match}")
                 
                 # If league name is provided, also check if it matches
                 league_match = True
                 if league_name:
                     normalized_league = self.normalize_team_name(league_name)
                     league_match = (normalized_league in db_league)
+                    logger.info(f"League comparison: '{normalized_league}' in '{db_league}' = {league_match}")
+                
+                logger.info(f"Match result: teams_match={teams_match}, league_match={league_match}")
                 
                 if teams_match and league_match:
                     logger.info(f"Found odds for {home_team} vs {away_team}")
