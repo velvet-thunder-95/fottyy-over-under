@@ -1637,8 +1637,6 @@ def get_match_prediction(match_data):
                 
                 if odds_data:
                     logger.info(f"Found odds in Supabase: {odds_data}")
-                else:
-                    logger.info(f"No odds found in Supabase for {home_team} vs {away_team}")
                     # Convert odds to probabilities
                     probs = odds_fetcher.convert_odds_to_probabilities(odds_data)
                     
@@ -1653,14 +1651,18 @@ def get_match_prediction(match_data):
                         match_data['odds_ft_1'] = odds_data['home_odds']
                         match_data['odds_ft_x'] = odds_data['draw_odds']
                         match_data['odds_ft_2'] = odds_data['away_odds']
-                        
-                        # Also store probabilities in match_data
-                        match_data['home_prob'] = home_prob
-                        match_data['draw_prob'] = draw_prob
-                        match_data['away_prob'] = away_prob
-                        
-                        # Set the odds source to 'supabase' to indicate these are from Swisslos
-                        match_data['odds_source'] = 'supabase'
+                else:
+                    logger.info(f"No odds found in Supabase for {home_team} vs {away_team}")
+                
+                # If we found valid odds from Supabase, also store probabilities and source
+                if valid_probs and odds_data and 'source' in odds_data and odds_data['source'] == 'supabase':
+                    # Also store probabilities in match_data
+                    match_data['home_prob'] = home_prob
+                    match_data['draw_prob'] = draw_prob
+                    match_data['away_prob'] = away_prob
+                    
+                    # Set the odds source to 'supabase' to indicate these are from Swisslos
+                    match_data['odds_source'] = 'supabase'
             except Exception as e:
                 logger.error(f"Error getting odds from Supabase: {str(e)}")
                 # Continue with existing odds system if there's an error

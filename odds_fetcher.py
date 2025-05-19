@@ -97,9 +97,18 @@ class OddsFetcher:
                 if league_name:
                     normalized_league = self.normalize_team_name(league_name)
                     
-                    # Handle special case for Allsvenskan
-                    if normalized_league == 'allsvenskan' and 'allsvenskan, sweden' in db_league:
+                    # Handle special cases for league names
+                    if 'sweden - allsvenskan' in normalized_league and 'allsvenskan, sweden' in db_league:
                         league_match = True
+                    elif 'allsvenskan' in normalized_league and 'allsvenskan' in db_league:
+                        league_match = True
+                    # Extract country name for comparison
+                    elif ' - ' in normalized_league and ',' in db_league:
+                        # Extract country from "Country - League" format
+                        country = normalized_league.split(' - ')[0].strip().lower()
+                        # Extract country from "League, Country" format
+                        db_country = db_league.split(',')[1].strip().lower() if ',' in db_league and len(db_league.split(',')) > 1 else ''
+                        league_match = (country in db_country or db_country in country)
                     # More flexible league matching - check if one contains the other
                     elif normalized_league in db_league or db_league in normalized_league:
                         league_match = True
