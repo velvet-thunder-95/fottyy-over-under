@@ -1362,7 +1362,7 @@ def display_market_values(home_team, away_team):
     
     # Show the load button if values aren't loaded yet
     if not st.session_state[button_key]:
-        if st.button(f"💰 Show Market Values", key=f"btn_{button_key}"):
+        if st.button(f" Show Market Values", key=f"btn_{button_key}"):
             st.session_state[button_key] = True
             st.rerun()
         return
@@ -1426,7 +1426,7 @@ def display_market_values(home_team, away_team):
             """, unsafe_allow_html=True)
             
             # Add a button to hide the values
-            if st.button("❌ Hide Market Values", key=f"hide_{button_key}"):
+            if st.button("Hide Market Values", key=f"hide_{button_key}"):
                 st.session_state[button_key] = False
                 st.rerun()
                 
