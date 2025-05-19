@@ -96,8 +96,17 @@ class OddsFetcher:
                 league_match = True
                 if league_name:
                     normalized_league = self.normalize_team_name(league_name)
-                    league_match = (normalized_league in db_league)
-                    logger.info(f"League comparison: '{normalized_league}' in '{db_league}' = {league_match}")
+                    
+                    # Handle special case for Allsvenskan
+                    if normalized_league == 'allsvenskan' and 'allsvenskan, sweden' in db_league:
+                        league_match = True
+                    # More flexible league matching - check if one contains the other
+                    elif normalized_league in db_league or db_league in normalized_league:
+                        league_match = True
+                    else:
+                        league_match = False
+                        
+                    logger.info(f"League comparison: '{normalized_league}' vs '{db_league}' = {league_match}")
                 
                 logger.info(f"Match result: teams_match={teams_match}, league_match={league_match}")
                 

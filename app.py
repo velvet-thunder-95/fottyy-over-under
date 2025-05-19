@@ -1632,9 +1632,13 @@ def get_match_prediction(match_data):
                 league_name = get_league_name(match_data)
                 
                 # Try to get odds from Supabase
+                logger.info(f"Trying to get odds from Supabase for {home_team} vs {away_team} in {league_name}")
                 odds_data = odds_fetcher.get_odds_from_db(home_team, away_team, league_name)
                 
                 if odds_data:
+                    logger.info(f"Found odds in Supabase: {odds_data}")
+                else:
+                    logger.info(f"No odds found in Supabase for {home_team} vs {away_team}")
                     # Convert odds to probabilities
                     probs = odds_fetcher.convert_odds_to_probabilities(odds_data)
                     
