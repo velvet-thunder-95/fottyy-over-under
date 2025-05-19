@@ -1632,15 +1632,29 @@ def get_match_prediction(match_data):
                 away_team = match_data.get('away_name', '')
                 league_name = get_league_name(match_data)
                 
-                # Try to get odds from Supabase
-                logger.info(f"Trying to get odds from Supabase for {home_team} vs {away_team} in {league_name}")
-                # Add team abbreviations to help with matching
-                home_abbr = match_data.get('home_abbr', '')
-                away_abbr = match_data.get('away_abbr', '')
-                if home_abbr or away_abbr:
-                    logger.info(f"Team abbreviations: Home={home_abbr}, Away={away_abbr}")
+                # Special case for Swedish teams - direct mapping to database names
+                swedish_teams_db_mapping = {
+                    'Mjällby': 'Mjallby AIF',
+                    'Brommapojkarna': 'IF Brommapojkarna',
+                    'Sirius': 'Sirius',
+                    'Norrköping': 'IFK Norrkoping',
+                    'Degerfors': 'Degerfors IF',
+                    'IFK Göteborg': 'IFK Goteborg',
+                    'Elfsborg': 'IF Elfsborg',
+                    'Djurgården': 'Djurgardens IF'
+                }
                 
-                odds_data = odds_fetcher.get_odds_from_db(home_team, away_team, league_name)
+                # Map team names to database names if they're in the mapping
+                db_home_team = swedish_teams_db_mapping.get(home_team, home_team)
+                db_away_team = swedish_teams_db_mapping.get(away_team, away_team)
+                
+                # Try to get odds from Supabase
+                logger.info(f"Trying to get odds from Supabase for {db_home_team} vs {db_away_team} in {league_name}")
+                
+                # For Swedish league, use fixed league name
+                db_league_name = 'Allsvenskan, Sweden' if 'Sweden' in league_name or 'Allsvenskan' in league_name else league_name
+                
+                odds_data = odds_fetcher.get_odds_from_db(db_home_team, db_away_team, db_league_name)
                 
                 if odds_data:
                     logger.info(f"Found odds in Supabase: {odds_data}")
