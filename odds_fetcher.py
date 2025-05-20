@@ -15,25 +15,49 @@ class OddsFetcher:
         logger.info("OddsFetcher initialized with Supabase connection")
     
     def normalize_team_name(self, team_name):
-        """Normalize team name for comparison by removing accents and converting to lowercase"""
+        """Normalize team name for comparison by removing accents, standardizing prefixes, and converting to lowercase"""
         if not team_name:
             return ""
             
-        # Remove common prefixes
+        # Standardize AL/El prefixes (common in Arabic names)
         name = team_name
-        prefixes = ['IF ', 'FC ', 'CD ', 'CA ', 'IFK ', 'UMF ']
+        prefixes = ['IF ', 'FC ', 'CD ', 'CA ', 'IFK ', 'UMF ', 'AL ', 'Al ', 'al ', 'EL ', 'El ', 'el ']
+        
+        # Special handling for teams that should keep their AL prefix
+        keep_al_prefix = ['al-ahli', 'al-ittihad', 'al-hilal', 'al-nassr', 'al-fateh', 
+                         'al-raed', 'al-taawon', 'al-faisaly', 'al-adalah', 'al-hazm',
+                         'al-batin', 'al-fayha', 'al-tai', 'al-khaleej', 'al-ettifaq',
+                         'al-raed', 'al-quadisiya', 'al-orubah', 'al-shabab', 'al-ittifaq']
+        
+        # Convert to lowercase for comparison
+        name_lower = name.lower()
+        
+        # Check if we should keep the AL prefix
+        should_keep_al = any(team in name_lower for team in keep_al_prefix)
+        
+        # Process prefixes
         for prefix in prefixes:
             if name.startswith(prefix):
-                name = name[len(prefix):]
+                # Only remove the prefix if we shouldn't keep the AL
+                if not (prefix.lower().strip() == 'al' and should_keep_al):
+                    name = name[len(prefix):].strip()
         
         # Remove common suffixes that might cause mismatches
-        suffixes = [' FC', ' IF', ' AIF', ' United', ' City', ' CF', ' UBK', ' Jrs.']
+        suffixes = [' FC', ' IF', ' AIF', ' United', ' City', ' CF', ' UBK', ' Jrs.', ' SC', ' AFC']
         for suffix in suffixes:
             if name.endswith(suffix):
-                name = name[:-len(suffix)]
+                name = name[:-len(suffix)].strip()
+        
+        # Remove any remaining non-alphanumeric characters except spaces and hyphens
+        import re
+        name = re.sub(r'[^\w\s-]', '', name)
+        
+        # Standardize AL prefix
+        if should_keep_al and not name.lower().startswith('al-'):
+            name = f"Al-{name}"
         
         # Remove accents and convert to lowercase
-        normalized = unidecode(name).lower().strip()
+        normalized = unidecode(name).strip()
         
         # Log the normalization for debugging
         if name != team_name:
@@ -41,7 +65,7 @@ class OddsFetcher:
         else:
             logger.info(f"Normalized team name: '{team_name}' -> '{normalized}'")
             
-        return normalized
+        return normalized.lower()
     
     def get_odds_from_db(self, home_team, away_team, league_name=None):
         """
@@ -58,6 +82,28 @@ class OddsFetcher:
         try:
             # Team name mappings for all leagues in the database
             team_mappings = {
+                # Slovakia Super Liga teams
+                'FK Košice': 'MFK Kosice',
+                'Podbrezová': 'FK ZP Podbrezova',
+                'DAC': 'DAC Dunajska Streda',
+                'Zemplín Michalovce': 'MFK Zemplin Michalovce',
+                'Slovan Bratislava': 'Slovan Bratislava',
+                'Spartak Trnava': 'Spartak Trnava',
+                'Žilina': 'MSK Zilina',
+                'Trenčín': 'AS Trencin',
+                'Ružomberok': 'MFK Ruzomberok',
+                'Zlaté Moravce': 'FC ViOn Zlate Moravce',
+                'Skalica': 'MFK Skalica',
+                'Dukla B.B.': 'FK Dukla Banska Bystrica',
+                
+                # Saudi Pro League teams
+                'Al Quadisiya': 'Al Quadisiya',
+                'Al Orubah': 'Al Orubah',
+                'Al Taawon': 'Al Taawon',
+                'Al Riyadh': 'Al Riyadh',
+                'Al Shabab': 'Al Shabab',
+                'Al Ittihad': 'Al Ittihad',
+                
                 # Swedish teams
                 'Mjällby': 'Mjallby AIF',
                 'Brommapojkarna': 'IF Brommapojkarna',
@@ -133,7 +179,20 @@ class OddsFetcher:
                 'Argentine football league - Primera Nacional': 'Liga Profesional, Argentina',
                 'Argentine football league': 'Liga Profesional, Argentina',
                 'Primera Nacional': 'Liga Profesional, Argentina',
-                'Argentina': 'Liga Profesional, Argentina'
+                'Argentina': 'Liga Profesional, Argentina',
+                
+                # Saudi Pro League
+                'Saudi Arabia - Pro League': 'Saudi Pro League, Saudi Arabia',
+                'Saudi Pro League': 'Saudi Pro League, Saudi Arabia',
+                'Saudi Professional League': 'Saudi Pro League, Saudi Arabia',
+                'Saudi': 'Saudi Pro League, Saudi Arabia',
+                
+                # Slovakia Super Liga
+                'Slovakia - Super Liga': 'Fortuna Liga, Slovakia',
+                'Slovak Super Liga': 'Fortuna Liga, Slovakia',
+                'Slovak First League': 'Fortuna Liga, Slovakia',
+                'Fortuna Liga': 'Fortuna Liga, Slovakia',
+                'Slovakia': 'Fortuna Liga, Slovakia'
             }
             
             # Apply mappings if available

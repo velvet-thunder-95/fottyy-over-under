@@ -1288,7 +1288,7 @@ def display_prediction(prediction, confidence):
 
 def display_probability_bars(home_prob, draw_prob, away_prob, home_team, away_team):
     """Display probability bars for match outcomes"""
-    st.markdown("### Match Outcome Probabilities")
+
     
     # Create three columns for the probabilities
     col1, col2, col3 = st.columns(3)
@@ -1484,12 +1484,12 @@ def display_match_odds(match_data):
     # Display header with source information if from Swisslos
     if odds_source == 'supabase':
         st.markdown("""
-            <h3 style="text-align: center; color: #1f2937; margin: 20px 0; font-size: 1.5rem; background-color: #e6f7ff; padding: 10px; border-radius: 5px;">Odds from Swisslos</h3>
+            <h3 style="text-align: center; color: #1f2937; margin: 20px 0; font-size: 1.0rem; background-color: #e6f7ff; padding: 10px; border-radius: 5px;">Odds from Swisslos</h3>
         """, unsafe_allow_html=True)
         logger.info(f"Displaying odds from Swisslos for {match_data.get('home_name', '')} vs {match_data.get('away_name', '')}")
     else:
         st.markdown("""
-            <h3 style="text-align: center; color: #1f2937; margin: 20px 0; font-size: 1.5rem;">Odds from fotty</h3>
+            <h3 style="text-align: center; color: #1f2937; margin: 20px 0; font-size: 1.0rem;">Odds from fotty</h3>
         """, unsafe_allow_html=True)
         logger.info(f"Displaying odds from system for {match_data.get('home_name', '')} vs {match_data.get('away_name', '')}")
     
