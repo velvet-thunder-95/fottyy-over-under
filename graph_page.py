@@ -955,16 +955,20 @@ def render_graph_page():
     # Format the display values
     for band in ['High', 'Mid', 'Low', 'All']:
         for stat in ['Games', 'Correct']:
-            # Integer columns (no decimal places)
-            styled = styled.format({(band, stat): '{:,.0f}'}, na_rep='')
+            # Integer columns with thousands separator for large numbers
+            styled = styled.format({(band, stat): '{:,}'}, na_rep='')
         
-        for stat in ['RatePct', 'ROI']:
-            # Percentage columns (2 decimal places)
+        for stat in ['RatePct']:
+            # Success rate with 1 decimal place
+            styled = styled.format({(band, stat): '{:.1f}%'}, na_rep='')
+        
+        for stat in ['ROI']:
+            # ROI with 2 decimal places
             styled = styled.format({(band, stat): '{:.2f}%'}, na_rep='')
         
         for stat in ['Profit']:
-            # Currency columns (2 decimal places)
-            styled = styled.format({(band, stat): '{:.2f}'}, na_rep='')
+            # Currency columns (2 decimal places) with 'U' suffix
+            styled = styled.format({(band, stat): '{:.2f}U'}, na_rep='')
     
     # Set table styles for borders, font, alignment
     styled = styled.set_table_styles([
