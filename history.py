@@ -416,8 +416,7 @@ def style_dataframe(df):
             ('font-size', '14px'),
             ('text-align', 'left'),
             ('padding', '12px 15px'),
-            ('border-bottom', '2px solid #dee2e6'),
-            ('cursor', 'pointer')  # Add pointer cursor to indicate sortable columns
+            ('border-bottom', '2px solid #dee2e6')
         ]},
         {'selector': 'td', 'props': [
             ('text-align', 'left'),
@@ -432,17 +431,6 @@ def style_dataframe(df):
         ]},
         {'selector': 'tr:hover td', 'props': [
             ('background-color', 'rgba(0,0,0,0.05) !important')
-        ]},
-        # Add styles for sort indicators
-        {'selector': 'th.asc span.sort-indicator:after', 'props': [
-            ('content', '"\\2191"'),  # Up arrow
-            ('padding-left', '3px'),
-            ('color', '#333')
-        ]},
-        {'selector': 'th.desc span.sort-indicator:after', 'props': [
-            ('content', '"\\2193"'),  # Down arrow
-            ('padding-left', '3px'),
-            ('color', '#333')
         ]}
     ])
 
@@ -914,24 +902,11 @@ def show_history_page():
                     # Apply styling
                     styled_df = style_dataframe(final_df)
                     
-                    # Display the styled dataframe with sorting enabled
+                    # Display the styled dataframe
                     st.dataframe(
                         styled_df,
                         use_container_width=True,
-                        hide_index=True,
-                        column_config={
-                            # Configure columns to be sortable with appropriate formats
-                            'Date': st.column_config.DateColumn('Date', format='YYYY-MM-DD'),
-                            'League': st.column_config.TextColumn('League'),
-                            'Home Team': st.column_config.TextColumn('Home Team'),
-                            'Away Team': st.column_config.TextColumn('Away Team'),
-                            'Prediction': st.column_config.TextColumn('Prediction'),
-                            'Confidence': st.column_config.TextColumn('Confidence'),
-                            'Actual Outcome': st.column_config.TextColumn('Actual Outcome'),
-                            'Result': st.column_config.TextColumn('Result'),
-                            'Profit/Loss': st.column_config.TextColumn('Profit/Loss'),
-                            'Status': st.column_config.TextColumn('Status')
-                        }
+                        hide_index=True
                     )
                     
                 except Exception as e:

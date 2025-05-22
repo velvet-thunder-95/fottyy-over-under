@@ -668,29 +668,64 @@ def render_graph_page():
                         pass
         return styles
 
-    # Prepare data for sortable display while preserving styling
+    # Apply styling to the dataframe
     styled = full_df.style.apply(style_func, axis=None)
     
     # Set table styles for borders, font, alignment
     styled = styled.set_table_styles([
-        {'selector': 'th', 'props': [('font-size', '13px'), ('background', '#f8fafc'), ('border', '2px solid #bbb'), ('text-align','center'), ('cursor', 'pointer')]},
+        {'selector': 'th', 'props': [('font-size', '13px'), ('background', '#f8fafc'), ('border', '2px solid #bbb'), ('text-align','center')]},
         {'selector': 'td', 'props': [('border', '1px solid #ddd'), ('font-size', '13px'), ('text-align','center')]},
         {'selector': 'th.col_heading.level0', 'props': [('border-top', '3px solid #222'), ('font-size', '14px'), ('font-weight','bold'), ('background','#e8f5e9')]},
         {'selector': 'th.col_heading.level1', 'props': [('border-bottom', '2px solid #bbb')]},
         {'selector': 'th.row_heading', 'props': [('border-right', '2px solid #bbb')]},
-        # Add styles for sort indicators
-        {'selector': 'th.asc span.sort-indicator:after', 'props': [('content', '"\\2191"'), ('padding-left', '3px'), ('color', '#333')]},
-        {'selector': 'th.desc span.sort-indicator:after', 'props': [('content', '"\\2193"'), ('padding-left', '3px'), ('color', '#333')]},
     ], overwrite=False)
     
+    # Create a flattened version of the dataframe for sorting
+    flat_df = full_df.copy()
+    
+    # Create flattened column names by joining the MultiIndex levels with underscores
+    flat_column_names = []
+    for col in flat_df.columns:
+        if isinstance(col, tuple):
+            # Join the non-empty parts of the tuple with underscores
+            parts = [str(part) for part in col if part != '']
+            flat_column_names.append('_'.join(parts))
+        else:
+            flat_column_names.append(str(col))
+    
+    # Rename columns to flat names for sorting capability
+    flat_df.columns = flat_column_names
+    
+    # Make sure numeric columns are properly typed for sorting
+    for col in flat_df.columns:
+        if 'Games' in col or 'Correct' in col:
+            # Convert to numeric first to ensure proper sorting
+            flat_df[col] = pd.to_numeric(flat_df[col], errors='coerce')
+        elif 'RatePct' in col or 'Profit' in col or 'ROI' in col:
+            # Convert to numeric first to ensure proper sorting
+            flat_df[col] = pd.to_numeric(flat_df[col], errors='coerce')
+    
+    # Create column configuration for proper sorting
+    column_config = {}
+    for col in flat_df.columns:
+        if 'country' in col.lower() or 'league' in col.lower():
+            column_config[col] = st.column_config.TextColumn(col)
+        elif 'Games' in col or 'Correct' in col:
+            column_config[col] = st.column_config.NumberColumn(col, format="%d")
+        elif 'RatePct' in col:
+            column_config[col] = st.column_config.NumberColumn(col, format="%.2f%%")
+        elif 'Profit' in col:
+            column_config[col] = st.column_config.NumberColumn(col, format="%.2f")
+        elif 'ROI' in col:
+            column_config[col] = st.column_config.NumberColumn(col, format="%.2f%%")
+    
     # Display the dataframe with sorting enabled
-    # Note: We can't use column_config with MultiIndex columns directly
-    # Streamlit doesn't support tuple keys in column_config
     st.dataframe(
-        styled, 
+        data=flat_df,
         use_container_width=True, 
         hide_index=True, 
-        width=2000
+        width=2000,
+        column_config=column_config
     )
 
 
