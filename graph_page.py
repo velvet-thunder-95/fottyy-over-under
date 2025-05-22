@@ -1046,8 +1046,49 @@ def render_graph_page():
     # Create a new dataframe with flattened column names for better compatibility
     flat_display_df = display_df.copy()
     
+    # Create a numeric dataframe for sorting
+    numeric_df = display_df.copy()
+    
+    # Convert all numeric columns to proper numeric types for sorting
+    for band in ['High', 'Mid', 'Low', 'All']:
+        for stat in ['Games', 'Correct']:
+            col = (band, stat)
+            if col in numeric_df.columns:
+                numeric_df[col] = pd.to_numeric(numeric_df[col], errors='coerce')
+        
+        for stat in ['RatePct']:
+            col = (band, stat)
+            if col in numeric_df.columns:
+                # Convert percentage strings to numeric values
+                numeric_df[col] = numeric_df[col].apply(
+                    lambda x: float(x.replace('%', '')) if isinstance(x, str) and '%' in x 
+                    else float(x) if pd.notnull(x) and x != '' 
+                    else float('-inf')
+                )
+        
+        for stat in ['ROI']:
+            col = (band, stat)
+            if col in numeric_df.columns:
+                # Convert percentage strings to numeric values
+                numeric_df[col] = numeric_df[col].apply(
+                    lambda x: float(x.replace('%', '')) if isinstance(x, str) and '%' in x 
+                    else float(x) if pd.notnull(x) and x != '' 
+                    else float('-inf')
+                )
+        
+        for stat in ['Profit']:
+            col = (band, stat)
+            if col in numeric_df.columns:
+                # Convert currency strings to numeric values
+                numeric_df[col] = numeric_df[col].apply(
+                    lambda x: float(x.replace('U', '')) if isinstance(x, str) and 'U' in x 
+                    else float(x) if pd.notnull(x) and x != '' 
+                    else float('-inf')
+                )
+    
     # Flatten the column names
     flat_display_df.columns = [f"{col[0]}_{col[1]}" if isinstance(col, tuple) else col for col in flat_display_df.columns]
+    numeric_df.columns = [f"{col[0]}_{col[1]}" if isinstance(col, tuple) else col for col in numeric_df.columns]
     
     # Create a modified styling function that works with flattened column names
     def apply_flat_styling(df):
@@ -1186,9 +1227,55 @@ def render_graph_page():
     # Apply styling to the flattened dataframe
     styled_df = flat_display_df.style.apply(apply_flat_styling, axis=None)
     
+    # Create a dictionary to map display columns to their numeric values for sorting
+    column_config = {}
+    
+    # Configure each column with proper sorting
+    for col in flat_display_df.columns:
+        if col in numeric_df.columns:
+            # For numeric columns, use the numeric values for sorting
+            if 'Games' in col or 'Correct' in col:
+                column_config[col] = st.column_config.NumberColumn(
+                    col,
+                    help=f"Sortable {col} column",
+                    format="%d",
+                    step=1,
+                )
+            elif 'RatePct' in col:
+                column_config[col] = st.column_config.NumberColumn(
+                    col,
+                    help=f"Sortable {col} column",
+                    format="%.1f%%",
+                )
+            elif 'ROI' in col:
+                column_config[col] = st.column_config.NumberColumn(
+                    col,
+                    help=f"Sortable {col} column",
+                    format="%.2f%%",
+                )
+            elif 'Profit' in col:
+                column_config[col] = st.column_config.NumberColumn(
+                    col,
+                    help=f"Sortable {col} column",
+                    format="%.2fU",
+                )
+    
+    # Create a sortable dataframe with numeric values but display formatted values
+    sortable_df = pd.DataFrame()
+    
+    # Add all columns from the display dataframe
+    for col in flat_display_df.columns:
+        if col in numeric_df.columns:
+            # Use numeric values for sorting but keep display formatting
+            sortable_df[col] = numeric_df[col]
+        else:
+            # For non-numeric columns, just copy the values
+            sortable_df[col] = flat_display_df[col]
+    
     # Display the dataframe with sorting enabled
     st.dataframe(
-        styled_df,
+        sortable_df,
+        column_config=column_config,
         use_container_width=True,
         hide_index=False,
         width=2000
