@@ -1027,8 +1027,41 @@ def render_graph_page():
         {'selector': 'tr:hover td', 'props': [('background-color', '#e8f5e9 !important')]},
     ], overwrite=False)
     
-    # Display the styled dataframe
-    st.dataframe(styled, use_container_width=True, hide_index=True, width=2000)
+    # Create a dictionary of column configs for proper sorting
+    column_configs = {}
+    
+    # Configure each column for proper sorting
+    for band in ['High', 'Mid', 'Low', 'All']:
+        # Games and Correct columns - integer sorting
+        for stat in ['Games', 'Correct']:
+            column_configs[(band, stat)] = st.column_config.NumberColumn(
+                format="%d",
+            )
+        
+        # RatePct column - percentage sorting
+        column_configs[(band, 'RatePct')] = st.column_config.NumberColumn(
+            format="%.1f%%",
+        )
+        
+        # ROI column - percentage sorting
+        column_configs[(band, 'ROI')] = st.column_config.NumberColumn(
+            format="%.2f%%",
+        )
+        
+        # Profit column - currency sorting
+        column_configs[(band, 'Profit')] = st.column_config.NumberColumn(
+            format="%.2fU",
+        )
+    
+    # Display the dataframe with proper column configs for sorting
+    st.dataframe(
+        # Convert back to numeric values for proper sorting while keeping formatting
+        data=full_df,
+        column_config=column_configs,
+        use_container_width=True,
+        hide_index=True,
+        width=2000
+    )
 
 
 # For Streamlit navigation
