@@ -680,23 +680,97 @@ def render_graph_page():
         {'selector': 'th.row_heading', 'props': [('border-right', '2px solid #bbb')]},
     ], overwrite=False)
     
+    # Create a copy of the original dataframe for styling
+    styled_df = full_df.copy()
+    
+    # Define styling functions for different columns
+    def style_ratepct(val):
+        if pd.isna(val) or val == '':
+            return ''
+        try:
+            val = float(val)
+            if val >= 70:
+                return 'background-color: #34c759;'
+            elif val < 50:
+                return 'background-color: #ff9800;'
+            elif val < 40:
+                return 'background-color: #ff3737;'
+        except:
+            pass
+        return ''
+    
+    def style_profit_roi(val):
+        if pd.isna(val) or val == '':
+            return ''
+        try:
+            val = float(val)
+            if val > 0:
+                return 'background-color: #d0f5d8; color: #1a4d1a;'
+            elif val < 0:
+                return 'background-color: #fbe9e7; color: #b71c1c;'
+        except:
+            pass
+        return ''
+    
+    # Apply styling to each cell based on column type
+    def style_dataframe(df):
+        # Create a DataFrame of empty strings with same shape as original
+        styles = pd.DataFrame('', index=df.index, columns=df.columns)
+        
+        # Apply styling to each cell
+        for i, row in df.iterrows():
+            for j, col in enumerate(df.columns):
+                # Apply alternating row colors
+                if i % 2 == 1:
+                    styles.iloc[i, j] += 'background-color: #f8f9fa;'
+                
+                # Apply specific styling based on column type
+                if isinstance(col, tuple) and len(col) > 1:
+                    band, metric = col
+                    if metric == 'RatePct':
+                        styles.iloc[i, j] += style_ratepct(row[col])
+                    elif metric in ['Profit', 'ROI']:
+                        styles.iloc[i, j] += style_profit_roi(row[col])
+        
+        return styles
+    
+    # Apply styling to the dataframe
+    styled = styled_df.style.apply(style_dataframe, axis=None)
+    
+    # Format the values
+    for band in ['High', 'Mid', 'Low', 'All']:
+        for stat in ['Games', 'Correct']:
+            # Integer columns (no decimal places)
+            styled = styled.format({(band, stat): lambda x: f"{int(x)}" if pd.notnull(x) and x != '' else ''})
+        for stat in ['RatePct', 'ROI']:
+            # Percentage columns (2 decimal places)
+            styled = styled.format({(band, stat): lambda x: f"{float(x):.2f}%" if pd.notnull(x) and x != '' else ''})
+        for stat in ['Profit']:
+            # Currency columns (2 decimal places)
+            styled = styled.format({(band, stat): lambda x: f"{float(x):.2f}" if pd.notnull(x) and x != '' else ''})
+    
+    # Set table styles for borders, font, alignment
+    styled = styled.set_table_styles([
+        {'selector': 'th', 'props': [('font-size', '13px'), ('background', '#f8fafc'), ('border', '2px solid #bbb'), ('text-align','center')]},
+        {'selector': 'td', 'props': [('border', '1px solid #ddd'), ('font-size', '13px'), ('text-align','center')]},
+        {'selector': 'th.col_heading.level0', 'props': [('border-top', '3px solid #222'), ('font-size', '14px'), ('font-weight','bold'), ('background','#e8f5e9')]},
+        {'selector': 'th.col_heading.level1', 'props': [('border-bottom', '2px solid #bbb')]},
+        {'selector': 'th.row_heading', 'props': [('border-right', '2px solid #bbb')]},
+        {'selector': 'tr:hover td', 'props': [('background-color', '#e8f5e9 !important')]},
+    ], overwrite=False)
+    
     # Create a flattened version of the dataframe for sorting
     flat_df = full_df.copy()
     
     # Create flattened column names by joining the MultiIndex levels with underscores
     flat_column_names = []
-    flat_to_original = {}  # Mapping from flat column names to original tuples
-    
     for col in flat_df.columns:
         if isinstance(col, tuple):
             # Join the non-empty parts of the tuple with underscores
             parts = [str(part) for part in col if part != '']
-            flat_name = '_'.join(parts)
-            flat_column_names.append(flat_name)
-            flat_to_original[flat_name] = col
+            flat_column_names.append('_'.join(parts))
         else:
             flat_column_names.append(str(col))
-            flat_to_original[str(col)] = col
     
     # Rename columns to flat names for sorting capability
     flat_df.columns = flat_column_names
@@ -724,137 +798,133 @@ def render_graph_page():
         elif 'ROI' in col:
             column_config[col] = st.column_config.NumberColumn(col, format="%.2f%%")
     
-    # Apply color styling to the dataframe
-    # We'll use a custom CSS function to apply colors
-    def apply_color_styles():
-        styles = """
-        <style>
-        /* Base styles for the table */
-        [data-testid="stDataFrame"] table {
-            border-collapse: collapse;
-            width: 100%;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-        }
-        
-        /* Header styles */
-        [data-testid="stDataFrame"] thead tr th {
-            background-color: #f8fafc;
-            border: 2px solid #bbb;
-            font-size: 13px;
-            text-align: center;
-            cursor: pointer;
-        }
-        
-        [data-testid="stDataFrame"] thead tr:first-child th {
-            border-top: 3px solid #222;
-            font-size: 14px;
-            font-weight: bold;
-            background-color: #e8f5e9;
-        }
-        
-        /* Cell styles */
-        [data-testid="stDataFrame"] tbody tr td {
-            border: 1px solid #ddd;
-            font-size: 13px;
-            text-align: center;
-        }
-        
-        /* Alternating row colors */
-        [data-testid="stDataFrame"] tbody tr:nth-child(even) {
-            background-color: #f8f9fa;
-        }
-        
-        /* Hover effect */
-        [data-testid="stDataFrame"] tbody tr:hover {
-            background-color: #e8f5e9;
-        }
-        
-        /* Color coding for values */
-        .positive-value {
-            background-color: #d0f5d8 !important;
-            color: #1a4d1a !important;
-        }
-        
-        .negative-value {
-            background-color: #fbe9e7 !important;
-            color: #b71c1c !important;
-        }
-        
-        .high-rate {
-            background-color: #34c759 !important;
-        }
-        
-        .medium-rate {
-            background-color: #ff9800 !important;
-        }
-        
-        .low-rate {
-            background-color: #ff3737 !important;
-        }
-        </style>
-        
-        <script>
-        // Function to apply color coding to cells after the table is rendered
-        function applyColorCoding() {
-            const table = document.querySelector('[data-testid="stDataFrame"] table');
-            if (!table) return;
-            
-            const rows = table.querySelectorAll('tbody tr');
-            rows.forEach(row => {
-                const cells = row.querySelectorAll('td');
-                cells.forEach(cell => {
-                    const text = cell.textContent.trim();
-                    const columnName = cell.getAttribute('data-column-name') || '';
-                    
-                    // Apply color coding based on column type and value
-                    if (columnName.includes('Profit') || columnName.includes('ROI')) {
-                        const value = parseFloat(text.replace(',', '.').replace('%', ''));
-                        if (!isNaN(value)) {
-                            if (value > 0) cell.classList.add('positive-value');
-                            if (value < 0) cell.classList.add('negative-value');
-                        }
-                    }
-                    else if (columnName.includes('RatePct')) {
-                        const value = parseFloat(text.replace(',', '.').replace('%', ''));
-                        if (!isNaN(value)) {
-                            if (value >= 70) cell.classList.add('high-rate');
-                            else if (value < 50) cell.classList.add('medium-rate');
-                            else if (value < 40) cell.classList.add('low-rate');
-                        }
-                    }
-                });
-            });
-        }
-        
-        // Run when the DOM is fully loaded
-        document.addEventListener('DOMContentLoaded', function() {
-            applyColorCoding();
-            
-            // Also run when content changes (for when sorting is applied)
-            const observer = new MutationObserver(function(mutations) {
-                applyColorCoding();
-            });
-            
-            const target = document.querySelector('[data-testid="stDataFrame"]');
-            if (target) {
-                observer.observe(target, { childList: true, subtree: true });
-            }
-        });
-        </script>
-        """
-        st.markdown(styles, unsafe_allow_html=True)
+    # Add custom CSS for better styling
+    st.markdown("""
+    <style>
+    [data-testid="stDataFrame"] table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+    [data-testid="stDataFrame"] th {
+        background-color: #f8fafc !important;
+        border: 2px solid #bbb !important;
+        font-size: 13px !important;
+        text-align: center !important;
+        cursor: pointer !important;
+    }
+    [data-testid="stDataFrame"] td {
+        border: 1px solid #ddd !important;
+        font-size: 13px !important;
+        text-align: center !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
     
-    # Apply the color styles
-    apply_color_styles()
+    # Convert the MultiIndex dataframe to a regular dataframe with flattened column names
+    # This will allow for sorting while preserving styling
+    display_df = full_df.copy()
     
-    # Display the dataframe with sorting enabled
-    st.dataframe(
-        data=flat_df,
-        use_container_width=True, 
-        hide_index=True, 
-        width=2000,
-        column_config=column_config
-    )
+    # Format the values for display
+    for band in ['High', 'Mid', 'Low', 'All']:
+        for stat in ['Games', 'Correct']:
+            # Format integer columns
+            col = (band, stat)
+            if col in display_df.columns:
+                display_df[col] = display_df[col].apply(lambda x: int(x) if pd.notnull(x) and x != '' else 0)
+        
+        for stat in ['RatePct', 'ROI']:
+            # Format percentage columns
+            col = (band, stat)
+            if col in display_df.columns:
+                display_df[col] = display_df[col].apply(lambda x: float(x) if pd.notnull(x) and x != '' else 0)
+        
+        for stat in ['Profit']:
+            # Format currency columns
+            col = (band, stat)
+            if col in display_df.columns:
+                display_df[col] = display_df[col].apply(lambda x: float(x) if pd.notnull(x) and x != '' else 0)
+    
+    # Apply styling with colors
+    def highlight_cells(val, col):
+        if pd.isna(val) or val == '':
+            return ''
+        
+        # Extract the metric type from the column
+        metric = col[1] if isinstance(col, tuple) and len(col) > 1 else ''
+        
+        if metric == 'RatePct':
+            try:
+                val_float = float(val)
+                if val_float >= 70:
+                    return 'background-color: #34c759;'
+                elif val_float < 50:
+                    return 'background-color: #ff9800;'
+                elif val_float < 40:
+                    return 'background-color: #ff3737;'
+            except:
+                pass
+        
+        elif metric in ['Profit', 'ROI']:
+            try:
+                val_float = float(val)
+                if val_float > 0:
+                    return 'background-color: #d0f5d8; color: #1a4d1a;'
+                elif val_float < 0:
+                    return 'background-color: #fbe9e7; color: #b71c1c;'
+            except:
+                pass
+        
+        return ''
+    
+    # Apply styling to each cell
+    def apply_styling(df):
+        styles = pd.DataFrame('', index=df.index, columns=df.columns)
+        
+        for i, row in df.iterrows():
+            # Apply alternating row colors
+            row_bg = 'background-color: #f8f9fa;' if i % 2 == 1 else ''
+            
+            for col in df.columns:
+                # Start with row background
+                cell_style = row_bg
+                
+                # Add cell-specific styling
+                if isinstance(col, tuple) and len(col) > 1:
+                    cell_style += highlight_cells(row[col], col)
+                
+                styles.loc[i, col] = cell_style
+        
+        return styles
+    
+    # Apply styling to the dataframe
+    styled = display_df.style.apply(apply_styling, axis=None)
+    
+    # Format the display values
+    for band in ['High', 'Mid', 'Low', 'All']:
+        for stat in ['Games', 'Correct']:
+            # Integer columns (no decimal places)
+            styled = styled.format({(band, stat): '{:,.0f}'}, na_rep='')
+        
+        for stat in ['RatePct', 'ROI']:
+            # Percentage columns (2 decimal places)
+            styled = styled.format({(band, stat): '{:.2f}%'}, na_rep='')
+        
+        for stat in ['Profit']:
+            # Currency columns (2 decimal places)
+            styled = styled.format({(band, stat): '{:.2f}'}, na_rep='')
+    
+    # Set table styles for borders, font, alignment
+    styled = styled.set_table_styles([
+        {'selector': 'th', 'props': [('font-size', '13px'), ('background', '#f8fafc'), ('border', '2px solid #bbb'), ('text-align','center')]},
+        {'selector': 'td', 'props': [('border', '1px solid #ddd'), ('font-size', '13px'), ('text-align','center')]},
+        {'selector': 'th.col_heading.level0', 'props': [('border-top', '3px solid #222'), ('font-size', '14px'), ('font-weight','bold'), ('background','#e8f5e9')]},
+        {'selector': 'th.col_heading.level1', 'props': [('border-bottom', '2px solid #bbb')]},
+        {'selector': 'th.row_heading', 'props': [('border-right', '2px solid #bbb')]},
+        {'selector': 'tr:hover td', 'props': [('background-color', '#e8f5e9 !important')]},
+    ], overwrite=False)
+    
+    # Display the styled dataframe
+    st.dataframe(styled, use_container_width=True, hide_index=True, width=2000)
 
 
 # For Streamlit navigation
