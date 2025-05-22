@@ -1272,9 +1272,21 @@ def render_graph_page():
             # For non-numeric columns, just copy the values
             sortable_df[col] = flat_display_df[col]
     
-    # Display the dataframe with sorting enabled
+    # Apply styling to the sortable dataframe
+    styled_sortable_df = sortable_df.style.apply(apply_flat_styling, axis=None)
+    
+    # Set table styles for borders, font, alignment
+    styled_sortable_df = styled_sortable_df.set_table_styles([
+        {'selector': 'th', 'props': [('font-size', '13px'), ('background', '#f8fafc'), ('border', '2px solid #bbb'), ('text-align','center')]},
+        {'selector': 'td', 'props': [('border', '1px solid #ddd'), ('font-size', '13px'), ('text-align','center')]},
+        {'selector': 'th.col_heading.level0', 'props': [('border-top', '3px solid #222'), ('font-size', '14px'), ('font-weight','bold'), ('background','#e8f5e9')]},
+        {'selector': 'th.row_heading', 'props': [('border-right', '2px solid #bbb')]},
+        {'selector': 'tr:hover td', 'props': [('background-color', '#e8f5e9 !important')]},
+    ], overwrite=False)
+    
+    # Display the dataframe with sorting enabled and styling
     st.dataframe(
-        sortable_df,
+        styled_sortable_df,
         column_config=column_config,
         use_container_width=True,
         hide_index=False,
