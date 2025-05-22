@@ -856,11 +856,11 @@ def render_graph_page():
             try:
                 val_float = float(val)
                 if val_float >= 70:
-                    return 'background-color: #34c759;'
+                    return 'background-color: rgba(52, 199, 89, 0.25);'  # Light green
                 elif val_float < 50:
-                    return 'background-color: #ff9800;'
+                    return 'background-color: rgba(255, 152, 0, 0.25);'  # Light orange
                 elif val_float < 40:
-                    return 'background-color: #ff3737;'
+                    return 'background-color: rgba(255, 55, 55, 0.25);'  # Light red
             except:
                 pass
         
