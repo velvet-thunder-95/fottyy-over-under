@@ -668,16 +668,42 @@ def render_graph_page():
                         pass
         return styles
 
+    # Prepare data for sortable display while preserving styling
     styled = full_df.style.apply(style_func, axis=None)
+    
     # Set table styles for borders, font, alignment
     styled = styled.set_table_styles([
-        {'selector': 'th', 'props': [('font-size', '13px'), ('background', '#f8fafc'), ('border', '2px solid #bbb'), ('text-align','center')]},
+        {'selector': 'th', 'props': [('font-size', '13px'), ('background', '#f8fafc'), ('border', '2px solid #bbb'), ('text-align','center'), ('cursor', 'pointer')]},
         {'selector': 'td', 'props': [('border', '1px solid #ddd'), ('font-size', '13px'), ('text-align','center')]},
         {'selector': 'th.col_heading.level0', 'props': [('border-top', '3px solid #222'), ('font-size', '14px'), ('font-weight','bold'), ('background','#e8f5e9')]},
         {'selector': 'th.col_heading.level1', 'props': [('border-bottom', '2px solid #bbb')]},
         {'selector': 'th.row_heading', 'props': [('border-right', '2px solid #bbb')]},
+        # Add styles for sort indicators
+        {'selector': 'th.asc span.sort-indicator:after', 'props': [('content', '"\\2191"'), ('padding-left', '3px'), ('color', '#333')]},
+        {'selector': 'th.desc span.sort-indicator:after', 'props': [('content', '"\\2193"'), ('padding-left', '3px'), ('color', '#333')]},
     ], overwrite=False)
-    st.dataframe(styled, use_container_width=True, hide_index=True, width=2000)
+    
+    # Display the dataframe with sorting enabled
+    st.dataframe(
+        styled, 
+        use_container_width=True, 
+        hide_index=True, 
+        width=2000,
+        column_config={
+            # Configure columns to be sortable
+            # For each confidence band and metric, enable sorting
+            **{(band, 'Games'): st.column_config.NumberColumn(f"{band} Games", format="%d") 
+               for band in ['High', 'Mid', 'Low', 'All']},
+            **{(band, 'Correct'): st.column_config.NumberColumn(f"{band} Correct", format="%d") 
+               for band in ['High', 'Mid', 'Low', 'All']},
+            **{(band, 'RatePct'): st.column_config.NumberColumn(f"{band} Rate %", format="%.2f") 
+               for band in ['High', 'Mid', 'Low', 'All']},
+            **{(band, 'Profit'): st.column_config.NumberColumn(f"{band} Profit", format="%.2f") 
+               for band in ['High', 'Mid', 'Low', 'All']},
+            **{(band, 'ROI'): st.column_config.NumberColumn(f"{band} ROI", format="%.2f") 
+               for band in ['High', 'Mid', 'Low', 'All']},
+        }
+    )
 
 
 # For Streamlit navigation
