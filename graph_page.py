@@ -158,8 +158,12 @@ def render_graph_page():
             'unique_leagues': unique_leagues
         }
     
-    # Display the page title
-    st.title('                                ')
+    # Display title with custom styling
+    st.markdown("""
+        <div class="title-container">
+            <h1 class="title">TREND HISTORY PAGE</h1>
+        </div>
+    """, unsafe_allow_html=True)
     
     # Add navigation buttons
     add_navigation_buttons()
@@ -171,6 +175,26 @@ def render_graph_page():
     .stDataFrame {font-size: 13px !important;}
     .stDataFrame th, .stDataFrame td {text-align: center !important;}
     .stDataFrame tbody tr:last-child {background: #e6f4ea !important; font-weight: bold;}
+    
+    /* Title styling */
+    .title-container {
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        padding: 30px 20px;
+        border-radius: 15px;
+        margin-bottom: 30px;
+        text-align: center;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .title {
+        color: white;
+        font-size: 2.2em;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        margin: 0;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+    }
     
     /* Metrics styling */
     .metrics-container {
