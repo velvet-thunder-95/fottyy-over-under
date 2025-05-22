@@ -683,23 +683,11 @@ def show_login_page():
             f"""
             <style>
             .stApp {{  /* Double braces to escape in f-string */
-                position: relative;
-            }}
-            
-            .stApp::before {{  /* Create a pseudo-element for the blurred background */
-                content: "";
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
                 background-image: url("data:image/jpeg;base64,{img_data}");
                 background-size: cover;
                 background-position: center;
                 background-repeat: no-repeat;
                 background-attachment: fixed;
-                filter: blur(3px);  /* Add a slight blur effect */
-                z-index: -1;
             }}
             
             .login-container {{

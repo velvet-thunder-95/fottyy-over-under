@@ -804,10 +804,7 @@ def render_graph_page():
     
     # Make sure numeric columns are properly typed for sorting
     for col in flat_df.columns:
-        if 'Games' in col or 'Correct' in col:
-            # Convert to numeric first to ensure proper sorting
-            flat_df[col] = pd.to_numeric(flat_df[col], errors='coerce')
-        elif 'RatePct' in col or 'Profit' in col or 'ROI' in col:
+        if 'Games' in col or 'Correct' in col or 'RatePct' in col or 'Profit' in col or 'ROI' in col:
             # Convert to numeric first to ensure proper sorting
             flat_df[col] = pd.to_numeric(flat_df[col], errors='coerce')
     
@@ -847,34 +844,49 @@ def render_graph_page():
     </style>
     """, unsafe_allow_html=True)
     
-    # Convert the MultiIndex dataframe to a regular dataframe with flattened column names
-    # This will allow for sorting while preserving styling
+    # Create a display dataframe for formatting and a numeric dataframe for sorting
     display_df = full_df.copy()
+    numeric_df = full_df.copy()
     
-    # Format the values for display
+    # Create a dictionary to store the numeric values for sorting
+    numeric_values = {}
+    
+    # Format the values for display while preserving numeric values for sorting
     for band in ['High', 'Mid', 'Low', 'All']:
         for stat in ['Games', 'Correct']:
             # Format integer columns
             col = (band, stat)
             if col in display_df.columns:
-                display_df[col] = display_df[col].apply(lambda x: int(x) if pd.notnull(x) and x != '' else 0)
+                # Store numeric values for sorting
+                numeric_values[col] = numeric_df[col].apply(lambda x: float(x) if pd.notnull(x) and x != '' else float('-inf'))
+                # Format for display
+                display_df[col] = display_df[col].apply(lambda x: f"{int(x):,}" if pd.notnull(x) and x != '' else '')
         
         for stat in ['RatePct']:
             # Format percentage columns with 1 decimal place
             col = (band, stat)
             if col in display_df.columns:
+                # Store numeric values for sorting
+                numeric_values[col] = numeric_df[col].apply(lambda x: float(x) if pd.notnull(x) and x != '' else float('-inf'))
+                # Format for display
                 display_df[col] = display_df[col].apply(lambda x: f"{float(x):.1f}%" if pd.notnull(x) and x != '' else '')
         
         for stat in ['ROI']:
             # Format ROI with 2 decimal places
             col = (band, stat)
             if col in display_df.columns:
+                # Store numeric values for sorting
+                numeric_values[col] = numeric_df[col].apply(lambda x: float(x) if pd.notnull(x) and x != '' else float('-inf'))
+                # Format for display
                 display_df[col] = display_df[col].apply(lambda x: f"{float(x):.2f}%" if pd.notnull(x) and x != '' else '')
         
         for stat in ['Profit']:
             # Format currency columns with U suffix
             col = (band, stat)
             if col in display_df.columns:
+                # Store numeric values for sorting
+                numeric_values[col] = numeric_df[col].apply(lambda x: float(x) if pd.notnull(x) and x != '' else float('-inf'))
+                # Format for display
                 display_df[col] = display_df[col].apply(lambda x: f"{float(x):.2f}U" if pd.notnull(x) and x != '' else '')
     
     # Apply styling with colors
@@ -1027,39 +1039,22 @@ def render_graph_page():
         {'selector': 'tr:hover td', 'props': [('background-color', '#e8f5e9 !important')]},
     ], overwrite=False)
     
-    # Create a dictionary of column configs for proper sorting
-    column_configs = {}
+    # Create a custom dataframe with hidden numeric columns for sorting
+    sorted_df = display_df.copy()
     
-    # Configure each column for proper sorting
-    for band in ['High', 'Mid', 'Low', 'All']:
-        # Games and Correct columns - integer sorting
-        for stat in ['Games', 'Correct']:
-            column_configs[(band, stat)] = st.column_config.NumberColumn(
-                format="%d",
-            )
-        
-        # RatePct column - percentage sorting
-        column_configs[(band, 'RatePct')] = st.column_config.NumberColumn(
-            format="%.1f%%",
-        )
-        
-        # ROI column - percentage sorting
-        column_configs[(band, 'ROI')] = st.column_config.NumberColumn(
-            format="%.2f%%",
-        )
-        
-        # Profit column - currency sorting
-        column_configs[(band, 'Profit')] = st.column_config.NumberColumn(
-            format="%.2fU",
-        )
+    # Add hidden columns with numeric values for sorting
+    for col, values in numeric_values.items():
+        # Create a hidden column name for sorting
+        sort_col = f"_sort_{col[0]}_{col[1]}"
+        # Add the numeric values to the dataframe
+        sorted_df[sort_col] = values
     
-    # Display the dataframe with proper column configs for sorting
+    # Display the dataframe with sorting enabled
     st.dataframe(
-        # Convert back to numeric values for proper sorting while keeping formatting
-        data=full_df,
-        column_config=column_configs,
+        sorted_df.style.apply(apply_styling, axis=None),
         use_container_width=True,
-        hide_index=True,
+        hide_index=False,
+        column_order=display_df.columns.tolist(),  # Only show the display columns, not the hidden sort columns
         width=2000
     )
 
