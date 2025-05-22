@@ -881,16 +881,69 @@ def render_graph_page():
         styles = pd.DataFrame('', index=df.index, columns=df.columns)
         
         for i, row in df.iterrows():
-            # Apply alternating row colors
-            row_bg = 'background-color: #f8f9fa;' if i % 2 == 1 else ''
+            # Determine row background based on performance
+            # Check if this is an 'All' confidence band row and evaluate overall performance
+            all_roi = None
+            all_ratepct = None
+            all_profit = None
+            
+            # Extract key metrics for the 'All' confidence band if available
+            for col in df.columns:
+                if isinstance(col, tuple) and len(col) > 1:
+                    band, metric = col
+                    if band == 'All':
+                        if metric == 'ROI':
+                            try:
+                                all_roi = float(row[col]) if pd.notnull(row[col]) else None
+                            except:
+                                pass
+                        elif metric == 'RatePct':
+                            try:
+                                all_ratepct = float(row[col]) if pd.notnull(row[col]) else None
+                            except:
+                                pass
+                        elif metric == 'Profit':
+                            try:
+                                all_profit = float(row[col]) if pd.notnull(row[col]) else None
+                            except:
+                                pass
+            
+            # Determine row background color based on overall performance
+            row_bg = ''
+            
+            # High performing leagues - good ROI, good success rate, and positive profit
+            if (all_roi is not None and all_roi > 15 and 
+                all_ratepct is not None and all_ratepct > 60 and 
+                all_profit is not None and all_profit > 0):
+                row_bg = 'background-color: rgba(52, 199, 89, 0.2);'  # Light green
+            
+            # Problematic leagues - negative ROI, low success rate
+            elif (all_roi is not None and all_roi < -10 and 
+                  all_ratepct is not None and all_ratepct < 45):
+                row_bg = 'background-color: rgba(255, 55, 55, 0.2);'  # Light red
+            
+            # Promising leagues - positive ROI but could be better
+            elif (all_roi is not None and all_roi > 0 and 
+                  all_ratepct is not None and all_ratepct > 50):
+                row_bg = 'background-color: rgba(52, 199, 89, 0.1);'  # Very light green
+            
+            # Underperforming leagues - negative ROI but not terrible
+            elif (all_roi is not None and all_roi < 0):
+                row_bg = 'background-color: rgba(255, 152, 0, 0.1);'  # Very light orange
+            
+            # Default alternating row colors if no special highlighting
+            elif i % 2 == 1:
+                row_bg = 'background-color: #f8f9fa;'
             
             for col in df.columns:
                 # Start with row background
                 cell_style = row_bg
                 
-                # Add cell-specific styling
+                # Add cell-specific styling (this will override row background for specific cells)
                 if isinstance(col, tuple) and len(col) > 1:
-                    cell_style += highlight_cells(row[col], col)
+                    cell_specific_style = highlight_cells(row[col], col)
+                    if cell_specific_style:
+                        cell_style = cell_specific_style  # Override row background if cell has specific styling
                 
                 styles.loc[i, col] = cell_style
         
