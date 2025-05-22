@@ -685,13 +685,18 @@ def render_graph_page():
     
     # Create flattened column names by joining the MultiIndex levels with underscores
     flat_column_names = []
+    flat_to_original = {}  # Mapping from flat column names to original tuples
+    
     for col in flat_df.columns:
         if isinstance(col, tuple):
             # Join the non-empty parts of the tuple with underscores
             parts = [str(part) for part in col if part != '']
-            flat_column_names.append('_'.join(parts))
+            flat_name = '_'.join(parts)
+            flat_column_names.append(flat_name)
+            flat_to_original[flat_name] = col
         else:
             flat_column_names.append(str(col))
+            flat_to_original[str(col)] = col
     
     # Rename columns to flat names for sorting capability
     flat_df.columns = flat_column_names
@@ -718,6 +723,129 @@ def render_graph_page():
             column_config[col] = st.column_config.NumberColumn(col, format="%.2f")
         elif 'ROI' in col:
             column_config[col] = st.column_config.NumberColumn(col, format="%.2f%%")
+    
+    # Apply color styling to the dataframe
+    # We'll use a custom CSS function to apply colors
+    def apply_color_styles():
+        styles = """
+        <style>
+        /* Base styles for the table */
+        [data-testid="stDataFrame"] table {
+            border-collapse: collapse;
+            width: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        
+        /* Header styles */
+        [data-testid="stDataFrame"] thead tr th {
+            background-color: #f8fafc;
+            border: 2px solid #bbb;
+            font-size: 13px;
+            text-align: center;
+            cursor: pointer;
+        }
+        
+        [data-testid="stDataFrame"] thead tr:first-child th {
+            border-top: 3px solid #222;
+            font-size: 14px;
+            font-weight: bold;
+            background-color: #e8f5e9;
+        }
+        
+        /* Cell styles */
+        [data-testid="stDataFrame"] tbody tr td {
+            border: 1px solid #ddd;
+            font-size: 13px;
+            text-align: center;
+        }
+        
+        /* Alternating row colors */
+        [data-testid="stDataFrame"] tbody tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        
+        /* Hover effect */
+        [data-testid="stDataFrame"] tbody tr:hover {
+            background-color: #e8f5e9;
+        }
+        
+        /* Color coding for values */
+        .positive-value {
+            background-color: #d0f5d8 !important;
+            color: #1a4d1a !important;
+        }
+        
+        .negative-value {
+            background-color: #fbe9e7 !important;
+            color: #b71c1c !important;
+        }
+        
+        .high-rate {
+            background-color: #34c759 !important;
+        }
+        
+        .medium-rate {
+            background-color: #ff9800 !important;
+        }
+        
+        .low-rate {
+            background-color: #ff3737 !important;
+        }
+        </style>
+        
+        <script>
+        // Function to apply color coding to cells after the table is rendered
+        function applyColorCoding() {
+            const table = document.querySelector('[data-testid="stDataFrame"] table');
+            if (!table) return;
+            
+            const rows = table.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                cells.forEach(cell => {
+                    const text = cell.textContent.trim();
+                    const columnName = cell.getAttribute('data-column-name') || '';
+                    
+                    // Apply color coding based on column type and value
+                    if (columnName.includes('Profit') || columnName.includes('ROI')) {
+                        const value = parseFloat(text.replace(',', '.').replace('%', ''));
+                        if (!isNaN(value)) {
+                            if (value > 0) cell.classList.add('positive-value');
+                            if (value < 0) cell.classList.add('negative-value');
+                        }
+                    }
+                    else if (columnName.includes('RatePct')) {
+                        const value = parseFloat(text.replace(',', '.').replace('%', ''));
+                        if (!isNaN(value)) {
+                            if (value >= 70) cell.classList.add('high-rate');
+                            else if (value < 50) cell.classList.add('medium-rate');
+                            else if (value < 40) cell.classList.add('low-rate');
+                        }
+                    }
+                });
+            });
+        }
+        
+        // Run when the DOM is fully loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            applyColorCoding();
+            
+            // Also run when content changes (for when sorting is applied)
+            const observer = new MutationObserver(function(mutations) {
+                applyColorCoding();
+            });
+            
+            const target = document.querySelector('[data-testid="stDataFrame"]');
+            if (target) {
+                observer.observe(target, { childList: true, subtree: true });
+            }
+        });
+        </script>
+        """
+        st.markdown(styles, unsafe_allow_html=True)
+    
+    # Apply the color styles
+    apply_color_styles()
     
     # Display the dataframe with sorting enabled
     st.dataframe(
