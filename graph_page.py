@@ -158,6 +158,9 @@ def render_graph_page():
             'unique_leagues': unique_leagues
         }
     
+    # Add some space before the title
+    st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
+    
     # Display title with custom styling
     st.markdown("""
         <div class="title-container">
@@ -179,21 +182,21 @@ def render_graph_page():
     /* Title styling */
     .title-container {
         background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-        padding: 30px 20px;
-        border-radius: 15px;
-        margin-bottom: 30px;
+        padding: 15px 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
         text-align: center;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
     
     .title {
         color: white;
-        font-size: 2.2em;
+        font-size: 1.8em;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 2px;
         margin: 0;
-        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
     }
     
     /* Metrics styling */
