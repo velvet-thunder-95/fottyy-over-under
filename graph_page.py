@@ -832,17 +832,23 @@ def render_graph_page():
             if col in display_df.columns:
                 display_df[col] = display_df[col].apply(lambda x: int(x) if pd.notnull(x) and x != '' else 0)
         
-        for stat in ['RatePct', 'ROI']:
-            # Format percentage columns
+        for stat in ['RatePct']:
+            # Format percentage columns with 1 decimal place
             col = (band, stat)
             if col in display_df.columns:
-                display_df[col] = display_df[col].apply(lambda x: float(x) if pd.notnull(x) and x != '' else 0)
+                display_df[col] = display_df[col].apply(lambda x: f"{float(x):.1f}%" if pd.notnull(x) and x != '' else '')
+        
+        for stat in ['ROI']:
+            # Format ROI with 2 decimal places
+            col = (band, stat)
+            if col in display_df.columns:
+                display_df[col] = display_df[col].apply(lambda x: f"{float(x):.2f}%" if pd.notnull(x) and x != '' else '')
         
         for stat in ['Profit']:
-            # Format currency columns
+            # Format currency columns with U suffix
             col = (band, stat)
             if col in display_df.columns:
-                display_df[col] = display_df[col].apply(lambda x: float(x) if pd.notnull(x) and x != '' else 0)
+                display_df[col] = display_df[col].apply(lambda x: f"{float(x):.2f}U" if pd.notnull(x) and x != '' else '')
     
     # Apply styling with colors
     def highlight_cells(val, col):
@@ -854,7 +860,12 @@ def render_graph_page():
         
         if metric == 'RatePct':
             try:
-                val_float = float(val)
+                # Extract numeric value from formatted string if needed
+                if isinstance(val, str) and '%' in val:
+                    val_float = float(val.replace('%', ''))
+                else:
+                    val_float = float(val)
+                
                 if val_float >= 70:
                     return 'background-color: rgba(52, 199, 89, 0.25);'  # Light green
                 elif val_float < 50:
@@ -866,7 +877,13 @@ def render_graph_page():
         
         elif metric in ['Profit', 'ROI']:
             try:
-                val_float = float(val)
+                # Extract numeric value from formatted string if needed
+                if isinstance(val, str):
+                    val_clean = val.replace('%', '').replace('U', '')
+                    val_float = float(val_clean)
+                else:
+                    val_float = float(val)
+                
                 if val_float > 0:
                     return 'background-color: #d0f5d8; color: #1a4d1a;'
                 elif val_float < 0:
@@ -952,23 +969,14 @@ def render_graph_page():
     # Apply styling to the dataframe
     styled = display_df.style.apply(apply_styling, axis=None)
     
-    # Format the display values
+    # Format the display values - only format columns that haven't been pre-formatted
     for band in ['High', 'Mid', 'Low', 'All']:
         for stat in ['Games', 'Correct']:
             # Integer columns with thousands separator for large numbers
             styled = styled.format({(band, stat): '{:,}'}, na_rep='')
         
-        for stat in ['RatePct']:
-            # Success rate with 1 decimal place
-            styled = styled.format({(band, stat): '{:.1f}%'}, na_rep='')
-        
-        for stat in ['ROI']:
-            # ROI with 2 decimal places
-            styled = styled.format({(band, stat): '{:.2f}%'}, na_rep='')
-        
-        for stat in ['Profit']:
-            # Currency columns (2 decimal places) with 'U' suffix
-            styled = styled.format({(band, stat): '{:.2f}U'}, na_rep='')
+        # Note: We're not formatting RatePct, ROI, and Profit here because they've already been formatted
+        # in the display_df preparation step above
     
     # Set table styles for borders, font, alignment
     styled = styled.set_table_styles([
