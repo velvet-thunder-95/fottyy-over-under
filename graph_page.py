@@ -119,11 +119,52 @@ def add_navigation_buttons():
             st.rerun()
 
 def render_graph_page():
+    # Initialize session state variables if they don't exist
+    if 'graph_data_loaded' not in st.session_state:
+        st.session_state.graph_data_loaded = False
+        
+    if 'graph_df' not in st.session_state:
+        # Initialize PredictionHistory
+        ph = PredictionHistory()
+        # Get initial data with default filters
+        df = ph.get_predictions(status='Completed')
+        st.session_state.graph_df = df
+        st.session_state.graph_data_loaded = True
+    
+    if 'graph_all_predictions' not in st.session_state:
+        ph = PredictionHistory()
+        all_predictions = ph.get_predictions()
+        st.session_state.graph_all_predictions = all_predictions
+    
+    # Initialize filter state variables
+    if 'graph_filter_params' not in st.session_state:
+        all_predictions = st.session_state.graph_all_predictions
+        if not all_predictions.empty:
+            min_date = pd.to_datetime(all_predictions['date']).min().date()
+            max_date = pd.to_datetime(all_predictions['date']).max().date()
+        else:
+            min_date = datetime.now().date() - timedelta(days=30)
+            max_date = datetime.now().date()
+            
+        unique_leagues = sorted(all_predictions['league'].unique()) if not all_predictions.empty else []
+        
+        st.session_state.graph_filter_params = {
+            'start_date': min_date,
+            'end_date': max_date,
+            'leagues': ["All"],
+            'confidence_levels': ["All"],
+            'min_date': min_date,
+            'max_date': max_date,
+            'unique_leagues': unique_leagues
+        }
+    
+    # Display the page title
     st.title('                                ')
     
     # Add navigation buttons
     add_navigation_buttons()
     
+    # Apply styling
     st.markdown('''
     <style>
     .block-container {padding: 0 0 0 0;}
@@ -174,118 +215,110 @@ def render_graph_page():
     }
     </style>
     ''', unsafe_allow_html=True)
-
-    # Initialize PredictionHistory
-    ph = PredictionHistory()
-    
-    # Get all predictions for initial data and filter options
-    all_predictions = ph.get_predictions()
     
     # --- Sidebar Filters ---
     st.sidebar.markdown("## Filters", help="Filter analytics data")
     
-    # Date Range Filter
-    if not all_predictions.empty:
-        min_date = pd.to_datetime(all_predictions['date']).min().date()
-        max_date = pd.to_datetime(all_predictions['date']).max().date()
-    else:
-        min_date = datetime.now().date() - timedelta(days=30)
-        max_date = datetime.now().date()
+    # Get filter parameters from session state
+    params = st.session_state.graph_filter_params
     
-    # Initialize session state for filters if not exists
-    if 'graph_start_date' not in st.session_state:
-        st.session_state.graph_start_date = min_date
-    if 'graph_end_date' not in st.session_state:
-        st.session_state.graph_end_date = max_date
-    if 'graph_selected_leagues' not in st.session_state:
-        st.session_state.graph_selected_leagues = ["All"]
-    if 'graph_confidence_levels' not in st.session_state:
-        st.session_state.graph_confidence_levels = ["All"]
-    if 'graph_temp_start_date' not in st.session_state:
-        st.session_state.graph_temp_start_date = st.session_state.graph_start_date
-    if 'graph_temp_end_date' not in st.session_state:
-        st.session_state.graph_temp_end_date = st.session_state.graph_end_date
-    if 'graph_temp_leagues' not in st.session_state:
-        st.session_state.graph_temp_leagues = st.session_state.graph_selected_leagues.copy()
-    if 'graph_temp_confidence' not in st.session_state:
-        st.session_state.graph_temp_confidence = st.session_state.graph_confidence_levels.copy()
-    if 'graph_filters_applied' not in st.session_state:
-        st.session_state.graph_filters_applied = False
+    # Create a form to prevent automatic rerun on every input change
+    with st.sidebar.form(key="filter_form"):
+        # Date Range Filter
+        start_date = st.date_input(
+            "Start Date",
+            value=params['start_date'],
+            min_value=params['min_date'],
+            max_value=params['max_date'],
+            help="Filter data from this date"
+        )
+        
+        end_date = st.date_input(
+            "End Date",
+            value=params['end_date'],
+            min_value=params['min_date'],
+            max_value=params['max_date'],
+            help="Filter data until this date"
+        )
+        
+        # Validate dates
+        if start_date > end_date:
+            st.error("Error: End date must be after start date")
+        
+        # League Filter
+        leagues = st.multiselect(
+            "Select Competitions",
+            options=["All"] + params['unique_leagues'],
+            default=params['leagues'],
+            help="Filter data by competition. Select multiple competitions or 'All'"
+        )
+        
+        # Handle empty selection
+        if not leagues:
+            leagues = ["All"]
+        
+        # Confidence Level Filter
+        confidence_levels = st.multiselect(
+            "Confidence Levels",
+            options=["All", "High", "Medium", "Low"],
+            default=params['confidence_levels'],
+            help="Filter by confidence level: High (≥70%), Medium (50-69%), Low (<50%). Select multiple levels or 'All'"
+        )
+        
+        # Handle empty selection
+        if not confidence_levels:
+            confidence_levels = ["All"]
+        
+        # Submit button
+        submit_button = st.form_submit_button(label="Apply Filters", type="primary")
     
-    # Date Range - using temporary values for display
-    temp_start_date = st.sidebar.date_input(
-        "Start Date",
-        value=st.session_state.graph_temp_start_date,
-        min_value=min_date,
-        max_value=max_date,
-        help="Filter data from this date"
-    )
-    st.session_state.graph_temp_start_date = temp_start_date
-    
-    temp_end_date = st.sidebar.date_input(
-        "End Date",
-        value=st.session_state.graph_temp_end_date,
-        min_value=min_date,
-        max_value=max_date,
-        help="Filter data until this date"
-    )
-    st.session_state.graph_temp_end_date = temp_end_date
-    
-    # Validate dates
-    if temp_start_date > temp_end_date:
-        st.sidebar.error("Error: End date must be after start date")
-    
-    # Extract unique leagues from all predictions
-    unique_leagues = sorted(all_predictions['league'].unique()) if not all_predictions.empty else []
-    
-    # League Filter - using temporary values for display
-    temp_leagues = st.sidebar.multiselect(
-        "Select Competitions",
-        options=["All"] + unique_leagues,
-        default=st.session_state.graph_temp_leagues,
-        help="Filter data by competition. Select multiple competitions or 'All'"
-    )
-    
-    # Handle empty selection
-    if not temp_leagues:
-        temp_leagues = ["All"]
-    st.session_state.graph_temp_leagues = temp_leagues
-    
-    # Confidence Level Filter - using temporary values for display
-    temp_confidence = st.sidebar.multiselect(
-        "Confidence Levels",
-        options=["All", "High", "Medium", "Low"],
-        default=st.session_state.graph_temp_confidence,
-        help="Filter by confidence level: High (≥70%), Medium (50-69%), Low (<50%). Select multiple levels or 'All'"
-    )
-    
-    # Handle empty selection
-    if not temp_confidence:
-        temp_confidence = ["All"]
-    st.session_state.graph_temp_confidence = temp_confidence
-    
-    # Add some space before the button
-    st.sidebar.markdown("<br>", unsafe_allow_html=True)
-    
-    # Apply button using the same style as other buttons in the app
-    if st.sidebar.button("Apply Filters", key="apply_graph_filters", help="Apply the selected filters to the data", type="primary"):
-        # Apply the temporary values to the actual filter values
-        st.session_state.graph_start_date = temp_start_date
-        st.session_state.graph_end_date = temp_end_date
-        st.session_state.graph_selected_leagues = temp_leagues
-        st.session_state.graph_confidence_levels = temp_confidence
-        st.session_state.graph_filters_applied = True
-        st.rerun()
-    
-    # Use the actual filter values for data filtering
-    start_date = st.session_state.graph_start_date
-    end_date = st.session_state.graph_end_date
-    selected_leagues = st.session_state.graph_selected_leagues
-    confidence_levels = st.session_state.graph_confidence_levels
-    
-    # Format dates for database query
-    start_date_str = start_date.strftime("%Y-%m-%d")
-    end_date_str = (end_date + timedelta(days=1)).strftime("%Y-%m-%d")  # Include end date
+    # Process form submission
+    if submit_button:
+        # Update filter parameters in session state
+        st.session_state.graph_filter_params.update({
+            'start_date': start_date,
+            'end_date': end_date,
+            'leagues': leagues,
+            'confidence_levels': confidence_levels
+        })
+        
+        # Apply filters and update the dataframe
+        ph = PredictionHistory()
+        
+        # Format dates for database query
+        start_date_str = start_date.strftime("%Y-%m-%d")
+        end_date_str = (end_date + timedelta(days=1)).strftime("%Y-%m-%d")  # Include end date
+        
+        # Get filtered data
+        df = ph.get_predictions(
+            start_date=start_date_str,
+            end_date=end_date_str,
+            status='Completed'
+        )
+        
+        # Apply additional filters in memory
+        if not df.empty:
+            # Apply league filter
+            if leagues and "All" not in leagues:
+                df = df[df['league'].isin(leagues)]
+            
+            # Apply confidence filter
+            if confidence_levels and "All" not in confidence_levels:
+                mask = pd.Series(False, index=df.index)
+                
+                for level in confidence_levels:
+                    if level == "High":
+                        mask |= df['confidence'] >= 70
+                    elif level == "Medium":
+                        mask |= (df['confidence'] >= 50) & (df['confidence'] < 70)
+                    elif level == "Low":
+                        mask |= df['confidence'] < 50
+                        
+                df = df[mask]
+        
+        # Update the dataframe in session state
+        st.session_state.graph_df = df
+        st.session_state.graph_data_loaded = True
     
     # --- Filter Presets UI ---
     st.sidebar.markdown('### Analytics Filter Presets', help="Save and apply filter combinations for the analytics page.")
@@ -293,8 +326,11 @@ def render_graph_page():
         graph_filter_name = st.text_input("Save Filter Preset", key="graph_filter_name")
         if st.button("Save Filter Preset", key="save_graph_filter"):
             if graph_filter_name:
+                # Get current filter parameters
+                params = st.session_state.graph_filter_params
+                
                 # Save exactly what the user selected, even if it's only one league
-                leagues_to_save = st.session_state.graph_selected_leagues.copy()
+                leagues_to_save = params['leagues'].copy()
                 if "All" in leagues_to_save and len(leagues_to_save) > 1:
                     leagues_to_save.remove("All")  # Remove 'All' if other leagues are selected
                 if leagues_to_save == ["All"]:
@@ -302,7 +338,7 @@ def render_graph_page():
                 
                 # Convert confidence levels to match the format expected by the filter_storage module
                 conf_levels = []
-                for level in st.session_state.graph_confidence_levels:
+                for level in params['confidence_levels']:
                     if level == "All":
                         conf_levels = ["All"]
                         break
@@ -316,8 +352,8 @@ def render_graph_page():
                 # Save the filter preset using the history filter table
                 st.session_state.graph_saved_filters = filter_storage.save_history_filter(
                     graph_filter_name,
-                    st.session_state.graph_start_date.strftime("%Y-%m-%d"),
-                    st.session_state.graph_end_date.strftime("%Y-%m-%d"),
+                    params['start_date'].strftime("%Y-%m-%d"),
+                    params['end_date'].strftime("%Y-%m-%d"),
                     leagues_to_save,
                     conf_levels,
                     None  # No status filter for graph page
@@ -337,85 +373,96 @@ def render_graph_page():
                 cols = st.columns([1,1])
                 if cols[0].button("Apply", key=f"apply_graph_filter_{idx}"):
                     # Apply the filter preset
-                    st.session_state.graph_selected_leagues = sf['leagues'] if sf['leagues'] else ["All"]
-                    st.session_state.graph_confidence_levels = sf['confidence'] if sf['confidence'] else ["All"]
-                    st.session_state.graph_start_date = pd.to_datetime(sf['start_date']).date()
-                    st.session_state.graph_end_date = pd.to_datetime(sf['end_date']).date()
-                    # Also update the temporary values for display
-                    st.session_state.graph_temp_leagues = st.session_state.graph_selected_leagues.copy()
-                    st.session_state.graph_temp_confidence = st.session_state.graph_confidence_levels.copy()
-                    st.session_state.graph_temp_start_date = st.session_state.graph_start_date
-                    st.session_state.graph_temp_end_date = st.session_state.graph_end_date
-                    # Set the filters_applied flag to trigger data refresh
-                    st.session_state.graph_filters_applied = True
+                    start_date = pd.to_datetime(sf['start_date']).date()
+                    end_date = pd.to_datetime(sf['end_date']).date()
+                    leagues = sf['leagues'] if sf['leagues'] else ["All"]
+                    confidence = sf['confidence'] if sf['confidence'] else ["All"]
+                    
+                    # Update filter parameters in session state
+                    st.session_state.graph_filter_params.update({
+                        'start_date': start_date,
+                        'end_date': end_date,
+                        'leagues': leagues,
+                        'confidence_levels': confidence
+                    })
+                    
+                    # Apply filters and update the dataframe
+                    ph = PredictionHistory()
+                    
+                    # Format dates for database query
+                    start_date_str = start_date.strftime("%Y-%m-%d")
+                    end_date_str = (end_date + timedelta(days=1)).strftime("%Y-%m-%d")  # Include end date
+                    
+                    # Get filtered data
+                    df = ph.get_predictions(
+                        start_date=start_date_str,
+                        end_date=end_date_str,
+                        status='Completed'
+                    )
+                    
+                    # Apply additional filters in memory
+                    if not df.empty:
+                        # Apply league filter
+                        if leagues and "All" not in leagues:
+                            df = df[df['league'].isin(leagues)]
+                        
+                        # Apply confidence filter
+                        if confidence and "All" not in confidence:
+                            mask = pd.Series(False, index=df.index)
+                            
+                            for level in confidence:
+                                if level == "High":
+                                    mask |= df['confidence'] >= 70
+                                elif level == "Medium":
+                                    mask |= (df['confidence'] >= 50) & (df['confidence'] < 70)
+                                elif level == "Low":
+                                    mask |= df['confidence'] < 50
+                                    
+                            df = df[mask]
+                    
+                    # Update the dataframe in session state
+                    st.session_state.graph_df = df
                     st.rerun()
                 if cols[1].button("Delete", key=f"delete_graph_filter_{idx}"):
                     st.session_state.graph_saved_filters = filter_storage.delete_history_filter(sf['id'])
                     st.rerun()
     
-    # Check if filters have been applied or if this is the first load
-    if st.session_state.graph_filters_applied or 'df' not in st.session_state:
-        # Get filtered predictions with date range and status
-        df = ph.get_predictions(
-            start_date=start_date_str,
-            end_date=end_date_str,
-            status='Completed'
-        )
+    # Use the dataframe from session state
+    df = st.session_state.graph_df
+    
+    # Process the dataframe for display
+    if not df.empty:
+        # Drop unwanted columns if they exist
+        for col in ['home_market_value', 'away_market_value', 'prediction_type']:
+            if col in df.columns:
+                df = df.drop(columns=col)
         
-        # Apply additional filters in memory
-        if not df.empty:
-            # Apply league filter
-            if selected_leagues and "All" not in selected_leagues:
-                df = df[df['league'].isin(selected_leagues)]
+        # Split league names that contain hyphens into country and league parts
+        if 'country' not in df.columns:
+            # Create a function to split league names
+            def split_league_name(league_name):
+                if isinstance(league_name, str) and ' - ' in league_name:
+                    parts = league_name.split(' - ', 1)
+                    return parts[0], parts[1]
+                return league_name, league_name
             
-            # Apply confidence filter
-            if confidence_levels and "All" not in confidence_levels:
-                mask = pd.Series(False, index=df.index)
-                
-                for level in confidence_levels:
-                    if level == "High":
-                        mask |= df['confidence'] >= 70
-                    elif level == "Medium":
-                        mask |= (df['confidence'] >= 50) & (df['confidence'] < 70)
-                    elif level == "Low":
-                        mask |= df['confidence'] < 50
-                        
-                df = df[mask]
+            # Apply the function to extract country and league
+            df['country'], df['league'] = zip(*df['league'].apply(split_league_name))
         
-        # Store the filtered dataframe in session state
-        st.session_state.df = df
+        # Calculate correct predictions
+        df['correct'] = (df['predicted_outcome'] == df['actual_outcome']).astype(int)
+        
+        # Add confidence band
+        if 'confidence' in df.columns:
+            df['conf_band'] = df['confidence'].apply(get_confidence_band)
+        else:
+            pass
+        
+        # Aggregate data for display
+        agg = league_table_agg(df)
     else:
-        # Use the existing dataframe from session state
-        df = st.session_state.df
-    
-
-    
-    # Drop unwanted columns if they exist
-    for col in ['home_market_value', 'away_market_value', 'prediction_type']:
-        if col in df.columns:
-            df = df.drop(columns=col)
-    if df.empty:
         st.info('No completed predictions to display.')
         return
-    # Split league names that contain hyphens into country and league parts
-    if 'country' not in df.columns:
-        # Create a function to split league names
-        def split_league_name(league_name):
-            if isinstance(league_name, str) and ' - ' in league_name:
-                parts = league_name.split(' - ', 1)
-                return parts[0], parts[1]
-            return league_name, league_name
-        
-        # Apply the function to extract country and league
-        df['country'], df['league'] = zip(*df['league'].apply(split_league_name))
-    df['correct'] = (df['predicted_outcome'] == df['actual_outcome']).astype(int)
-    if 'confidence' in df.columns:
-        df['conf_band'] = df['confidence'].apply(get_confidence_band)
-        # st.write(df['conf_band'].value_counts(dropna=False))  # Debug output
-    else:
-        # st.write('No confidence column found!')  # Debug output
-        pass
-    agg = league_table_agg(df)
     
     # Pivot for display with MultiIndex columns
     pivot = agg.pivot(index=['country', 'league'], columns='conf_band', values=['Games','Correct','RatePct','Profit','ROI'])
