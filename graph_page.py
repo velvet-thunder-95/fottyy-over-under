@@ -209,6 +209,8 @@ def render_graph_page():
         st.session_state.graph_temp_leagues = st.session_state.graph_selected_leagues.copy()
     if 'graph_temp_confidence' not in st.session_state:
         st.session_state.graph_temp_confidence = st.session_state.graph_confidence_levels.copy()
+    if 'graph_filters_applied' not in st.session_state:
+        st.session_state.graph_filters_applied = False
     
     # Date Range - using temporary values for display
     temp_start_date = st.sidebar.date_input(
@@ -262,37 +264,18 @@ def render_graph_page():
         temp_confidence = ["All"]
     st.session_state.graph_temp_confidence = temp_confidence
     
-    # Apply button with custom styling
-    st.sidebar.markdown("""
-    <style>
-    .apply-button {
-        background-color: #2c5282;
-        color: white;
-        padding: 0.5rem 1rem;
-        border-radius: 0.25rem;
-        border: none;
-        font-weight: 600;
-        cursor: pointer;
-        width: 100%;
-        margin-top: 0.5rem;
-        margin-bottom: 1rem;
-        text-align: center;
-    }
-    .apply-button:hover {
-        background-color: #1a365d;
-    }
-    </style>
-    """, unsafe_allow_html=True)
+    # Add some space before the button
+    st.sidebar.markdown("<br>", unsafe_allow_html=True)
     
-    apply_col1, apply_col2 = st.sidebar.columns([3, 1])
-    with apply_col1:
-        if st.button("Apply Filters", key="apply_graph_filters", help="Apply the selected filters to the data"):
-            # Apply the temporary values to the actual filter values
-            st.session_state.graph_start_date = temp_start_date
-            st.session_state.graph_end_date = temp_end_date
-            st.session_state.graph_selected_leagues = temp_leagues
-            st.session_state.graph_confidence_levels = temp_confidence
-            st.rerun()
+    # Apply button using the same style as other buttons in the app
+    if st.sidebar.button("Apply Filters", key="apply_graph_filters", help="Apply the selected filters to the data", type="primary"):
+        # Apply the temporary values to the actual filter values
+        st.session_state.graph_start_date = temp_start_date
+        st.session_state.graph_end_date = temp_end_date
+        st.session_state.graph_selected_leagues = temp_leagues
+        st.session_state.graph_confidence_levels = temp_confidence
+        st.session_state.graph_filters_applied = True
+        st.rerun()
     
     # Use the actual filter values for data filtering
     start_date = st.session_state.graph_start_date
@@ -358,37 +341,52 @@ def render_graph_page():
                     st.session_state.graph_confidence_levels = sf['confidence'] if sf['confidence'] else ["All"]
                     st.session_state.graph_start_date = pd.to_datetime(sf['start_date']).date()
                     st.session_state.graph_end_date = pd.to_datetime(sf['end_date']).date()
+                    # Also update the temporary values for display
+                    st.session_state.graph_temp_leagues = st.session_state.graph_selected_leagues.copy()
+                    st.session_state.graph_temp_confidence = st.session_state.graph_confidence_levels.copy()
+                    st.session_state.graph_temp_start_date = st.session_state.graph_start_date
+                    st.session_state.graph_temp_end_date = st.session_state.graph_end_date
+                    # Set the filters_applied flag to trigger data refresh
+                    st.session_state.graph_filters_applied = True
                     st.rerun()
                 if cols[1].button("Delete", key=f"delete_graph_filter_{idx}"):
                     st.session_state.graph_saved_filters = filter_storage.delete_history_filter(sf['id'])
                     st.rerun()
     
-    # Get filtered predictions with date range and status
-    df = ph.get_predictions(
-        start_date=start_date_str,
-        end_date=end_date_str,
-        status='Completed'
-    )
-    
-    # Apply additional filters in memory
-    if not df.empty:
-        # Apply league filter
-        if selected_leagues and "All" not in selected_leagues:
-            df = df[df['league'].isin(selected_leagues)]
+    # Check if filters have been applied or if this is the first load
+    if st.session_state.graph_filters_applied or 'df' not in st.session_state:
+        # Get filtered predictions with date range and status
+        df = ph.get_predictions(
+            start_date=start_date_str,
+            end_date=end_date_str,
+            status='Completed'
+        )
         
-        # Apply confidence filter
-        if confidence_levels and "All" not in confidence_levels:
-            mask = pd.Series(False, index=df.index)
+        # Apply additional filters in memory
+        if not df.empty:
+            # Apply league filter
+            if selected_leagues and "All" not in selected_leagues:
+                df = df[df['league'].isin(selected_leagues)]
             
-            for level in confidence_levels:
-                if level == "High":
-                    mask |= df['confidence'] >= 70
-                elif level == "Medium":
-                    mask |= (df['confidence'] >= 50) & (df['confidence'] < 70)
-                elif level == "Low":
-                    mask |= df['confidence'] < 50
-                    
-            df = df[mask]
+            # Apply confidence filter
+            if confidence_levels and "All" not in confidence_levels:
+                mask = pd.Series(False, index=df.index)
+                
+                for level in confidence_levels:
+                    if level == "High":
+                        mask |= df['confidence'] >= 70
+                    elif level == "Medium":
+                        mask |= (df['confidence'] >= 50) & (df['confidence'] < 70)
+                    elif level == "Low":
+                        mask |= df['confidence'] < 50
+                        
+                df = df[mask]
+        
+        # Store the filtered dataframe in session state
+        st.session_state.df = df
+    else:
+        # Use the existing dataframe from session state
+        df = st.session_state.df
     
 
     
