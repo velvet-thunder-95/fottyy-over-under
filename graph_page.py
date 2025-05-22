@@ -201,65 +201,108 @@ def render_graph_page():
         st.session_state.graph_selected_leagues = ["All"]
     if 'graph_confidence_levels' not in st.session_state:
         st.session_state.graph_confidence_levels = ["All"]
+    if 'graph_temp_start_date' not in st.session_state:
+        st.session_state.graph_temp_start_date = st.session_state.graph_start_date
+    if 'graph_temp_end_date' not in st.session_state:
+        st.session_state.graph_temp_end_date = st.session_state.graph_end_date
+    if 'graph_temp_leagues' not in st.session_state:
+        st.session_state.graph_temp_leagues = st.session_state.graph_selected_leagues.copy()
+    if 'graph_temp_confidence' not in st.session_state:
+        st.session_state.graph_temp_confidence = st.session_state.graph_confidence_levels.copy()
     
-    # Date Range
-    start_date = st.sidebar.date_input(
+    # Date Range - using temporary values for display
+    temp_start_date = st.sidebar.date_input(
         "Start Date",
-        value=st.session_state.graph_start_date,
+        value=st.session_state.graph_temp_start_date,
         min_value=min_date,
         max_value=max_date,
         help="Filter data from this date"
     )
+    st.session_state.graph_temp_start_date = temp_start_date
     
-    end_date = st.sidebar.date_input(
+    temp_end_date = st.sidebar.date_input(
         "End Date",
-        value=st.session_state.graph_end_date,
+        value=st.session_state.graph_temp_end_date,
         min_value=min_date,
         max_value=max_date,
         help="Filter data until this date"
     )
-    
-    # Update session state
-    st.session_state.graph_start_date = start_date
-    st.session_state.graph_end_date = end_date
+    st.session_state.graph_temp_end_date = temp_end_date
     
     # Validate dates
-    if start_date > end_date:
+    if temp_start_date > temp_end_date:
         st.sidebar.error("Error: End date must be after start date")
-        start_date, end_date = end_date, start_date
-    
-    # Format dates for database query
-    start_date_str = start_date.strftime("%Y-%m-%d")
-    end_date_str = (end_date + timedelta(days=1)).strftime("%Y-%m-%d")  # Include end date
     
     # Extract unique leagues from all predictions
     unique_leagues = sorted(all_predictions['league'].unique()) if not all_predictions.empty else []
     
-    # League Filter
-    selected_leagues = st.sidebar.multiselect(
+    # League Filter - using temporary values for display
+    temp_leagues = st.sidebar.multiselect(
         "Select Competitions",
         options=["All"] + unique_leagues,
-        default=st.session_state.graph_selected_leagues,
+        default=st.session_state.graph_temp_leagues,
         help="Filter data by competition. Select multiple competitions or 'All'"
     )
     
     # Handle empty selection
-    if not selected_leagues:
-        selected_leagues = ["All"]
-    st.session_state.graph_selected_leagues = selected_leagues
+    if not temp_leagues:
+        temp_leagues = ["All"]
+    st.session_state.graph_temp_leagues = temp_leagues
     
-    # Confidence Level Filter
-    confidence_levels = st.sidebar.multiselect(
+    # Confidence Level Filter - using temporary values for display
+    temp_confidence = st.sidebar.multiselect(
         "Confidence Levels",
         options=["All", "High", "Medium", "Low"],
-        default=st.session_state.graph_confidence_levels,
+        default=st.session_state.graph_temp_confidence,
         help="Filter by confidence level: High (≥70%), Medium (50-69%), Low (<50%). Select multiple levels or 'All'"
     )
     
     # Handle empty selection
-    if not confidence_levels:
-        confidence_levels = ["All"]
-    st.session_state.graph_confidence_levels = confidence_levels
+    if not temp_confidence:
+        temp_confidence = ["All"]
+    st.session_state.graph_temp_confidence = temp_confidence
+    
+    # Apply button with custom styling
+    st.sidebar.markdown("""
+    <style>
+    .apply-button {
+        background-color: #2c5282;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 0.25rem;
+        border: none;
+        font-weight: 600;
+        cursor: pointer;
+        width: 100%;
+        margin-top: 0.5rem;
+        margin-bottom: 1rem;
+        text-align: center;
+    }
+    .apply-button:hover {
+        background-color: #1a365d;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    apply_col1, apply_col2 = st.sidebar.columns([3, 1])
+    with apply_col1:
+        if st.button("Apply Filters", key="apply_graph_filters", help="Apply the selected filters to the data"):
+            # Apply the temporary values to the actual filter values
+            st.session_state.graph_start_date = temp_start_date
+            st.session_state.graph_end_date = temp_end_date
+            st.session_state.graph_selected_leagues = temp_leagues
+            st.session_state.graph_confidence_levels = temp_confidence
+            st.rerun()
+    
+    # Use the actual filter values for data filtering
+    start_date = st.session_state.graph_start_date
+    end_date = st.session_state.graph_end_date
+    selected_leagues = st.session_state.graph_selected_leagues
+    confidence_levels = st.session_state.graph_confidence_levels
+    
+    # Format dates for database query
+    start_date_str = start_date.strftime("%Y-%m-%d")
+    end_date_str = (end_date + timedelta(days=1)).strftime("%Y-%m-%d")  # Include end date
     
     # --- Filter Presets UI ---
     st.sidebar.markdown('### Analytics Filter Presets', help="Save and apply filter combinations for the analytics page.")
