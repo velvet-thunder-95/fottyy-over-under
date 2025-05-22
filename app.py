@@ -669,49 +669,33 @@ def logout():
 def show_login_page():
     """Display the login page with background image"""
     
-    # Add background image CSS
-    try:
-        # Use a relative path to the image
-        image_path = os.path.join(project_root, 'assets', 'Soccer Wide Image.jpg')
-        img_data = get_base64_encoded_image(image_path)
-        
-        st.markdown("""
-        <style>
-        .stApp {
-            background-image: url('data:image/jpeg;base64,{img_data}');
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            background-attachment: fixed;
-        }
-        
-        .login-container {
-            background-color: rgba(255, 255, 255, 0.9) !important;
-            backdrop-filter: blur(5px);
-            border-radius: 15px !important;
-            padding: 2rem !important;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2) !important;
-            max-width: 400px !important;
-            margin: 5rem auto !important;
-        }
-        </style>
-        """.format(img_data=img_data), unsafe_allow_html=True)
-    except Exception as e:
-        # Fallback if image loading fails
-        st.markdown("""
-        <style>
-        .login-container {
-            background-color: white !important;
-            border-radius: 15px !important;
-            padding: 2rem !important;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2) !important;
-            max-width: 400px !important;
-            margin: 5rem auto !important;
-        }
-        </style>
-        """, unsafe_allow_html=True)
-        # Log the error but don't show it to the user
-        logger.error(f"Error loading background image: {str(e)}")
+    # Add a full-page background div with the soccer image
+    st.markdown("""
+    <style>
+    .fullscreen-bg {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: url('https://images.unsplash.com/photo-1508098682722-e99c643e7f76?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80');
+        background-size: cover;
+        background-position: center;
+        z-index: -1;
+    }
+    
+    .login-container {
+        background-color: rgba(255, 255, 255, 0.9) !important;
+        backdrop-filter: blur(5px);
+        border-radius: 15px !important;
+        padding: 2rem !important;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2) !important;
+        max-width: 400px !important;
+        margin: 5rem auto !important;
+    }
+    </style>
+    <div class="fullscreen-bg"></div>
+    """, unsafe_allow_html=True)
     
     with st.container():
         st.markdown("""<div class="login-container">
