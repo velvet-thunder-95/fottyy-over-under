@@ -564,84 +564,146 @@ def show_history_page():
     """, unsafe_allow_html=True)
     
     try:
-        # Initialize PredictionHistory
-        history = PredictionHistory()
+        # Initialize session state variables if they don't exist
+        if 'history_data_loaded' not in st.session_state:
+            st.session_state.history_data_loaded = False
+            
+        if 'history_df' not in st.session_state:
+            # Initialize PredictionHistory
+            history = PredictionHistory()
+            # Get initial data with default filters
+            df = history.get_predictions()
+            st.session_state.history_df = df
+            st.session_state.history_data_loaded = True
+        else:
+            history = PredictionHistory()
+        
+        # Initialize filter state variables
+        if 'history_filter_params' not in st.session_state:
+            all_predictions = history.get_predictions()
+            if not all_predictions.empty:
+                min_date = pd.to_datetime(all_predictions['date']).min().date()
+                max_date = pd.to_datetime(all_predictions['date']).max().date()
+            else:
+                min_date = datetime.now().date() - timedelta(days=30)
+                max_date = datetime.now().date()
+                
+            unique_leagues = sorted(all_predictions['league'].unique()) if not all_predictions.empty else []
+            
+            st.session_state.history_filter_params = {
+                'start_date': min_date,
+                'end_date': max_date,
+                'leagues': ["All"],
+                'confidence_levels': ["All"],
+                'status': "All",
+                'min_date': min_date,
+                'max_date': max_date,
+                'unique_leagues': unique_leagues
+            }
         
         # --- Filters section should appear above savable filters ---
         # Add date filter in sidebar
         st.sidebar.markdown("## Filters", help="Filter your prediction history")
         
-        # Get all predictions first to determine date range
-        all_predictions = history.get_predictions()
-        if not all_predictions.empty:
-            min_date = pd.to_datetime(all_predictions['date']).min().date()
-            max_date = pd.to_datetime(all_predictions['date']).max().date()
-        else:
-            min_date = datetime.now().date() - timedelta(days=30)
-            max_date = datetime.now().date()
-
-        # Date filters with dynamic min/max dates
-        start_date = st.sidebar.date_input(
-            "Start Date",
-            value=min_date,
-            min_value=min_date,
-            max_value=max_date,
-            help="Filter predictions from this date"
-        )
+        # Get filter parameters from session state
+        params = st.session_state.history_filter_params
         
-        end_date = st.sidebar.date_input(
-            "End Date",
-            value=max_date,
-            min_value=min_date,
-            max_value=max_date,
-            help="Filter predictions until this date"
-        )
-
-        # Ensure session_state always has start_date and end_date
-        st.session_state.start_date = start_date
-        st.session_state.end_date = end_date
-
-        # Validate dates
-        if start_date > end_date:
-            st.sidebar.error("Error: End date must be after start date")
-            start_date, end_date = end_date, start_date
-
-        # Format dates for database query
+        # Create a form to prevent automatic rerun on every input change
+        with st.sidebar.form(key="history_filter_form"):
+            # Date Range Filter
+            start_date = st.date_input(
+                "Start Date",
+                value=params['start_date'],
+                min_value=params['min_date'],
+                max_value=params['max_date'],
+                help="Filter predictions from this date"
+            )
+            
+            end_date = st.date_input(
+                "End Date",
+                value=params['end_date'],
+                min_value=params['min_date'],
+                max_value=params['max_date'],
+                help="Filter predictions until this date"
+            )
+            
+            # Validate dates
+            if start_date > end_date:
+                st.error("Error: End date must be after start date")
+            
+            # League Filter
+            leagues = st.multiselect(
+                "Select Competitions",
+                options=["All"] + params['unique_leagues'],
+                default=params['leagues'],
+                help="Filter predictions by competition. Select multiple competitions or 'All'"
+            )
+            
+            # Handle empty selection
+            if not leagues:
+                leagues = ["All"]
+            
+            # Confidence Level Filter
+            confidence_levels = st.multiselect(
+                "Confidence Levels",
+                options=["All", "High", "Medium", "Low"],
+                default=params['confidence_levels'],
+                help="Filter predictions by confidence level: High (≥70%), Medium (50-69%), Low (<50%). Select multiple levels or 'All'"
+            )
+            
+            # Handle empty selection
+            if not confidence_levels:
+                confidence_levels = ["All"]
+                
+            # Status filter
+            status = st.selectbox(
+                "Status",
+                options=["All", "Completed", "Pending"],
+                index=0 if params['status'] == "All" else (1 if params['status'] == "Completed" else 2),
+                help="Filter by prediction status"
+            )
+            
+            # Submit button
+            submit_button = st.form_submit_button(label="Apply Filters", type="primary")
+        
+        # Process form submission
+        if submit_button:
+            # Update filter parameters in session state
+            st.session_state.history_filter_params.update({
+                'start_date': start_date,
+                'end_date': end_date,
+                'leagues': leagues,
+                'confidence_levels': confidence_levels,
+                'status': status
+            })
+            
+            # Format dates for database query
+            start_date_str = start_date.strftime("%Y-%m-%d")
+            end_date_str = (end_date + timedelta(days=1)).strftime("%Y-%m-%d")  # Include end date
+            
+            # Get filtered data
+            predictions = history.get_predictions(
+                start_date=start_date_str,
+                end_date=end_date_str,
+                status=None if status == "All" else status,
+                confidence_levels=None if "All" in confidence_levels else confidence_levels,
+                leagues=None if "All" in leagues else leagues
+            )
+            
+            # Update the dataframe in session state
+            st.session_state.history_df = predictions
+        
+        # Use values from session state for the rest of the code
+        params = st.session_state.history_filter_params
+        start_date = params['start_date']
+        end_date = params['end_date']
+        selected_leagues = params['leagues']
+        confidence_levels = params['confidence_levels']
+        selected_status = params['status']
+        
+        # Format dates for display and calculations
         start_date_str = start_date.strftime("%Y-%m-%d")
         end_date_str = (end_date + timedelta(days=1)).strftime("%Y-%m-%d")  # Include end date
-        
-        # Get unique leagues from predictions
-        unique_leagues = sorted(all_predictions['league'].unique()) if not all_predictions.empty else []
-
-        # Initialize session state for filter controls if not already set
-        if 'selected_leagues' not in st.session_state:
-            st.session_state.selected_leagues = ["All"]
-        if 'confidence_levels' not in st.session_state:
-            st.session_state.confidence_levels = ["All"]
-        if 'selected_status' not in st.session_state:
-            st.session_state.selected_status = "All"
-
-        # League multiselect
-        selected_leagues = st.sidebar.multiselect(
-            "Select Competitions",
-            options=["All"] + unique_leagues,
-            default=st.session_state.get("selected_leagues", ["All"]),
-            help="Filter predictions by competition. Select multiple competitions or 'All'"
-        )
-        if not selected_leagues:
-            selected_leagues = ["All"]
-        st.session_state.selected_leagues = selected_leagues
-        
-        # Confidence level multiselect
-        confidence_levels = st.sidebar.multiselect(
-            "Confidence Levels",
-            options=["All", "High", "Medium", "Low"],
-            default=st.session_state.get("confidence_levels", ["All"]),
-            help="Filter predictions by confidence level: High (≥70%), Medium (50-69%), Low (<50%). Select multiple levels or 'All'"
-        )
-        if not confidence_levels:
-            confidence_levels = ["All"]
-        st.session_state.confidence_levels = confidence_levels
         
         # --- History Savable Filters UI ---
         st.sidebar.markdown('### History Page Filter Presets', help="Save and apply filter combinations for the history page.")
@@ -650,18 +712,18 @@ def show_history_page():
             if st.button("Save History Filter Preset", key="save_history_filter"):
                 if history_filter_name:
                     # Save exactly what the user selected, even if it's only one league
-                    leagues_to_save = st.session_state.selected_leagues.copy()
+                    leagues_to_save = params['leagues'].copy()
                     if "All" in leagues_to_save and len(leagues_to_save) > 1:
                         leagues_to_save.remove("All")  # Remove 'All' if other leagues are selected
                     if leagues_to_save == ["All"]:
                         leagues_to_save = []  # If only 'All' is selected, treat as no specific filter
                     st.session_state.history_saved_filters = filter_storage.save_history_filter(
                         history_filter_name,
-                        st.session_state.start_date.strftime("%Y-%m-%d"),
-                        st.session_state.end_date.strftime("%Y-%m-%d"),
+                        params['start_date'].strftime("%Y-%m-%d"),
+                        params['end_date'].strftime("%Y-%m-%d"),
                         leagues_to_save,
-                        st.session_state.get('confidence_levels', ["All"]),
-                        st.session_state.get('selected_status', "All")
+                        params['confidence_levels'],
+                        params['status']
                     )
                     st.success(f"Saved history filter preset '{history_filter_name}'!")
                 else:
@@ -675,30 +737,42 @@ def show_history_page():
                     st.write(f"**{sf['name']}** | {sf['start_date']} to {sf['end_date']} | Leagues: {', '.join(sf['leagues'])} | Confidence: {', '.join(sf['confidence'])} | Status: {sf['status'] if sf['status'] else 'All'}")
                     cols = st.columns([1,1])
                     if cols[0].button("Apply", key=f"apply_hist_filter_{idx}"):
-                        # Clear all relevant filter-related session state before applying
-                        st.session_state.selected_leagues = []
-                        st.session_state.confidence_levels = []
-                        st.session_state.selected_status = "All"
-                        st.session_state.start_date = None
-                        st.session_state.end_date = None
-                        # Apply all filter fields from the preset
-                        st.session_state['selected_leagues'] = sf['leagues']
-                        st.session_state['confidence_levels'] = sf['confidence']
-                        st.session_state['selected_status'] = sf['status']
-                        st.session_state['start_date'] = pd.to_datetime(sf['start_date']).date()
-                        st.session_state['end_date'] = pd.to_datetime(sf['end_date']).date()
+                        # Update the filter parameters in session state
+                        leagues_to_apply = sf['leagues'] if sf['leagues'] else ["All"]
+                        confidence_to_apply = sf['confidence'] if sf['confidence'] else ["All"]
+                        status_to_apply = sf['status'] if sf['status'] else "All"
+                        
+                        # Update filter parameters
+                        st.session_state.history_filter_params.update({
+                            'start_date': pd.to_datetime(sf['start_date']).date(),
+                            'end_date': pd.to_datetime(sf['end_date']).date(),
+                            'leagues': leagues_to_apply,
+                            'confidence_levels': confidence_to_apply,
+                            'status': status_to_apply
+                        })
+                        
+                        # Format dates for database query
+                        start_date_str = sf['start_date']
+                        end_date_str = (pd.to_datetime(sf['end_date']).date() + timedelta(days=1)).strftime("%Y-%m-%d")
+                        
+                        # Get filtered data based on preset
+                        predictions = history.get_predictions(
+                            start_date=start_date_str,
+                            end_date=end_date_str,
+                            status=None if status_to_apply == "All" else status_to_apply,
+                            confidence_levels=None if "All" in confidence_to_apply else confidence_to_apply,
+                            leagues=None if "All" in leagues_to_apply else leagues_to_apply
+                        )
+                        
+                        # Update the dataframe in session state
+                        st.session_state.history_df = predictions
                         st.rerun()
                     if cols[1].button("Delete", key=f"delete_hist_filter_{idx}"):
                         st.session_state.history_saved_filters = filter_storage.delete_history_filter(sf['id'])
                         st.rerun()
         
-        # Get filtered predictions
-        predictions = history.get_predictions(
-            start_date=start_date_str,
-            end_date=end_date_str,
-            confidence_levels=None if "All" in confidence_levels else confidence_levels,
-            leagues=None if "All" in selected_leagues else selected_leagues
-        )
+        # Get the filtered predictions from session state
+        predictions = st.session_state.history_df
         
         # Debug info
         logging.info(f"Date range: {start_date_str} to {end_date_str}")
@@ -712,14 +786,6 @@ def show_history_page():
         if not predictions.empty:
             # Update any pending predictions
             history.update_match_results_all()
-            
-            # Refresh predictions after update
-            predictions = history.get_predictions(
-                start_date=start_date_str,
-                end_date=end_date_str,
-                confidence_levels=None if "All" in confidence_levels else confidence_levels,
-                leagues=None if "All" in selected_leagues else selected_leagues
-            )
             
             # Calculate statistics
             current_confidence = None if "All" in confidence_levels else confidence_levels
