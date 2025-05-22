@@ -667,7 +667,31 @@ def logout():
     st.session_state.logged_in = False
 
 def show_login_page():
-    """Display the login page"""
+    """Display the login page with background image"""
+    
+    # Add background image CSS
+    st.markdown("""
+    <style>
+    .stApp {
+        background-image: url('data:image/jpeg;base64,{img_data}');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+    }
+    
+    .login-container {
+        background-color: rgba(255, 255, 255, 0.9) !important;
+        backdrop-filter: blur(5px);
+        border-radius: 15px !important;
+        padding: 2rem !important;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2) !important;
+        max-width: 400px !important;
+        margin: 5rem auto !important;
+    }
+    </style>
+    """.format(img_data=get_base64_encoded_image('/Users/shivamrishinarayansingh/fottyy/assets/Soccer Wide Image.jpg')), unsafe_allow_html=True)
+    
     with st.container():
         st.markdown("""<div class="login-container">
             <h2 style="color: #1a1a1a; text-align: center; margin-bottom: 2rem;">Welcome Back!</h2>
@@ -2723,6 +2747,11 @@ def add_back_to_top_button():
             };
         </script>
     """, unsafe_allow_html=True)
+
+def get_base64_encoded_image(image_path):
+    """Get base64 encoded image data"""
+    with open(image_path, "rb") as img_file:
+        return base64.b64encode(img_file.read()).decode('utf-8')
 
 def convert_to_cet(kickoff):
     """Convert kickoff time to CET format"""
