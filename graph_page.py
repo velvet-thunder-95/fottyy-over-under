@@ -911,17 +911,29 @@ def render_graph_page():
                     if band == 'All':
                         if metric == 'ROI':
                             try:
-                                all_roi = float(row[col]) if pd.notnull(row[col]) else None
+                                # Extract numeric value from formatted string if needed
+                                if isinstance(row[col], str) and '%' in row[col]:
+                                    all_roi = float(row[col].replace('%', ''))
+                                else:
+                                    all_roi = float(row[col]) if pd.notnull(row[col]) else None
                             except:
                                 pass
                         elif metric == 'RatePct':
                             try:
-                                all_ratepct = float(row[col]) if pd.notnull(row[col]) else None
+                                # Extract numeric value from formatted string if needed
+                                if isinstance(row[col], str) and '%' in row[col]:
+                                    all_ratepct = float(row[col].replace('%', ''))
+                                else:
+                                    all_ratepct = float(row[col]) if pd.notnull(row[col]) else None
                             except:
                                 pass
                         elif metric == 'Profit':
                             try:
-                                all_profit = float(row[col]) if pd.notnull(row[col]) else None
+                                # Extract numeric value from formatted string if needed
+                                if isinstance(row[col], str) and 'U' in row[col]:
+                                    all_profit = float(row[col].replace('U', ''))
+                                else:
+                                    all_profit = float(row[col]) if pd.notnull(row[col]) else None
                             except:
                                 pass
             
