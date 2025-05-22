@@ -684,25 +684,13 @@ def render_graph_page():
     ], overwrite=False)
     
     # Display the dataframe with sorting enabled
+    # Note: We can't use column_config with MultiIndex columns directly
+    # Streamlit doesn't support tuple keys in column_config
     st.dataframe(
         styled, 
         use_container_width=True, 
         hide_index=True, 
-        width=2000,
-        column_config={
-            # Configure columns to be sortable
-            # For each confidence band and metric, enable sorting
-            **{(band, 'Games'): st.column_config.NumberColumn(f"{band} Games", format="%d") 
-               for band in ['High', 'Mid', 'Low', 'All']},
-            **{(band, 'Correct'): st.column_config.NumberColumn(f"{band} Correct", format="%d") 
-               for band in ['High', 'Mid', 'Low', 'All']},
-            **{(band, 'RatePct'): st.column_config.NumberColumn(f"{band} Rate %", format="%.2f") 
-               for band in ['High', 'Mid', 'Low', 'All']},
-            **{(band, 'Profit'): st.column_config.NumberColumn(f"{band} Profit", format="%.2f") 
-               for band in ['High', 'Mid', 'Low', 'All']},
-            **{(band, 'ROI'): st.column_config.NumberColumn(f"{band} ROI", format="%.2f") 
-               for band in ['High', 'Mid', 'Low', 'All']},
-        }
+        width=2000
     )
 
 
