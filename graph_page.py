@@ -119,7 +119,7 @@ def add_navigation_buttons():
             st.rerun()
 
 def render_graph_page():
-    st.title('League & Confidence Analytics')
+    st.title('                                ')
     
     # Add navigation buttons
     add_navigation_buttons()
@@ -347,14 +347,7 @@ def render_graph_page():
                     
             df = df[mask]
     
-    # Show filter summary
-    st.markdown(f"""<div style='background-color: #f0f2f6; padding: 10px; border-radius: 5px; margin-bottom: 20px;'>
-        <h4 style='margin: 0; color: #1e3c72;'>Current Filters</h4>
-        <p><strong>Date Range:</strong> {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}</p>
-        <p><strong>Leagues:</strong> {', '.join(selected_leagues)}</p>
-        <p><strong>Confidence Levels:</strong> {', '.join(confidence_levels)}</p>
-        <p><strong>Total Records:</strong> {len(df) if not df.empty else 0}</p>
-    </div>""", unsafe_allow_html=True)
+
     
     # Drop unwanted columns if they exist
     for col in ['home_market_value', 'away_market_value', 'prediction_type']:
