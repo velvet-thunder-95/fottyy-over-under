@@ -1039,22 +1039,158 @@ def render_graph_page():
         {'selector': 'tr:hover td', 'props': [('background-color', '#e8f5e9 !important')]},
     ], overwrite=False)
     
-    # Create a custom dataframe with hidden numeric columns for sorting
-    sorted_df = display_df.copy()
+    # Use a different approach for sorting
+    # Instead of adding hidden columns, we'll use the original numeric values for sorting
+    # but display the formatted values
     
-    # Add hidden columns with numeric values for sorting
-    for col, values in numeric_values.items():
-        # Create a hidden column name for sorting
-        sort_col = f"_sort_{col[0]}_{col[1]}"
-        # Add the numeric values to the dataframe
-        sorted_df[sort_col] = values
+    # Create a new dataframe with flattened column names for better compatibility
+    flat_display_df = display_df.copy()
+    
+    # Flatten the column names
+    flat_display_df.columns = [f"{col[0]}_{col[1]}" if isinstance(col, tuple) else col for col in flat_display_df.columns]
+    
+    # Create a modified styling function that works with flattened column names
+    def apply_flat_styling(df):
+        styles = pd.DataFrame('', index=df.index, columns=df.columns)
+        
+        for i, row in df.iterrows():
+            # Determine row background based on performance
+            # Extract key metrics for the 'All' confidence band if available
+            all_roi = None
+            all_ratepct = None
+            all_profit = None
+            
+            # Extract key metrics from flattened column names
+            for col in df.columns:
+                if 'All_ROI' in col:
+                    try:
+                        # Extract numeric value from formatted string if needed
+                        val = row[col]
+                        if isinstance(val, str) and '%' in val:
+                            all_roi = float(val.replace('%', ''))
+                        else:
+                            all_roi = float(val) if pd.notnull(val) else None
+                    except:
+                        pass
+                elif 'All_RatePct' in col:
+                    try:
+                        # Extract numeric value from formatted string if needed
+                        val = row[col]
+                        if isinstance(val, str) and '%' in val:
+                            all_ratepct = float(val.replace('%', ''))
+                        else:
+                            all_ratepct = float(val) if pd.notnull(val) else None
+                    except:
+                        pass
+                elif 'All_Profit' in col:
+                    try:
+                        # Extract numeric value from formatted string if needed
+                        val = row[col]
+                        if isinstance(val, str) and 'U' in val:
+                            all_profit = float(val.replace('U', ''))
+                        else:
+                            all_profit = float(val) if pd.notnull(val) else None
+                    except:
+                        pass
+            
+            # Determine row background color based on overall performance
+            row_bg = ''
+            
+            # High performing leagues - good ROI, good success rate, and positive profit
+            if (all_roi is not None and all_roi > 15 and 
+                all_ratepct is not None and all_ratepct > 60 and 
+                all_profit is not None and all_profit > 0):
+                row_bg = 'background-color: rgba(52, 199, 89, 0.2);'  # Light green
+            
+            # Problematic leagues - negative ROI, low success rate
+            elif (all_roi is not None and all_roi < -10 and 
+                  all_ratepct is not None and all_ratepct < 45):
+                row_bg = 'background-color: rgba(255, 55, 55, 0.2);'  # Light red
+            
+            # Promising leagues - positive ROI but could be better
+            elif (all_roi is not None and all_roi > 0 and 
+                  all_ratepct is not None and all_ratepct > 50):
+                row_bg = 'background-color: rgba(52, 199, 89, 0.1);'  # Very light green
+            
+            # Underperforming leagues - negative ROI but not terrible
+            elif (all_roi is not None and all_roi < 0):
+                row_bg = 'background-color: rgba(255, 152, 0, 0.1);'  # Very light orange
+            
+            # Default alternating row colors if no special highlighting
+            elif i % 2 == 1:
+                row_bg = 'background-color: #f8f9fa;'
+            
+            for col in df.columns:
+                # Start with row background
+                cell_style = row_bg
+                
+                # Add cell-specific styling for flattened columns
+                if '_' in col:
+                    band, metric = col.split('_', 1)
+                    val = row[col]
+                    
+                    # RatePct styling
+                    if 'RatePct' in metric:
+                        try:
+                            if isinstance(val, str) and '%' in val:
+                                val_float = float(val.replace('%', ''))
+                            else:
+                                val_float = float(val) if pd.notnull(val) else None
+                                
+                            if val_float is not None:
+                                if val_float >= 70:
+                                    cell_style = 'background-color: rgba(52, 199, 89, 0.25);'  # Light green
+                                elif val_float < 50:
+                                    cell_style = 'background-color: rgba(255, 152, 0, 0.25);'  # Light orange
+                                elif val_float < 40:
+                                    cell_style = 'background-color: rgba(255, 55, 55, 0.25);'  # Light red
+                        except:
+                            pass
+                    
+                    # Profit styling
+                    elif 'Profit' in metric:
+                        try:
+                            if isinstance(val, str) and 'U' in val:
+                                val_float = float(val.replace('U', ''))
+                            else:
+                                val_float = float(val) if pd.notnull(val) else None
+                                
+                            if val_float is not None:
+                                if val_float > 0:
+                                    cell_style = 'background-color: rgba(52, 199, 89, 0.25); color: #1a4d1a;'
+                                elif val_float < 0:
+                                    cell_style = 'background-color: rgba(255, 55, 55, 0.25); color: #b71c1c;'
+                        except:
+                            pass
+                    
+                    # ROI styling
+                    elif 'ROI' in metric:
+                        try:
+                            if isinstance(val, str) and '%' in val:
+                                val_float = float(val.replace('%', ''))
+                            else:
+                                val_float = float(val) if pd.notnull(val) else None
+                                
+                            if val_float is not None:
+                                if val_float > 0:
+                                    cell_style = 'background-color: rgba(52, 199, 89, 0.25); color: #1a4d1a;'
+                                elif val_float < 0:
+                                    cell_style = 'background-color: rgba(255, 55, 55, 0.25); color: #b71c1c;'
+                        except:
+                            pass
+                
+                styles.loc[i, col] = cell_style
+        
+        return styles
+    
+    # Apply styling to the flattened dataframe
+    styled_df = flat_display_df.style.apply(apply_flat_styling, axis=None)
     
     # Display the dataframe with sorting enabled
     st.dataframe(
-        sorted_df.style.apply(apply_styling, axis=None),
+        styled_df,
         use_container_width=True,
         hide_index=False,
-        column_order=display_df.columns.tolist(),  # Only show the display columns, not the hidden sort columns
         width=2000
     )
 
