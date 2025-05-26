@@ -17,11 +17,15 @@ from prediction_history import PredictionHistory
 sys.path.append('.')
 filter_storage = importlib.import_module('filter_storage')
 
-# Import display_predictions_with_buttons from history_aggrid
-from history_aggrid import display_predictions_with_buttons
+# Import utils for shared functionality
+from utils import style_dataframe, get_confidence_level
 
 # Initialize PredictionHistory instance
 prediction_history = PredictionHistory()
+
+# Import display_predictions_with_buttons from history_aggrid
+# This import is moved after the PredictionHistory initialization to avoid circular imports
+from history_aggrid import display_predictions_with_buttons
 
 def delete_prediction(prediction_id):
     """Delete a prediction from the database"""
@@ -291,129 +295,47 @@ def calculate_statistics(confidence_levels=None, leagues=None, start_date=None, 
         logging.error(f"Error calculating statistics: {str(e)}")
         return [0, 0, 0.0, 0.0, 0.0], 0
 
-def style_dataframe(df):
-    """Style the predictions dataframe with colors and formatting"""
-    def style_row(row):
-        styles = {}
-        
-        # Base style for all cells
-        base_style = 'font-size: 14px; padding: 12px 15px; border-bottom: 1px solid #e0e0e0;'
-        
-        # Background color based on status
-        if row.get('Status') == 'Pending':
-            bg_color = '#f8f9fa'  # Light gray for pending
-        elif row.get('Result') == '✅ Won':
-            bg_color = '#e8f5e9'  # Light green for wins
-        elif row.get('Result') == '❌ Lost':
-            bg_color = '#fce4ec'  # Light red for losses
-        else:
-            bg_color = '#ffffff'  # White for others
-            
-        # Add background color to base style
-        base_style += f' background-color: {bg_color};'
-        
-        # Style Result column
-        if row.get('Result') == '✅ Won':
-            styles['Result'] = base_style + 'color: #28a745; font-weight: bold'
-        elif row.get('Result') == '❌ Lost':
-            styles['Result'] = base_style + 'color: #dc3545; font-weight: bold'
-        else:
-            styles['Result'] = base_style + 'color: #6c757d; font-style: italic'
-            
-        # Style Profit/Loss column
-        try:
-            if row.get('Profit/Loss') == '-':
-                styles['Profit/Loss'] = base_style + 'color: #6c757d'
-            elif row.get('Profit/Loss', '').startswith('+'):
-                styles['Profit/Loss'] = base_style + 'color: #28a745; font-weight: bold'  # Green for profits
-            elif row.get('Profit/Loss', '').startswith('-'):
-                styles['Profit/Loss'] = base_style + 'color: #dc3545; font-weight: bold'  # Red for losses
-            else:
-                styles['Profit/Loss'] = base_style + 'color: #6c757d'  # Gray for zero/neutral
-        except (AttributeError, TypeError):
-            styles['Profit/Loss'] = base_style + 'color: #6c757d'
-            
-        # Style Confidence column
-        confidence_style = base_style
-        if row.get('Confidence') == 'High':
-            confidence_style += 'background-color: #d4edda; color: #155724; font-weight: bold'
-        elif row.get('Confidence') == 'Medium':
-            confidence_style += 'background-color: #fff3cd; color: #856404; font-weight: bold'
-        elif row.get('Confidence') == 'Low':
-            confidence_style += 'background-color: #f8d7da; color: #721c24; font-weight: bold'
-        styles['Confidence'] = confidence_style
-            
-        # Status column styling
-        if row.get('Status') == 'Completed':
-            styles['Status'] = base_style + 'color: #28a745'
-        elif row.get('Status') == 'Pending':
-            styles['Status'] = base_style + 'color: #ffc107'
-        else:
-            styles['Status'] = base_style + 'color: #6c757d'
-            
-        # Default style for other columns
-        for col in df.columns:
-            if col not in styles:
-                styles[col] = base_style
-                
-        return pd.Series(styles)
-    
-    # Apply the styles and add table-level styling
-    return df.style.apply(style_row, axis=1).set_table_styles([
-        {'selector': 'th', 'props': [
-            ('background-color', '#f8f9fa'),
-            ('color', '#333333'),
-            ('font-weight', '600'),
-            ('font-size', '14px'),
-            ('text-align', 'left'),
-            ('padding', '12px 15px'),
-            ('border-bottom', '2px solid #dee2e6')
-        ]},
-        {'selector': 'td', 'props': [
-            ('text-align', 'left'),
-            ('white-space', 'nowrap'),
-            ('min-width', '100px')
-        ]},
-        {'selector': 'table', 'props': [
-            ('border-collapse', 'collapse'),
-            ('width', '100%'),
-            ('margin', '10px 0'),
-            ('font-family', '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif')
-        ]},
-        {'selector': 'tr:hover td', 'props': [
-            ('background-color', 'rgba(0,0,0,0.05) !important')
-        ]}
-    ])
-
-def get_confidence_level(confidence):
-    """Convert confidence value to display text"""
-    try:
-        # Handle None, NaN, and empty values
-        if confidence is None or pd.isna(confidence) or confidence == "":
-            return "Unknown"
-            
-        # Convert to float and handle string values
-        conf_value = float(str(confidence).strip())
-        
-        # Categorize confidence
-        if conf_value >= 70:
-            return "High"
-        elif conf_value >= 50:
-            return "Medium"
-        elif conf_value >= 0:
-            return "Low"
-        else:
-            return "Unknown"
-    except (ValueError, TypeError, AttributeError):
-        return "Unknown"
-
 def show_history_page():
     """Display prediction history page"""
     st.markdown("""
         <style>
         .stDataFrame {
-            font-size: 14px;
             width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            font-size: 0.9em;
+            min-width: 400px;
+            border-radius: 5px 5px 0 0;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+        }
+        .stDataFrame th {
+            background-color: #f8f9fa;
+            color: #333333;
+            font-weight: 600;
+            font-size: 14px;
+            text-align: left;
+            padding: 12px 15px;
+            border-bottom: 2px solid #dee2e6;
+        }
+        .stDataFrame td {
+            text-align: left;
+            white-space: nowrap;
+            min-width: 100px;
+            padding: 12px 15px;
+            border-bottom: 1px solid #dddddd;
+        }
+        .stDataFrame tr {
+            background-color: #ffffff;
+        }
+        .stDataFrame tr:nth-of-type(even) {
+            background-color: #f3f3f3;
+        }
+        .stDataFrame tr:last-of-type {
+            border-bottom: 2px solid #1e3c72;
+        }
+        .stDataFrame tr:hover {
+            background-color: #f1f1f1;
         }
         .stDataFrame [data-testid="StyledDataFrameDataCell"] {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
