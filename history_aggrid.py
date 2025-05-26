@@ -182,9 +182,12 @@ def display_predictions_with_buttons(predictions_df):
         </script>
         """
         
+        # Convert DataFrame to a list of dictionaries to avoid pandas compatibility issues
+        grid_data = display_df.to_dict('records')
+        
         # Display the AgGrid component with the configured options
         grid_response = AgGrid(
-            display_df,
+            data=grid_data,  # Use the converted data
             gridOptions=grid_options,
             update_mode=GridUpdateMode.MODEL_CHANGED | GridUpdateMode.VALUE_CHANGED,
             fit_columns_on_grid_load=True,
@@ -200,7 +203,8 @@ def display_predictions_with_buttons(predictions_df):
                 ".ag-row-hover": {"backgroundColor": "#f0f0f0 !important"}
             },
             columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS,
-            enable_enterprise_modules=False
+            enable_enterprise_modules=False,
+            try_to_convert_back_to_data_frame=False  # Prevent conversion back to DataFrame
         )
         
         # Add the JavaScript for handling button clicks
