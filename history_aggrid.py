@@ -4,6 +4,17 @@ import json
 from datetime import datetime, timedelta
 from st_aggrid import AgGrid, GridOptionsBuilder, JsCode, GridUpdateMode, ColumnsAutoSizeMode
 
+def prepare_data_for_grid(df):
+    """Prepare DataFrame for AgGrid by converting all columns to strings"""
+    # Create a clean copy
+    clean_df = df.copy()
+    
+    # Convert all columns to strings to avoid serialization issues
+    for col in clean_df.columns:
+        clean_df[col] = clean_df[col].astype(str)
+    
+    return clean_df
+
 def display_predictions_with_buttons(predictions_df):
     """
     Display predictions dataframe with edit and delete buttons directly in the table
@@ -188,32 +199,31 @@ def display_predictions_with_buttons(predictions_df):
         </script>
         """
         
-        # Create a clean copy of the DataFrame with proper data types
-        clean_df = display_df.copy()
+        # Prepare data for the grid by converting all columns to strings
+        grid_data = prepare_data_for_grid(display_df)
         
-        # Convert all data to native Python types
-        for col in clean_df.columns:
-            # Handle datetime columns
-            if pd.api.types.is_datetime64_any_dtype(clean_df[col]):
-                clean_df[col] = clean_df[col].astype(str)
-            # Convert other non-native types to string
-            elif not pd.api.types.is_numeric_dtype(clean_df[col]):
-                clean_df[col] = clean_df[col].astype(str)
+        # Get column definitions from the grid options
+        column_defs = [{
+            'field': col,
+            'headerName': col.replace('_', ' ').title(),
+            'sortable': col not in ['Edit', 'Delete'],
+            'filter': col not in ['Edit', 'Delete']
+        } for col in grid_data.columns]
         
-        # Convert DataFrame to a list of dictionaries with native Python types
-        grid_data = clean_df.to_dict('records')
+        # Update grid options with column definitions
+        grid_options['columnDefs'] = column_defs
         
-        # Create a new DataFrame with the cleaned data
-        grid_df = pd.DataFrame(grid_data)
+        # Convert to list of dictionaries for AgGrid
+        grid_records = grid_data.to_dict('records')
         
         # Display the AgGrid component with the configured options
         grid_response = AgGrid(
-            grid_df,  # Use the cleaned DataFrame
+            data=grid_records,
             gridOptions=grid_options,
             update_mode=GridUpdateMode.MODEL_CHANGED | GridUpdateMode.VALUE_CHANGED,
             fit_columns_on_grid_load=True,
             theme='streamlit',
-            height=min(600, (len(grid_df) + 1) * 50 + 50) if len(grid_df) > 0 else 200,
+            height=min(600, (len(grid_data) + 1) * 50 + 50) if len(grid_data) > 0 else 200,
             width='100%',
             reload_data=False,
             allow_unsafe_jscode=True,
@@ -225,8 +235,9 @@ def display_predictions_with_buttons(predictions_df):
             },
             columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS,
             enable_enterprise_modules=False,
-            data_return_mode='AS_INPUT',
-            try_to_convert_back_to_data_frame=False
+            data_return_mode='FILTERED_AND_SORTED',
+            try_to_convert_back_to_data_frame=False,
+            key='predictions_grid'
         )
         
         # Add the JavaScript for handling button clicks
