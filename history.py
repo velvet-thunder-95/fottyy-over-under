@@ -11,9 +11,11 @@ from match_analyzer import MatchAnalyzer
 from supabase_db import SupabaseDB
 import logging
 import sys
+import time
 sys.path.append('.')
 import importlib
 filter_storage = importlib.import_module('filter_storage')
+from history_aggrid import display_predictions_with_buttons
 
 class PredictionHistory:
     def __init__(self):
@@ -936,86 +938,36 @@ def show_history_page():
                     # Rename columns for display
                     final_df = final_df.rename(columns=display_columns)
                     
-                    # Apply styling
-                    styled_df = style_dataframe(final_df)
-                    
                     # Store the selected prediction ID in session state
                     if 'edit_prediction_id' not in st.session_state:
                         st.session_state.edit_prediction_id = None
                     if 'delete_prediction_id' not in st.session_state:
                         st.session_state.delete_prediction_id = None
-                    if 'edited_data' not in st.session_state:
-                        st.session_state.edited_data = None
                     
                     # Create a container for the dataframe and action interface
                     predictions_container = st.container()
                     
-                    # Add action columns for edit and delete
-                    display_df = final_df.copy()
-                    
-                    # Create a copy for editing
-                    editable_df = display_df.copy()
-                    
-                    # Add Action column with dropdown options
-                    editable_df['Action'] = ['Select Action' for _ in range(len(editable_df))]
-                    
-                    # Define column order to exclude ID column
-                    columns_to_display = ['Date', 'League', 'Home Team', 'Away Team', 'Prediction', 
-                                         'Confidence', 'Actual Outcome', 'Result', 'Profit/Loss', 'Status',
-                                         'Action']
-                    
-                    # Display the editable dataframe
+                    # Display the dataframe with buttons
                     with predictions_container:
-                        # Apply styling to the dataframe for better visual appearance
-                        styled_df = style_dataframe(editable_df)
+                        st.markdown("### Prediction History")
                         
-                        # Use data_editor for direct editing in the dataframe
-                        edited_df = st.data_editor(
-                            editable_df,
-                            use_container_width=True,
-                            hide_index=True,
-                            column_order=columns_to_display,
-                            column_config={
-                                'Action': st.column_config.SelectboxColumn(
-                                    'Action',
-                                    help='Select an action for this prediction',
-                                    width='medium',
-                                    options=['Select Action', 'Edit', 'Delete'],
-                                    required=True,
-                                    default='Select Action'
-                                )
-                            },
-                            disabled=['Date', 'League', 'Home Team', 'Away Team', 'Prediction', 
-                                     'Confidence', 'Actual Outcome', 'Result', 'Profit/Loss', 'Status']
-                        )
+                        # Use the AgGrid implementation to display predictions with edit and delete buttons
+                        grid_result = display_predictions_with_buttons(final_df)
                         
-                        # Store the edited data in session state
-                        st.session_state.edited_data = edited_df
-                        
-                        # Check if Action values have been changed
-                        if st.session_state.edited_data is not None:
-                            for i, row in st.session_state.edited_data.iterrows():
-                                # Check if an action was selected
-                                if row['Action'] != 'Select Action':
-                                    # Get the prediction ID for this row
-                                    prediction_id = row['ID']
-                                    
-                                    # Process the selected action
-                                    if row['Action'] == 'Edit':
-                                        st.session_state.edit_prediction_id = prediction_id
-                                    elif row['Action'] == 'Delete':
-                                        st.session_state.delete_prediction_id = prediction_id
-                                    
-                                    # Reset the action dropdown
-                                    st.session_state.edited_data.at[i, 'Action'] = 'Select Action'
-                                    st.rerun()
-                        
+                        # Check if a button was clicked
+                        if grid_result["action"] == "edit":
+                            st.session_state.edit_prediction_id = grid_result["prediction_id"]
+                            st.rerun()
+                        elif grid_result["action"] == "delete":
+                            st.session_state.delete_prediction_id = grid_result["prediction_id"]
+                            st.rerun()
+
                     # Create a container for the edit and delete forms
                     edit_delete_container = st.container()
                     
                     # Show edit form if a prediction is selected for editing
                     if st.session_state.edit_prediction_id:
-                        with predictions_container:
+                        with edit_delete_container:
                             st.markdown("### Edit Prediction")
                             
                             # Get the prediction data
