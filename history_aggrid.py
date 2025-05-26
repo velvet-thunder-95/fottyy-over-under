@@ -38,7 +38,7 @@ def prepare_data_for_aggrid(df):
                 clean_df[col] = clean_df[col].astype(str)
             elif pd.api.types.is_numeric_dtype(clean_df[col]):
                 # Convert numeric columns to string, handling NaN/None values
-                clean_df[col] = clean_df[col].astype('object').fillna('').astype(str).infer_objects(copy=False)
+                clean_df[col] = clean_df[col].astype(str).replace('nan', '')
             else:
                 # For other types, convert to string
                 clean_df[col] = clean_df[col].astype(str)
@@ -484,15 +484,16 @@ def display_predictions_with_buttons(predictions_df):
                     grid_data[col] = grid_data[col].astype(str)
                 elif pd.api.types.is_numeric_dtype(grid_data[col]):
                     # Convert numeric columns to string, handling NaN/None values
-                    grid_data[col] = grid_data[col].astype('object').fillna('').astype(str).infer_objects(copy=False)
+                    grid_data[col] = grid_data[col].astype(str).replace('nan', '')
                 else:
-                    grid_data[col] = grid_data[col].astype(str)
+                    grid_data[col] = grid_data[col].astype(str).replace('nan', '')
             
             # Convert to dictionary records for better compatibility
-            # Use items() instead of iteritems() which is deprecated
-            grid_records = grid_data.to_dict('records')
+            # Convert to list of dicts to avoid any pandas version issues
+            grid_records = []
+            for _, row in grid_data.iterrows():
+                grid_records.append({col: str(val) for col, val in row.items()})
             
-            # Display the AgGrid component with simplified options
             # Create a new DataFrame to avoid any reference issues
             grid_df = pd.DataFrame(grid_records)
             
@@ -513,34 +514,44 @@ def display_predictions_with_buttons(predictions_df):
                 }
             }
             
-            # Display the AgGrid component
-            grid_response = AgGrid(
-                grid_df,
-                gridOptions=ag_grid_options,
-                update_mode=GridUpdateMode.MODEL_CHANGED | GridUpdateMode.VALUE_CHANGED,
-                fit_columns_on_grid_load=True,
-                theme='streamlit',
-                height=min(600, (len(display_data) + 1) * 50 + 50) if len(display_data) > 0 else 200,
-                width='100%',
-                reload_data=False,
-                custom_css={
-                    ".ag-header-cell-label": {"justifyContent": "center"},
-                    ".ag-cell": {"display": "flex", "alignItems": "center", "justifyContent": "center"},
-                    ".ag-row-odd": {"backgroundColor": "#f9f9f9"},
-                    ".ag-row-hover": {"backgroundColor": "#f0f0f0 !important"},
-                    ".ag-center-cols-viewport": {"overflow-x": "auto"}
-                },
-                columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS,
-                enable_enterprise_modules=False,
-                data_return_mode='FILTERED_AND_SORTED',
-                try_to_convert_back_to_data_frame=True,
-                key='predictions_grid',
-                suppressColumnVirtualisation=True,
-                suppressRowVirtualisation=True,
-                update_data_on_first_render=True,
-                allow_unsafe_html=True,
-                allow_unsafe_jscode=True
-            )
+            # Set pandas option to avoid future warnings
+            pd.set_option('future.no_silent_downcasting', True)
+            
+            # Display the AgGrid component with error handling
+            try:
+                grid_response = AgGrid(
+                    grid_df,
+                    gridOptions=ag_grid_options,
+                    update_mode=GridUpdateMode.MODEL_CHANGED | GridUpdateMode.VALUE_CHANGED,
+                    fit_columns_on_grid_load=True,
+                    theme='streamlit',
+                    height=min(600, (len(display_data) + 1) * 50 + 50) if len(display_data) > 0 else 200,
+                    width='100%',
+                    reload_data=False,
+                    custom_css={
+                        ".ag-header-cell-label": {"justifyContent": "center"},
+                        ".ag-cell": {"display": "flex", "alignItems": "center", "justifyContent": "center"},
+                        ".ag-row-odd": {"backgroundColor": "#f9f9f9"},
+                        ".ag-row-hover": {"backgroundColor": "#f0f0f0 !important"},
+                        ".ag-center-cols-viewport": {"overflow-x": "auto"}
+                    },
+                    columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS,
+                    enable_enterprise_modules=False,
+                    data_return_mode='FILTERED_AND_SORTED',
+                    try_to_convert_back_to_data_frame=True,
+                    key='predictions_grid',
+                    suppressColumnVirtualisation=True,
+                    suppressRowVirtualisation=True,
+                    update_data_on_first_render=True,
+                    allow_unsafe_html=True,
+                    allow_unsafe_jscode=True
+                )
+                return grid_response
+                
+            except Exception as e:
+                st.error(f"Error displaying predictions table: {str(e)}")
+                st.error("Please try refreshing the page or contact support if the issue persists.")
+                return None
             
             # JavaScript for handling button clicks
             button_clicked_js = """
