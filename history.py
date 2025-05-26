@@ -189,53 +189,7 @@ def update_match_results(match_id, result):
     except Exception as e:
         print(f"Error processing match {match_id}: {str(e)}")
 
-def update_match_results_all():
-    """Update match results for pending predictions only"""
-    import logging
-    logging.basicConfig(level=logging.INFO)
-    logger = logging.getLogger(__name__)
-    
-    analyzer = MatchAnalyzer("633379bdd5c4c3eb26919d8570866801e1c07f399197ba8c5311446b8ea77a49")
-    
-    # Get only pending predictions that have a match_id
-    result = prediction_history.db.supabase.table('predictions') \
-        .select('id,match_id,home_team,away_team,date,predicted_outcome,home_odds,draw_odds,away_odds') \
-        .filter('match_id', 'neq', None) \
-        .filter('status', 'eq', 'Pending') \
-        .execute()
-    pending_predictions = result.data
-    logger.info(f"Found {len(pending_predictions)} pending predictions to check")
-    
-    updated_count = 0
-    for pred in pending_predictions:
-        try:
-            match_id = pred['match_id']
-            home_team = pred['home_team']
-            away_team = pred['away_team']
-            match_date = pred['date']
-            
-            if not match_id:
-                logger.warning(f"Missing match_id for {home_team} vs {away_team} on {match_date}")
-                continue
-            
-            # Get current match result from API
-            result = analyzer.analyze_match_result(match_id)
-            if not result:
-                logger.debug(f"Match still pending: {home_team} vs {away_team}")
-                continue
-            
-            # Only update if the API shows the match is completed
-            api_status = result.get('status')
-            if api_status == 'Completed':
-                # Update the result
-                update_match_results(match_id, result)
-                logger.info(f"Updated {home_team} vs {away_team} - Match completed with result")
-                updated_count += 1
-                
-        except Exception as e:
-            logger.error(f"Error processing prediction {pred.get('id')}: {str(e)}")
-    
-    logger.info(f"Updated results for {updated_count} matches")
+# The update_match_results_all function has been moved to the PredictionHistory class
 
 def calculate_statistics(confidence_levels=None, leagues=None, start_date=None, end_date=None):
     """Calculate prediction statistics with optional confidence level and league filters"""

@@ -48,6 +48,62 @@ class PredictionHistory:
         """Get predictions for a specific league"""
         return self.db.get_predictions_by_league(league)
 
+    def update_match_results_all(self):
+        """Update match results for pending predictions only"""
+        import logging
+        logging.basicConfig(level=logging.INFO)
+        logger = logging.getLogger(__name__)
+        
+        from match_analyzer import MatchAnalyzer
+        analyzer = MatchAnalyzer("633379bdd5c4c3eb26919d8570866801e1c07f399197ba8c5311446b8ea77a49")
+        
+        # Get only pending predictions that have a match_id
+        result = self.db.supabase.table('predictions') \
+            .select('*') \
+            .eq('status', 'Pending') \
+            .not_.eq('match_id', '') \
+            .execute()
+            
+        pending_predictions = result.data if hasattr(result, 'data') else []
+        
+        if not pending_predictions:
+            logger.info("No pending predictions to update")
+            return
+            
+        updated_count = 0
+        
+        for pred in pending_predictions:
+            try:
+                match_id = pred.get('match_id')
+                home_team = pred.get('home_team')
+                away_team = pred.get('away_team')
+                
+                if not match_id or not home_team or not away_team:
+                    continue
+                    
+                # Get match result
+                result = analyzer.get_match_result(home_team, away_team)
+                
+                # Check if the match has completed
+                api_status = result.get('status')
+                
+                if api_status == 'Completed':
+                    # Update the result
+                    self.update_prediction(pred.get('id'), {
+                        'status': 'Completed',
+                        'home_score': result.get('home_score'),
+                        'away_score': result.get('away_score'),
+                        'result': result.get('result')
+                    })
+                    logger.info(f"Updated {home_team} vs {away_team} - Match completed with result")
+                    updated_count += 1
+                    
+            except Exception as e:
+                logger.error(f"Error processing prediction {pred.get('id')}: {str(e)}")
+        
+        logger.info(f"Updated results for {updated_count} matches")
+        return updated_count
+        
     def get_predictions_by_team(self, team):
         """Get predictions for a specific team"""
         return self.db.get_predictions_by_team(team)
