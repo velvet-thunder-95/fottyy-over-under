@@ -1,8 +1,15 @@
-import streamlit as st
-import pandas as pd
 import json
+import numpy as np
+import pandas as pd
+import streamlit as st
 from datetime import datetime, timedelta
-from st_aggrid import AgGrid, GridOptionsBuilder, JsCode, GridUpdateMode, ColumnsAutoSizeMode
+from st_aggrid import (
+    AgGrid,
+    GridOptionsBuilder,
+    JsCode,
+    GridUpdateMode,
+    ColumnsAutoSizeMode
+)
 
 def prepare_data_for_aggrid(df):
     """
@@ -14,9 +21,6 @@ def prepare_data_for_aggrid(df):
     Returns:
         Tuple of (processed_df, column_defs)
     """
-    import pandas as pd
-    import numpy as np
-    
     if df is None or df.empty:
         return pd.DataFrame(), []
     
@@ -522,14 +526,68 @@ def display_predictions_with_buttons(predictions_df):
                 allow_unsafe_jscode=True
             )
             
-            # Add the JavaScript for handling button clicks
-            st.components.v1.html(button_clicked, height=0)
+            # JavaScript for handling button clicks
+            button_clicked_js = """
+            <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                document.body.addEventListener('button_click', function(e) {
+                    const data = e.detail;
+                    const jsonData = JSON.stringify(data);
+                    
+                    // Send the data to Streamlit
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', window.location.href, true);
+                    xhr.setRequestHeader('Content-Type', 'application/json');
+                    xhr.onload = function() {
+                        if (xhr.status === 200) {
+                            window.parent.postMessage({
+                                type: 'streamlit:setSessionState',
+                                data: {
+                                    key: 'button_click_data',
+                                    value: jsonData
+                                }
+                            }, '*');
+                            window.location.reload();
+                        }
+                    };
+                    xhr.send(JSON.stringify({
+                        'button_click': true,
+                        'data': data
+                    }));
+                });
+            });
+            </script>
+            """
             
+            # Add the JavaScript for handling button clicks
+            st.components.v1.html(button_clicked_js, height=0)
+            
+            # Check if a button was clicked in the current request
+            button_click_data = st.session_state.get('button_click_data')
+            if button_click_data:
+                try:
+                    # Clear the state to prevent multiple triggers
+                    st.session_state.pop('button_click_data', None)
+                    
+                    # Parse the JSON data
+                    data = json.loads(button_click_data)
+                    
+                    # Return the action and ID
+                    return {
+                        'data': grid_response['data'],
+                        'selected_rows': grid_response['selected_rows'],
+                        'action': data.get('action', '').lower(),
+                        'row_id': data.get('id', '')
+                    }
+                except Exception as e:
+                    st.error(f"Error processing button click: {str(e)}")
+            
+            # Return the grid response if no button was clicked
             return {
                 'data': grid_response['data'],
                 'selected_rows': grid_response['selected_rows'],
-                'action': st.session_state.get('last_button_clicked', {}).get('action', ''),
-                'row_id': st.session_state.get('last_button_clicked', {}).get('row_id', '')
+                'action': '',
+                'row_id': ''
             }
             
         except Exception as e:
@@ -543,27 +601,3 @@ def display_predictions_with_buttons(predictions_df):
                 'action': '',
                 'row_id': ''
             }
-        
-        # Add the JavaScript for handling button clicks
-        st.components.v1.html(button_clicked, height=0)
-        
-        # Check if a button was clicked
-        button_click_data = None
-        try:
-            button_click_data = st.session_state.get('button_click_data')
-            if button_click_data:
-                # Parse the JSON data
-                data = json.loads(button_click_data)
-                # Clear the state to prevent multiple triggers
-                st.session_state.pop('button_click_data', None)
-                
-                # Return the action and ID
-                return {
-                    "action": data["action"].lower(),
-                    "prediction_id": data["id"]
-                }
-        except Exception as e:
-            st.error(f"Error processing button click: {str(e)}")
-        
-        # Return default response if no button was clicked
-        return {"action": None, "prediction_id": None}
