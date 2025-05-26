@@ -1,7 +1,8 @@
 import streamlit as st
 import pandas as pd
+import json
 from datetime import datetime, timedelta
-from st_aggrid import AgGrid, GridOptionsBuilder, JsCode, GridUpdateMode
+from st_aggrid import AgGrid, GridOptionsBuilder, JsCode, GridUpdateMode, ColumnsAutoSizeMode
 
 def display_predictions_with_buttons(predictions_df):
     """
@@ -16,66 +17,217 @@ def display_predictions_with_buttons(predictions_df):
     # Create a copy of the dataframe for display
     display_df = predictions_df.copy()
     
-    # Define custom cell renderers for edit and delete buttons
-    edit_button_renderer = JsCode("""
-    function(params) {
-        return '<button style="background-color: #4CAF50; color: white; border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer;">✏️ Edit</button>';
-    }
-    """)
+    # Ensure ID column is available for row identification
+    if 'ID' not in display_df.columns and 'id' in display_df.columns:
+        display_df = display_df.rename(columns={'id': 'ID'})
     
-    delete_button_renderer = JsCode("""
+    # Define custom cell renderers for edit and delete buttons
+    button_style = """
     function(params) {
-        return '<button style="background-color: #f44336; color: white; border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer;">🗑️ Delete</button>';
+        const button = document.createElement('button');
+        button.innerHTML = params.value;
+        button.style.cssText = `
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        `;
+        
+        if (params.value === 'Edit') {
+            button.innerHTML = '✏️ ' + button.innerHTML;
+            button.style.backgroundColor = '#4CAF50';
+            button.style.color = 'white';
+            button.onmouseover = function() {
+                this.style.backgroundColor = '#45a049';
+                this.style.transform = 'translateY(-1px)';
+                this.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+            };
+        } else {
+            button.innerHTML = '🗑️ ' + button.innerHTML;
+            button.style.backgroundColor = '#f44336';
+            button.style.color = 'white';
+            button.onmouseover = function() {
+                this.style.backgroundColor = '#d32f2f';
+                this.style.transform = 'translateY(-1px)';
+                this.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+            };
+        }
+        
+        button.onmouseout = function() {
+            this.style.transform = '';
+            this.style.boxShadow = '';
+            if (params.value === 'Edit') {
+                this.style.backgroundColor = '#4CAF50';
+            } else {
+                this.style.backgroundColor = '#f44336';
+            }
+        };
+        
+        button.onclick = (e) => {
+            e.stopPropagation();
+            const rowData = params.node.data;
+            document.body.dispatchEvent(
+                new CustomEvent('button_click', { 
+                    detail: { 
+                        action: params.value.toLowerCase(),
+                        id: rowData.ID
+                    }
+                })
+            );
+        };
+        
+        return button;
     }
-    """)
+    """
     
     # Add button columns to the dataframe
-    display_df['edit'] = 'Edit'
-    display_df['delete'] = 'Delete'
+    display_df['Edit'] = 'Edit'
+    display_df['Delete'] = 'Delete'
     
     # Configure grid options
     gb = GridOptionsBuilder.from_dataframe(display_df)
-    gb.configure_default_column(min_column_width=100)
-    
-    # Configure columns
-    gb.configure_column('edit', header_name='Edit', cellRenderer=edit_button_renderer, width=100)
-    gb.configure_column('delete', header_name='Delete', cellRenderer=delete_button_renderer, width=100)
-    gb.configure_column('ID', hide=True)
-    
-    # Add custom styling for the dataframe
-    gb.configure_grid_options(domLayout='normal', rowHeight=50)
-    
-    # Build the grid options
-    grid_options = gb.build()
-    
-    # Display the AgGrid with buttons
-    grid_response = AgGrid(
-        display_df,
-        gridOptions=grid_options,
-        update_mode=GridUpdateMode.SELECTION_CHANGED,
-        allow_unsafe_jscode=True,
-        theme='streamlit',
-        height=500,
-        fit_columns_on_grid_load=True,
-        key=f'prediction_grid_{int(datetime.now().timestamp())}'
+    gb.configure_default_column(
+        min_column_width=100,
+        resizable=True,
+        filterable=True,
+        sortable=True
     )
     
-    # Check if a cell was clicked
-    result = {"action": None, "prediction_id": None}
+    # Configure button columns
+    gb.configure_column('Edit', 
+                       header_name='',
+                       cellRenderer=JsCode(button_style),
+                       width=90,
+                       pinned='left',
+                       suppressMenu=True,
+                       sortable=False,
+                       filterable=False)
     
-    if grid_response['selected_rows']:
-        selected_row = grid_response['selected_rows'][0]
-        selected_id = selected_row['ID']
-        
-        # Check which column was clicked
-        if 'clicked' in grid_response and grid_response['clicked'] is not None:
-            clicked_column = grid_response['clicked'].get('column', None)
+    gb.configure_column('Delete',
+                        header_name='',
+                        cellRenderer=JsCode(button_style),
+                        width=90,
+                        pinned='left',
+                        suppressMenu=True,
+                        sortable=False,
+                        filterable=False)
+    
+    # Hide ID column from display but keep it in the data
+    if 'ID' in display_df.columns:
+        gb.configure_column('ID', hide=True)
+    
+    # Configure grid options
+    grid_options = gb.build()
+    
+    # Add cell styling
+    grid_options.getRowStyle = JsCode("""
+    function(params) {
+        if (params.node.rowIndex % 2 === 0) {
+            return { backgroundColor: '#f9f9f9' };
+        }
+        return null;
+    }
+    """)
+    
+    # Configure grid to be responsive
+    grid_options.domLayout = 'autoHeight'
+    grid_options.animateRows = True
+    grid_options.rowHeight = 50
+    
+    # Add custom CSS for the grid
+    st.markdown("""
+    <style>
+        .ag-theme-streamlit {
+            --ag-border-radius: 8px;
+            --ag-border-color: #e0e0e0;
+            --ag-row-hover-color: #f5f5f5;
+            --ag-header-background-color: #f8f9fa;
+            --ag-odd-row-background-color: #ffffff;
+            --ag-header-foreground-color: #495057;
+            --ag-font-size: 14px;
+            --ag-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+        .ag-header-cell {
+            font-weight: 600 !important;
+        }
+        .ag-cell {
+            display: flex;
+            align-items: center;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    # Create a container for the grid with a key based on the current time
+    container = st.container()
+    
+    # Display the AgGrid with buttons
+    with container:
+        # Add JavaScript to handle button clicks
+        button_clicked = """
+        <script>
+        document.body.addEventListener('button_click', function(e) {
+            const data = e.detail;
+            const jsonData = JSON.stringify(data);
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.id = 'button_click_data';
+            input.value = jsonData;
+            document.body.appendChild(input);
             
-            if clicked_column == 'edit':
-                result["action"] = "edit"
-                result["prediction_id"] = selected_id
-            elif clicked_column == 'delete':
-                result["action"] = "delete"
-                result["prediction_id"] = selected_id
-    
-    return result
+            // Trigger a Streamlit component update
+            const event = new Event('input', { bubbles: true });
+            input.dispatchEvent(event);
+        });
+        </script>
+        """
+        
+        # Display the AgGrid component
+        grid_response = AgGrid(
+            display_df,
+            gridOptions=grid_options,
+            update_mode=GridUpdateMode.MODEL_CHANGED | GridUpdateMode.VALUE_CHANGED,
+            fit_columns_on_grid_load=True,
+            theme='streamlit',
+            height=min(600, (len(display_df) + 1) * 50 + 50),
+            width='100%',
+            reload_data=False,
+            allow_unsafe_jscode=True,
+            custom_css={
+                ".ag-header-cell-label": {"justify-content": "center"},
+                ".ag-cell": {"display": "flex", "align-items": "center", "justify-content": "center"}
+            },
+            columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS
+        )
+        
+        # Add the JavaScript for handling button clicks
+        st.components.v1.html(button_clicked, height=0)
+        
+        # Check if a button was clicked
+        button_click_data = None
+        try:
+            button_click_data = st.session_state.get('button_click_data')
+            if button_click_data:
+                # Parse the JSON data
+                data = json.loads(button_click_data)
+                # Clear the state to prevent multiple triggers
+                st.session_state.pop('button_click_data', None)
+                
+                # Return the action and ID
+                return {
+                    "action": data["action"].lower(),
+                    "prediction_id": data["id"]
+                }
+        except Exception as e:
+            st.error(f"Error processing button click: {str(e)}")
+        
+        # Return default response if no button was clicked
+        return {"action": None, "prediction_id": None}
