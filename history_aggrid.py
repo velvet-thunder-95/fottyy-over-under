@@ -14,18 +14,33 @@ def prepare_data_for_aggrid(df):
     Returns:
         Tuple of (processed_df, column_defs)
     """
+    import pandas as pd
+    
     # Create a clean copy of the DataFrame
     clean_df = df.copy()
     
-    # Convert datetime columns to string
-    for col in clean_df.select_dtypes(include=['datetime64']).columns:
+    # Convert all datetime columns to string
+    datetime_cols = clean_df.select_dtypes(include=['datetime64']).columns
+    for col in datetime_cols:
         clean_df[col] = clean_df[col].dt.strftime('%Y-%m-%d %H:%M:%S')
     
-    # Convert any remaining non-string columns to string
-    for col in clean_df.columns:
-        if clean_df[col].dtype == 'object':
-            continue
-        clean_df[col] = clean_df[col].astype(str)
+    # Create a new DataFrame with string representations of all values
+    # This avoids issues with pandas version differences
+    processed_data = []
+    for _, row in clean_df.iterrows():
+        row_dict = {}
+        for col in clean_df.columns:
+            val = row[col]
+            if pd.isna(val):
+                row_dict[col] = ''
+            elif not isinstance(val, (str, int, float, bool)) and val is not None:
+                row_dict[col] = str(val)
+            else:
+                row_dict[col] = val
+        processed_data.append(row_dict)
+    
+    # Create a new DataFrame from the processed data
+    result_df = pd.DataFrame(processed_data)
     
     # Generate column definitions
     column_defs = []
@@ -40,7 +55,7 @@ def prepare_data_for_aggrid(df):
         }
         column_defs.append(col_def)
     
-    return clean_df, column_defs
+    return result_df, column_defs
 
 # JavaScript code for the edit button
 edit_button_js = """
@@ -347,31 +362,41 @@ def display_predictions_with_buttons(predictions_df):
         grid_options = gb.build()
         
         # Display the AgGrid component with the configured options
-        # Pass the DataFrame directly and let AgGrid handle the conversion
-        grid_response = AgGrid(
-            grid_data,  # Pass the DataFrame directly
-            gridOptions=grid_options,
-            update_mode=GridUpdateMode.MODEL_CHANGED | GridUpdateMode.VALUE_CHANGED,
-            fit_columns_on_grid_load=True,
-            theme='streamlit',
-            height=min(600, (len(grid_data) + 1) * 50 + 50) if len(grid_data) > 0 else 200,
-            width='100%',
-            reload_data=False,
-            allow_unsafe_jscode=True,
-            custom_css={
-                ".ag-header-cell-label": {"justifyContent": "center"},
-                ".ag-cell": {"display": "flex", "alignItems": "center", "justifyContent": "center"},
-                ".ag-row-odd": {"backgroundColor": "#f9f9f9"},
-                ".ag-row-hover": {"backgroundColor": "#f0f0f0 !important"}
-            },
-            columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS,
-            enable_enterprise_modules=False,
-            data_return_mode='FILTERED_AND_SORTED',
-            try_to_convert_back_to_data_frame=False,
-            key='predictions_grid',
-            suppressColumnVirtualisation=True,
-            suppressRowVirtualisation=True
-        )
+        # Convert DataFrame to list of dicts to avoid pandas version issues
+        grid_data_dict = grid_data.to_dict('records')
+        
+        # Create a new grid options without the data to avoid serialization issues
+        grid_options_without_data = {k: v for k, v in grid_options.items() if k != 'rowData'}
+        
+        try:
+            grid_response = AgGrid(
+                data=grid_data_dict,  # Pass data as list of dicts
+                gridOptions=grid_options_without_data,
+                update_mode=GridUpdateMode.MODEL_CHANGED | GridUpdateMode.VALUE_CHANGED,
+                fit_columns_on_grid_load=True,
+                theme='streamlit',
+                height=min(600, (len(grid_data) + 1) * 50 + 50) if len(grid_data) > 0 else 200,
+                width='100%',
+                reload_data=False,
+                allow_unsafe_jscode=True,
+                custom_css={
+                    ".ag-header-cell-label": {"justifyContent": "center"},
+                    ".ag-cell": {"display": "flex", "alignItems": "center", "justifyContent": "center"},
+                    ".ag-row-odd": {"backgroundColor": "#f9f9f9"},
+                    ".ag-row-hover": {"backgroundColor": "#f0f0f0 !important"}
+                },
+                columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS,
+                enable_enterprise_modules=False,
+                data_return_mode='FILTERED_AND_SORTED',
+                try_to_convert_back_to_data_frame=False,
+                key='predictions_grid',
+                suppressColumnVirtualisation=True,
+                suppressRowVirtualisation=True
+            )
+        except Exception as e:
+            st.error(f"Error displaying predictions table: {str(e)}")
+            st.error("Please try refreshing the page or contact support if the issue persists.")
+            return None
         
         # Add the JavaScript for handling button clicks
         st.components.v1.html(button_clicked, height=0)
