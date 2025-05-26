@@ -104,6 +104,67 @@ class PredictionHistory:
         logger.info(f"Updated results for {updated_count} matches")
         return updated_count
         
+    def calculate_statistics(self, confidence_levels=None, leagues=None, start_date=None, end_date=None):
+        """Calculate prediction statistics with optional confidence level and league filters"""
+        try:
+            # Get all predictions first using our paginated get_predictions method
+            predictions = self.get_predictions(
+                start_date=start_date,
+                end_date=end_date,
+                confidence_levels=confidence_levels,
+                leagues=leagues
+            )
+            
+            if predictions.empty:
+                return [0, 0, 0.0, 0.0, 0.0], 0
+            
+            # Calculate statistics
+            completed_predictions = predictions[predictions['status'] == 'Completed']
+            pending_predictions = predictions[predictions['status'] == 'Pending']
+            
+            total_predictions = len(predictions)
+            completed_count = len(completed_predictions)
+            pending_count = len(pending_predictions)
+            
+            if completed_count == 0:
+                return [total_predictions, 0, 0.0, 0.0, 0.0], pending_count
+            
+            # Calculate correct predictions
+            correct_predictions = len(
+                completed_predictions[
+                    completed_predictions['predicted_outcome'] == 
+                    completed_predictions['actual_outcome']
+                ]
+            )
+            
+            # Calculate success rate
+            success_rate = (correct_predictions / completed_count * 100) if completed_count > 0 else 0.0
+            
+            # Calculate total profit/loss and ROI
+            total_profit = completed_predictions['profit_loss'].sum()
+            
+            # Calculate ROI using completed bets only (each bet is £1)
+            roi = (total_profit / completed_count * 100) if completed_count > 0 else 0.0
+            
+            # Debug info
+            import logging
+            logging.info("Statistics calculation:")
+            logging.info(f"Total predictions: {total_predictions}")
+            logging.info(f"Completed predictions: {completed_count}")
+            logging.info(f"Pending predictions: {pending_count}")
+            logging.info(f"Correct predictions: {correct_predictions}")
+            logging.info(f"Success rate: {success_rate:.2f}%")
+            logging.info(f"Total profit: £{total_profit:.2f}")
+            logging.info(f"ROI: {roi:.2f}%")
+            logging.info(f"Date range: {predictions['date'].min()} to {predictions['date'].max()}")
+            
+            return [total_predictions, correct_predictions, success_rate, total_profit, roi], pending_count
+            
+        except Exception as e:
+            import logging
+            logging.error(f"Error calculating statistics: {str(e)}")
+            return [0, 0, 0.0, 0.0, 0.0], 0
+            
     def get_predictions_by_team(self, team):
         """Get predictions for a specific team"""
         return self.db.get_predictions_by_team(team)
