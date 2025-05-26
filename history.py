@@ -944,50 +944,75 @@ def show_history_page():
                         st.session_state.edit_prediction_id = None
                     if 'delete_prediction_id' not in st.session_state:
                         st.session_state.delete_prediction_id = None
+                    if 'edited_data' not in st.session_state:
+                        st.session_state.edited_data = None
                     
                     # Create a container for the dataframe and action interface
                     predictions_container = st.container()
                     
-                    # Display the dataframe
+                    # Add action columns for edit and delete
+                    display_df = final_df.copy()
+                    
+                    # Create a copy for editing
+                    editable_df = display_df.copy()
+                    
+                    # Add Edit and Delete action columns
+                    editable_df['Edit'] = ['Edit' for _ in range(len(editable_df))]
+                    editable_df['Delete'] = ['Delete' for _ in range(len(editable_df))]
+                    
+                    # Display the editable dataframe
                     with predictions_container:
-                        # Apply styling to the dataframe
-                        styled_df = style_dataframe(final_df)
-                        
-                        # Display the styled dataframe
-                        st.dataframe(
-                            styled_df,
+                        # Use data_editor for direct editing in the dataframe
+                        edited_df = st.data_editor(
+                            editable_df,
                             use_container_width=True,
-                            hide_index=True
+                            hide_index=True,
+                            column_config={
+                                'Edit': st.column_config.TextColumn(
+                                    'Edit',
+                                    help='Click to edit this prediction',
+                                    disabled=False,
+                                    required=True,
+                                    default='Edit'
+                                ),
+                                'Delete': st.column_config.TextColumn(
+                                    'Delete',
+                                    help='Click to delete this prediction',
+                                    disabled=False,
+                                    required=True,
+                                    default='Delete'
+                                ),
+                                'ID': st.column_config.TextColumn(
+                                    'ID',
+                                    help='Prediction ID',
+                                    disabled=True,
+                                    required=True,
+                                    visible=False
+                                )
+                            },
+                            disabled=['Date', 'League', 'Home Team', 'Away Team', 'Prediction', 
+                                     'Confidence', 'Actual Outcome', 'Result', 'Profit/Loss', 'Status']
                         )
                         
-                        # Add a simple selection interface below the dataframe
-                        st.markdown("### Edit or Delete a Prediction")
+                        # Store the edited data in session state
+                        st.session_state.edited_data = edited_df
                         
-                        # Create a selectbox with all predictions
-                        options = [f"{i}: {row['Date']} - {row['Home Team']} vs {row['Away Team']}" 
-                                  for i, row in final_df.iterrows()]
-                        
-                        selected_index = st.selectbox(
-                            "Select a prediction:",
-                            options=options,
-                            index=0
-                        )
-                        
-                        # Extract the index from the selected option
-                        idx = int(selected_index.split(":")[0])
-                        
-                        # Create action buttons
-                        col1, col2 = st.columns(2)
-                        
-                        with col1:
-                            if st.button("✏️ Edit Selected Prediction"):
-                                st.session_state.edit_prediction_id = final_df.iloc[idx]['ID']
-                                st.rerun()
-                        
-                        with col2:
-                            if st.button("🗑️ Delete Selected Prediction"):
-                                st.session_state.delete_prediction_id = final_df.iloc[idx]['ID']
-                                st.rerun()
+                        # Check if Edit or Delete values have been changed
+                        if st.session_state.edited_data is not None:
+                            for i, row in st.session_state.edited_data.iterrows():
+                                # Check if Edit button was clicked (value changed)
+                                if row['Edit'] != 'Edit':
+                                    st.session_state.edit_prediction_id = row['ID']
+                                    # Reset the value
+                                    st.session_state.edited_data.at[i, 'Edit'] = 'Edit'
+                                    st.rerun()
+                                
+                                # Check if Delete button was clicked (value changed)
+                                if row['Delete'] != 'Delete':
+                                    st.session_state.delete_prediction_id = row['ID']
+                                    # Reset the value
+                                    st.session_state.edited_data.at[i, 'Delete'] = 'Delete'
+                                    st.rerun()
                         
                     # Create a container for the edit and delete forms
                     edit_delete_container = st.container()
