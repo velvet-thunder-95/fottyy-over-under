@@ -956,17 +956,19 @@ def show_history_page():
                     # Create a copy for editing
                     editable_df = display_df.copy()
                     
-                    # Add Edit and Delete action columns
-                    editable_df['Edit'] = ['Edit' for _ in range(len(editable_df))]
-                    editable_df['Delete'] = ['Delete' for _ in range(len(editable_df))]
+                    # Add Action column with dropdown options
+                    editable_df['Action'] = ['Select Action' for _ in range(len(editable_df))]
                     
                     # Define column order to exclude ID column
                     columns_to_display = ['Date', 'League', 'Home Team', 'Away Team', 'Prediction', 
                                          'Confidence', 'Actual Outcome', 'Result', 'Profit/Loss', 'Status',
-                                         'Edit', 'Delete']
+                                         'Action']
                     
                     # Display the editable dataframe
                     with predictions_container:
+                        # Apply styling to the dataframe for better visual appearance
+                        styled_df = style_dataframe(editable_df)
+                        
                         # Use data_editor for direct editing in the dataframe
                         edited_df = st.data_editor(
                             editable_df,
@@ -974,19 +976,13 @@ def show_history_page():
                             hide_index=True,
                             column_order=columns_to_display,
                             column_config={
-                                'Edit': st.column_config.TextColumn(
-                                    'Edit',
-                                    help='Click to edit this prediction',
-                                    disabled=False,
+                                'Action': st.column_config.SelectboxColumn(
+                                    'Action',
+                                    help='Select an action for this prediction',
+                                    width='medium',
+                                    options=['Select Action', 'Edit', 'Delete'],
                                     required=True,
-                                    default='Edit'
-                                ),
-                                'Delete': st.column_config.TextColumn(
-                                    'Delete',
-                                    help='Click to delete this prediction',
-                                    disabled=False,
-                                    required=True,
-                                    default='Delete'
+                                    default='Select Action'
                                 )
                             },
                             disabled=['Date', 'League', 'Home Team', 'Away Team', 'Prediction', 
@@ -996,21 +992,22 @@ def show_history_page():
                         # Store the edited data in session state
                         st.session_state.edited_data = edited_df
                         
-                        # Check if Edit or Delete values have been changed
+                        # Check if Action values have been changed
                         if st.session_state.edited_data is not None:
                             for i, row in st.session_state.edited_data.iterrows():
-                                # Check if Edit button was clicked (value changed)
-                                if row['Edit'] != 'Edit':
-                                    st.session_state.edit_prediction_id = row['ID']
-                                    # Reset the value
-                                    st.session_state.edited_data.at[i, 'Edit'] = 'Edit'
-                                    st.rerun()
-                                
-                                # Check if Delete button was clicked (value changed)
-                                if row['Delete'] != 'Delete':
-                                    st.session_state.delete_prediction_id = row['ID']
-                                    # Reset the value
-                                    st.session_state.edited_data.at[i, 'Delete'] = 'Delete'
+                                # Check if an action was selected
+                                if row['Action'] != 'Select Action':
+                                    # Get the prediction ID for this row
+                                    prediction_id = row['ID']
+                                    
+                                    # Process the selected action
+                                    if row['Action'] == 'Edit':
+                                        st.session_state.edit_prediction_id = prediction_id
+                                    elif row['Action'] == 'Delete':
+                                        st.session_state.delete_prediction_id = prediction_id
+                                    
+                                    # Reset the action dropdown
+                                    st.session_state.edited_data.at[i, 'Action'] = 'Select Action'
                                     st.rerun()
                         
                     # Create a container for the edit and delete forms
