@@ -188,21 +188,32 @@ def display_predictions_with_buttons(predictions_df):
         </script>
         """
         
-        # Ensure we're working with a copy of the display DataFrame
-        display_df = display_df.copy()
+        # Create a clean copy of the DataFrame with proper data types
+        clean_df = display_df.copy()
         
-        # Convert any datetime columns to strings to avoid serialization issues
-        for col in display_df.select_dtypes(include=['datetime64']).columns:
-            display_df[col] = display_df[col].astype(str)
-            
+        # Convert all data to native Python types
+        for col in clean_df.columns:
+            # Handle datetime columns
+            if pd.api.types.is_datetime64_any_dtype(clean_df[col]):
+                clean_df[col] = clean_df[col].astype(str)
+            # Convert other non-native types to string
+            elif not pd.api.types.is_numeric_dtype(clean_df[col]):
+                clean_df[col] = clean_df[col].astype(str)
+        
+        # Convert DataFrame to a list of dictionaries with native Python types
+        grid_data = clean_df.to_dict('records')
+        
+        # Create a new DataFrame with the cleaned data
+        grid_df = pd.DataFrame(grid_data)
+        
         # Display the AgGrid component with the configured options
         grid_response = AgGrid(
-            display_df,  # Pass the DataFrame directly
+            grid_df,  # Use the cleaned DataFrame
             gridOptions=grid_options,
             update_mode=GridUpdateMode.MODEL_CHANGED | GridUpdateMode.VALUE_CHANGED,
             fit_columns_on_grid_load=True,
             theme='streamlit',
-            height=min(600, (len(display_df) + 1) * 50 + 50) if len(display_df) > 0 else 200,
+            height=min(600, (len(grid_df) + 1) * 50 + 50) if len(grid_df) > 0 else 200,
             width='100%',
             reload_data=False,
             allow_unsafe_jscode=True,
@@ -215,7 +226,7 @@ def display_predictions_with_buttons(predictions_df):
             columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS,
             enable_enterprise_modules=False,
             data_return_mode='AS_INPUT',
-            try_to_convert_back_to_data_frame=True
+            try_to_convert_back_to_data_frame=False
         )
         
         # Add the JavaScript for handling button clicks
