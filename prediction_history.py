@@ -16,9 +16,41 @@ class PredictionHistory:
         """Add a new prediction to the database"""
         return self.db.add_prediction(prediction_data)
 
-    def get_predictions(self, filters=None):
-        """Get predictions with optional filters"""
-        return self.db.get_predictions(filters)
+    def get_predictions(self, start_date=None, end_date=None, confidence_levels=None, leagues=None, status=None):
+        """Get predictions with optional filters
+        
+        Args:
+            start_date (str, optional): Start date in YYYY-MM-DD format
+            end_date (str, optional): End date in YYYY-MM-DD format
+            confidence_levels (list, optional): List of confidence levels to filter by
+            leagues (list, optional): List of leagues to filter by
+            status (str, optional): Status to filter by (e.g., 'Pending', 'Completed')
+            
+        Returns:
+            pd.DataFrame: Filtered predictions
+        """
+        # Build filters dictionary
+        filters = {}
+        if start_date:
+            filters['start_date'] = start_date
+        if end_date:
+            filters['end_date'] = end_date
+            
+        # Get base predictions
+        predictions = self.db.get_predictions(start_date=start_date, end_date=end_date)
+        
+        # Apply additional filters
+        if not predictions.empty:
+            if status:
+                predictions = predictions[predictions['status'] == status]
+                
+            if confidence_levels:
+                predictions = predictions[predictions['confidence'].isin(confidence_levels)]
+                
+            if leagues:
+                predictions = predictions[predictions['league'].isin(leagues)]
+        
+        return predictions
 
     def update_prediction(self, prediction_id, update_data):
         """Update an existing prediction"""
@@ -81,19 +113,35 @@ class PredictionHistory:
                 if not match_id or not home_team or not away_team:
                     continue
                     
-                # Get match result
-                result = analyzer.get_match_result(home_team, away_team)
+                # Get match result using match_id
+                result = analyzer.analyze_match_result(match_id)
                 
+                if not result:
+                    logger.debug(f"No result found for match {match_id}")
+                    continue
+                    
                 # Check if the match has completed
                 api_status = result.get('status')
                 
                 if api_status == 'Completed':
+                    # Determine the actual outcome
+                    home_score = result.get('home_score')
+                    away_score = result.get('away_score')
+                    actual_outcome = None
+                    
+                    if home_score > away_score:
+                        actual_outcome = '1'
+                    elif away_score > home_score:
+                        actual_outcome = '2'
+                    else:
+                        actual_outcome = 'X'
+                    
                     # Update the result
                     self.update_prediction(pred.get('id'), {
                         'status': 'Completed',
-                        'home_score': result.get('home_score'),
-                        'away_score': result.get('away_score'),
-                        'result': result.get('result')
+                        'home_score': home_score,
+                        'away_score': away_score,
+                        'actual_outcome': actual_outcome
                     })
                     logger.info(f"Updated {home_team} vs {away_team} - Match completed with result")
                     updated_count += 1
@@ -115,7 +163,7 @@ class PredictionHistory:
                 leagues=leagues
             )
             
-            if predictions.empty:
+            if predictions is None or predictions.empty:
                 return [0, 0, 0.0, 0.0, 0.0], 0
             
             # Calculate statistics
