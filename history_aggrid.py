@@ -15,6 +15,7 @@ def prepare_data_for_aggrid(df):
         Tuple of (processed_df, column_defs)
     """
     import pandas as pd
+    import numpy as np
     
     if df is None or df.empty:
         return pd.DataFrame(), []
@@ -28,11 +29,18 @@ def prepare_data_for_aggrid(df):
         for col in datetime_cols:
             clean_df[col] = clean_df[col].dt.strftime('%Y-%m-%d %H:%M:%S')
         
-        # Convert all columns to string to avoid serialization issues
+        # Convert all non-string columns to string to avoid serialization issues
         for col in clean_df.columns:
             if clean_df[col].dtype == 'object':
-                continue
-            clean_df[col] = clean_df[col].astype(str)
+                # Handle any remaining non-string objects
+                clean_df[col] = clean_df[col].astype(str)
+            elif pd.api.types.is_numeric_dtype(clean_df[col]):
+                # Convert numeric columns to string, handling NaN/None values
+                clean_df[col] = clean_df[col].replace({np.nan: None}).astype('object')
+                clean_df[col] = clean_df[col].astype(str).replace('None', '')
+            else:
+                # For other types, convert to string
+                clean_df[col] = clean_df[col].astype(str)
         
         # Generate column definitions
         column_defs = []
@@ -43,14 +51,20 @@ def prepare_data_for_aggrid(df):
                 'sortable': col not in ['Edit', 'Delete'],
                 'filter': col not in ['Edit', 'Delete'],
                 'resizable': True,
-                'suppressMenu': True
+                'suppressMenu': True,
+                'cellStyle': {'textAlign': 'center'}
             }
             column_defs.append(col_def)
+        
+        # Ensure all column names are strings
+        clean_df.columns = clean_df.columns.astype(str)
         
         return clean_df, column_defs
         
     except Exception as e:
+        import traceback
         st.error(f"Error preparing data for grid: {str(e)}")
+        st.error(f"Traceback: {traceback.format_exc()}")
         return pd.DataFrame(), []
 
 # JavaScript code for the edit button
@@ -462,9 +476,18 @@ def display_predictions_with_buttons(predictions_df):
             # Get the grid options
             grid_options = gb.build()
             
+            # Convert DataFrame to a format that AgGrid can handle
+            # This helps avoid issues with pandas versions and data types
+            grid_data = display_data.copy()
+            
+            # Ensure all values are JSON serializable
+            for col in grid_data.columns:
+                if grid_data[col].dtype == 'object':
+                    grid_data[col] = grid_data[col].astype(str)
+            
             # Display the AgGrid component
             grid_response = AgGrid(
-                display_data,  # Pass the DataFrame directly
+                grid_data,  # Use the processed DataFrame
                 gridOptions=grid_options,
                 update_mode=GridUpdateMode.MODEL_CHANGED | GridUpdateMode.VALUE_CHANGED,
                 fit_columns_on_grid_load=True,
@@ -477,15 +500,17 @@ def display_predictions_with_buttons(predictions_df):
                     ".ag-header-cell-label": {"justifyContent": "center"},
                     ".ag-cell": {"display": "flex", "alignItems": "center", "justifyContent": "center"},
                     ".ag-row-odd": {"backgroundColor": "#f9f9f9"},
-                    ".ag-row-hover": {"backgroundColor": "#f0f0f0 !important"}
+                    ".ag-row-hover": {"backgroundColor": "#f0f0f0 !important"},
+                    ".ag-center-cols-viewport": {"overflow-x": "auto"}
                 },
                 columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS,
                 enable_enterprise_modules=False,
                 data_return_mode='FILTERED_AND_SORTED',
-                try_to_convert_back_to_data_frame=True,
+                try_to_convert_back_to_data_frame=False,  # We'll handle conversion manually
                 key='predictions_grid',
                 suppressColumnVirtualisation=True,
-                suppressRowVirtualisation=True
+                suppressRowVirtualisation=True,
+                update_data_on_first_render=True
             )
             
             # Add the JavaScript for handling button clicks
