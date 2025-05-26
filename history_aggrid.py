@@ -16,46 +16,42 @@ def prepare_data_for_aggrid(df):
     """
     import pandas as pd
     
-    # Create a clean copy of the DataFrame
-    clean_df = df.copy()
+    if df is None or df.empty:
+        return pd.DataFrame(), []
     
-    # Convert all datetime columns to string
-    datetime_cols = clean_df.select_dtypes(include=['datetime64']).columns
-    for col in datetime_cols:
-        clean_df[col] = clean_df[col].dt.strftime('%Y-%m-%d %H:%M:%S')
-    
-    # Create a new DataFrame with string representations of all values
-    # This avoids issues with pandas version differences
-    processed_data = []
-    for _, row in clean_df.iterrows():
-        row_dict = {}
+    try:
+        # Create a clean copy of the DataFrame
+        clean_df = df.copy()
+        
+        # Convert all datetime columns to string
+        datetime_cols = clean_df.select_dtypes(include=['datetime64']).columns
+        for col in datetime_cols:
+            clean_df[col] = clean_df[col].dt.strftime('%Y-%m-%d %H:%M:%S')
+        
+        # Convert all columns to string to avoid serialization issues
         for col in clean_df.columns:
-            val = row[col]
-            if pd.isna(val):
-                row_dict[col] = ''
-            elif not isinstance(val, (str, int, float, bool)) and val is not None:
-                row_dict[col] = str(val)
-            else:
-                row_dict[col] = val
-        processed_data.append(row_dict)
-    
-    # Create a new DataFrame from the processed data
-    result_df = pd.DataFrame(processed_data)
-    
-    # Generate column definitions
-    column_defs = []
-    for col in clean_df.columns:
-        col_def = {
-            'field': col,
-            'headerName': col.replace('_', ' ').title(),
-            'sortable': col not in ['Edit', 'Delete'],
-            'filter': col not in ['Edit', 'Delete'],
-            'resizable': True,
-            'suppressMenu': True
-        }
-        column_defs.append(col_def)
-    
-    return result_df, column_defs
+            if clean_df[col].dtype == 'object':
+                continue
+            clean_df[col] = clean_df[col].astype(str)
+        
+        # Generate column definitions
+        column_defs = []
+        for col in clean_df.columns:
+            col_def = {
+                'field': col,
+                'headerName': col.replace('_', ' ').title(),
+                'sortable': col not in ['Edit', 'Delete'],
+                'filter': col not in ['Edit', 'Delete'],
+                'resizable': True,
+                'suppressMenu': True
+            }
+            column_defs.append(col_def)
+        
+        return clean_df, column_defs
+        
+    except Exception as e:
+        st.error(f"Error preparing data for grid: {str(e)}")
+        return pd.DataFrame(), []
 
 # JavaScript code for the edit button
 edit_button_js = """
@@ -409,21 +405,71 @@ def display_predictions_with_buttons(predictions_df):
         # Get the grid options
         grid_options = gb.build()
         
-        # Display the AgGrid component with the configured options
-        # Convert DataFrame to list of dicts to avoid pandas version issues
-        grid_data_dict = grid_data.to_dict('records')
-        
-        # Create a new grid options without the data to avoid serialization issues
-        grid_options_without_data = {k: v for k, v in grid_options.items() if k != 'rowData'}
-        
         try:
+            # Ensure we have valid data
+            if grid_data is None or grid_data.empty:
+                st.warning("No data available to display.")
+                return {
+                    'data': pd.DataFrame(),
+                    'selected_rows': [],
+                    'action': '',
+                    'row_id': ''
+                }
+            
+            # Create a copy of the data to avoid modifying the original
+            display_data = grid_data.copy()
+            
+            # Initialize GridOptionsBuilder with the data
+            gb = GridOptionsBuilder.from_dataframe(display_data)
+            
+            # Configure default column properties
+            gb.configure_default_column(
+                filterable=True,
+                sortable=True,
+                resizable=True,
+                editable=False,
+                groupable=False,
+                suppressMenu=True
+            )
+            
+            # Configure action buttons if they exist in the DataFrame
+            if 'Edit' in display_data.columns:
+                gb.configure_column('Edit', 
+                                 width=80, 
+                                 cellRenderer=JsCode(edit_button_js),
+                                 sortable=False, 
+                                 filter=False,
+                                 suppressMenu=True)
+            
+            if 'Delete' in display_data.columns:
+                gb.configure_column('Delete', 
+                                 width=90, 
+                                 cellRenderer=JsCode(delete_button_js),
+                                 sortable=False, 
+                                 filter=False,
+                                 suppressMenu=True)
+            
+            # Configure grid options
+            gb.configure_grid_options(
+                enableCellTextSelection=True,
+                ensureDomOrder=True,
+                suppressRowClickSelection=True,
+                suppressColumnVirtualisation=True,
+                suppressRowVirtualisation=True,
+                suppressDragLeaveHidesColumns=True
+            )
+            
+            # Get the grid options
+            grid_options = gb.build()
+            
+            # Display the AgGrid component
             grid_response = AgGrid(
-                data=grid_data_dict,  # Pass data as list of dicts
-                gridOptions=grid_options_without_data,
+                display_data,  # Pass the DataFrame directly
+                gridOptions=grid_options,
                 update_mode=GridUpdateMode.MODEL_CHANGED | GridUpdateMode.VALUE_CHANGED,
                 fit_columns_on_grid_load=True,
                 theme='streamlit',
-                height=min(600, (len(grid_data) + 1) * 50 + 50) if len(grid_data) > 0 else 200,
+                height=min(600, (len(display_data) + 1) * 50 + 50) if len(display_data) > 0 else 200,
                 width='100%',
                 reload_data=False,
                 allow_unsafe_jscode=True,
@@ -436,7 +482,7 @@ def display_predictions_with_buttons(predictions_df):
                 columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS,
                 enable_enterprise_modules=False,
                 data_return_mode='FILTERED_AND_SORTED',
-                try_to_convert_back_to_data_frame=False,
+                try_to_convert_back_to_data_frame=True,
                 key='predictions_grid',
                 suppressColumnVirtualisation=True,
                 suppressRowVirtualisation=True
