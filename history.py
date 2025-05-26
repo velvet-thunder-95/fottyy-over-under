@@ -939,66 +939,79 @@ def show_history_page():
                     # Apply styling
                     styled_df = style_dataframe(final_df)
                     
-                    # Add Edit buttons to each row
-                    # We'll use a container to hold our dataframe and edit forms
-                    predictions_container = st.container()
+                    # Display the styled dataframe
+                    st.dataframe(
+                        styled_df,
+                        use_container_width=True,
+                        hide_index=True
+                    )
+                    
+                    # Add a section for editing predictions
+                    st.markdown("### Edit or Delete Predictions")
                     
                     # Store the selected prediction ID in session state
                     if 'edit_prediction_id' not in st.session_state:
                         st.session_state.edit_prediction_id = None
                     if 'delete_prediction_id' not in st.session_state:
                         st.session_state.delete_prediction_id = None
+                    if 'show_edit_form' not in st.session_state:
+                        st.session_state.show_edit_form = False
+                    if 'show_delete_confirm' not in st.session_state:
+                        st.session_state.show_delete_confirm = False
+                        
+                    # Create a simplified dataframe for selection
+                    selection_df = predictions[['id', 'date', 'league', 'home_team', 'away_team', 'predicted_outcome', 'status']].copy()
+                    selection_df['date'] = pd.to_datetime(selection_df['date']).dt.strftime('%Y-%m-%d')
+                    selection_df = selection_df.rename(columns={
+                        'id': 'ID',
+                        'date': 'Date',
+                        'league': 'League',
+                        'home_team': 'Home Team',
+                        'away_team': 'Away Team',
+                        'predicted_outcome': 'Prediction',
+                        'status': 'Status'
+                    })
                     
-                    # Create a column for edit buttons
-                    final_df['Edit'] = 'Edit'
-                    final_df['Delete'] = 'Delete'
+                    # Create two columns for edit and delete selection
+                    col1, col2 = st.columns(2)
                     
-                    # Display the styled dataframe with clickable cells
-                    with predictions_container:
-                        clicked = st.dataframe(
-                            styled_df,
-                            use_container_width=True,
-                            hide_index=True,
-                            column_config={
-                                'Edit': st.column_config.ButtonColumn(
-                                    'Edit',
-                                    help='Edit this prediction'
-                                ),
-                                'Delete': st.column_config.ButtonColumn(
-                                    'Delete',
-                                    help='Delete this prediction'
-                                ),
-                                'ID': st.column_config.Column(
-                                    'ID',
-                                    help='Prediction ID',
-                                    disabled=True,
-                                    required=True,
-                                    width='small',
-                                    visible=False
-                                )
-                            }
+                    with col1:
+                        st.subheader("Edit a Prediction")
+                        selected_edit_index = st.selectbox(
+                            "Select a prediction to edit:",
+                            options=range(len(selection_df)),
+                            format_func=lambda x: f"{selection_df.iloc[x]['Date']} - {selection_df.iloc[x]['Home Team']} vs {selection_df.iloc[x]['Away Team']}",
+                            key="edit_selection"
                         )
                         
-                        # Check if a button was clicked
-                        if clicked:
-                            # Get the row and column that was clicked
-                            row_clicked = clicked.get('row', None)
-                            col_clicked = clicked.get('column', None)
-                            
-                            # If Edit button was clicked
-                            if col_clicked == 'Edit' and row_clicked is not None:
-                                # Get the prediction ID from the clicked row
-                                prediction_id = final_df.iloc[row_clicked]['ID']
-                                st.session_state.edit_prediction_id = prediction_id
-                            
-                            # If Delete button was clicked
-                            if col_clicked == 'Delete' and row_clicked is not None:
-                                # Get the prediction ID from the clicked row
-                                prediction_id = final_df.iloc[row_clicked]['ID']
-                                st.session_state.delete_prediction_id = prediction_id
+                        if st.button("Edit Selected Prediction"):
+                            # Get the prediction ID from the selected index
+                            prediction_id = selection_df.iloc[selected_edit_index]['ID']
+                            st.session_state.edit_prediction_id = prediction_id
+                            st.session_state.show_edit_form = True
+                            st.rerun()
+                    
+                    with col2:
+                        st.subheader("Delete a Prediction")
+                        selected_delete_index = st.selectbox(
+                            "Select a prediction to delete:",
+                            options=range(len(selection_df)),
+                            format_func=lambda x: f"{selection_df.iloc[x]['Date']} - {selection_df.iloc[x]['Home Team']} vs {selection_df.iloc[x]['Away Team']}",
+                            key="delete_selection"
+                        )
+                        
+                        if st.button("Delete Selected Prediction"):
+                            # Get the prediction ID from the selected index
+                            prediction_id = selection_df.iloc[selected_delete_index]['ID']
+                            st.session_state.delete_prediction_id = prediction_id
+                            st.session_state.show_delete_confirm = True
+                            st.rerun()
+                        
+                    # Create a container for the edit and delete forms
+                    edit_delete_container = st.container()
                     
                     # Show edit form if a prediction is selected for editing
-                    if st.session_state.edit_prediction_id:
+                    if st.session_state.edit_prediction_id and st.session_state.show_edit_form:
                         with predictions_container:
                             st.markdown("### Edit Prediction")
                             
@@ -1167,6 +1180,7 @@ def show_history_page():
                                     st.success("Prediction updated successfully!")
                                     # Clear the edit ID and refresh the page
                                     st.session_state.edit_prediction_id = None
+                                    st.session_state.show_edit_form = False
                                     st.rerun()
                                 else:
                                     st.error("Failed to update prediction. Please try again.")
@@ -1174,10 +1188,11 @@ def show_history_page():
                             if cancel_button:
                                 # Clear the edit ID
                                 st.session_state.edit_prediction_id = None
+                                st.session_state.show_edit_form = False
                                 st.rerun()
                     
                     # Show delete confirmation if a prediction is selected for deletion
-                    if st.session_state.delete_prediction_id:
+                    if st.session_state.delete_prediction_id and st.session_state.show_delete_confirm:
                         with predictions_container:
                             st.markdown("### Delete Prediction")
                             st.warning("Are you sure you want to delete this prediction? This action cannot be undone.")
@@ -1201,6 +1216,7 @@ def show_history_page():
                                         st.success("Prediction deleted successfully!")
                                         # Clear the delete ID and refresh the page
                                         st.session_state.delete_prediction_id = None
+                                        st.session_state.show_delete_confirm = False
                                         st.rerun()
                                     else:
                                         st.error("Failed to delete prediction. Please try again.")
@@ -1209,6 +1225,7 @@ def show_history_page():
                                 if st.button("Cancel", key="cancel_delete"):
                                     # Clear the delete ID
                                     st.session_state.delete_prediction_id = None
+                                    st.session_state.show_delete_confirm = False
                                     st.rerun()
                     
                 except Exception as e:
