@@ -3,13 +3,8 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 from datetime import datetime, timedelta
-from st_aggrid import (
-    AgGrid,
-    GridOptionsBuilder,
-    JsCode,
-    GridUpdateMode,
-    ColumnsAutoSizeMode
-)
+from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, JsCode, ColumnsAutoSizeMode
+import traceback
 
 def prepare_data_for_aggrid(df):
     """

@@ -1,382 +1,295 @@
 # history.py
 
-
-
-import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
 from football_api import get_match_by_teams, get_match_result
 from session_state import init_session_state, check_login_state
 from match_analyzer import MatchAnalyzer
-from supabase_db import SupabaseDB
 import logging
 import sys
 import time
-sys.path.append('.')
 import importlib
+
+# Import PredictionHistory from the new module
+from prediction_history import PredictionHistory
+
+# Import filter_storage
+sys.path.append('.')
 filter_storage = importlib.import_module('filter_storage')
+
+# Import display_predictions_with_buttons from history_aggrid
 from history_aggrid import display_predictions_with_buttons
 
-class PredictionHistory:
-    def __init__(self):
-        """Initialize the Supabase database connection."""
-        self.db = SupabaseDB()
+# Initialize PredictionHistory instance
+prediction_history = PredictionHistory()
 
-    def init_database(self):
-        """Initialize the Supabase database"""
-        # No need to create tables as they are managed in Supabase dashboard
-        self.db.init_database()
+def delete_prediction(prediction_id):
+    """Delete a prediction from the database"""
+    try:
+        result = prediction_history.db.supabase.table('predictions').delete().eq('id', prediction_id).execute()
+        logging.info(f"Successfully deleted prediction with ID: {prediction_id}")
+        return True
+    except Exception as e:
+        logging.error(f"Error deleting prediction: {str(e)}")
+        return False
 
-    def add_prediction(self, prediction_data):
-        """Add a new prediction to the database"""
-        try:
-            # Ensure confidence is a float
-            confidence = float(prediction_data.get('confidence', 0.0))
-            match_id = str(prediction_data.get('match_id', ''))
-            
-            # Create clean data for insertion with fixed $1 bet amount
-            clean_data = {
-                'date': prediction_data['date'],
-                'league': prediction_data['league'],
-                'home_team': prediction_data['home_team'],
-                'away_team': prediction_data['away_team'],
-                'predicted_outcome': prediction_data['predicted_outcome'],
-                'actual_outcome': None,  # actual_outcome starts as None
-                'home_odds': float(prediction_data['home_odds']),
-                'draw_odds': float(prediction_data['draw_odds']),
-                'away_odds': float(prediction_data['away_odds']),
-                'confidence': confidence,
-                'bet_amount': 1.0,  # Fixed $1 bet amount
-                'profit_loss': 0.0,  # profit_loss starts at 0
-                'status': 'Pending',  # status starts as Pending
-                'match_id': match_id
-            }
-            
-            # Insert into Supabase
-            result = self.db.supabase.table('predictions').insert(clean_data).execute()
-            
-            logging.info(f"Successfully added prediction for {prediction_data['home_team']} vs {prediction_data['away_team']} with match_id: {match_id} and confidence: {confidence}")
-            return True
-            
-        except Exception as e:
-            logging.error(f"Error adding prediction: {str(e)}")
-            return False
-
-    def update_prediction_result(self, prediction_id, actual_outcome, profit_loss, home_score=None, away_score=None):
-        """Update prediction with actual result and profit/loss"""
-        try:
-            update_data = {
-                'actual_outcome': actual_outcome,
-                'profit_loss': profit_loss,
-                'status': 'Completed'
-            }
-            
-            if home_score is not None:
-                update_data['home_score'] = home_score
-            if away_score is not None:
-                update_data['away_score'] = away_score
-                
-            result = self.db.supabase.table('predictions').update(update_data).eq('id', prediction_id).execute()
-            return True
-            
-        except Exception as e:
-            logging.error(f"Error updating prediction result: {str(e)}")
-            return False
-            
-    def update_prediction(self, prediction_id, prediction_data):
-        """Update an existing prediction with new data"""
-        try:
-            # Ensure confidence is a float
-            if 'confidence' in prediction_data:
-                prediction_data['confidence'] = float(prediction_data['confidence'])
-            
-            # Ensure odds are floats
-            for odds_field in ['home_odds', 'draw_odds', 'away_odds']:
-                if odds_field in prediction_data:
-                    prediction_data['odds_field'] = float(prediction_data[odds_field])
-            
-            # Ensure bet_amount is a float
-            if 'bet_amount' in prediction_data:
-                prediction_data['bet_amount'] = float(prediction_data['bet_amount'])
-                
-            # Update in Supabase
-            result = self.db.supabase.table('predictions').update(prediction_data).eq('id', prediction_id).execute()
-            
-            logging.info(f"Successfully updated prediction with ID: {prediction_id}")
-            return True
-            
-        except Exception as e:
-            logging.error(f"Error updating prediction: {str(e)}")
-            return False
-            
-    def delete_prediction(self, prediction_id):
-        """Delete a prediction from the database"""
-        try:
-            result = self.db.supabase.table('predictions').delete().eq('id', prediction_id).execute()
-            logging.info(f"Successfully deleted prediction with ID: {prediction_id}")
-            return True
-        except Exception as e:
-            logging.error(f"Error deleting prediction: {str(e)}")
-            return False
-
-    def get_predictions(self, start_date=None, end_date=None, status=None, confidence_levels=None, leagues=None):
-        """Get predictions with optional filters"""
-        try:
-            # Get base predictions from Supabase with date filters
-            predictions = self.db.get_predictions(start_date=start_date, end_date=end_date)
-            
-            if predictions.empty:
-                return predictions
-                
-            # Apply additional filters in memory
-            if status:
-                predictions = predictions[predictions['status'] == status]
-                
-            if confidence_levels and "All" not in confidence_levels:
-                mask = pd.Series(False, index=predictions.index)
-                
-                for level in confidence_levels:
-                    if level == "High":
-                        mask |= predictions['confidence'] >= 70
-                    elif level == "Medium":
-                        mask |= (predictions['confidence'] >= 50) & (predictions['confidence'] < 70)
-                    elif level == "Low":
-                        mask |= predictions['confidence'] < 50
-                        
-                predictions = predictions[mask]
-                
-            if leagues and "All" not in leagues:
-                predictions = predictions[predictions['league'].isin(leagues)]
-            
-            # Ensure numeric columns
-            numeric_columns = ['bet_amount', 'confidence', 'home_odds', 'draw_odds', 'away_odds', 'profit_loss']
-            for col in numeric_columns:
-                if col in predictions.columns:
-                    predictions[col] = pd.to_numeric(predictions[col], errors='coerce')
-            
-            # Ensure proper profit_loss values
-            predictions.loc[predictions['status'] != 'Completed', 'profit_loss'] = 0.0
-            
-            # Sort by date (newest first)
-            predictions = predictions.sort_values('date', ascending=False)
-            
-            logging.info(f"After filtering: {len(predictions)} records from {predictions['date'].min()} to {predictions['date'].max()}")
+def get_predictions(start_date=None, end_date=None, status=None, confidence_levels=None, leagues=None):
+    """Get predictions with optional filters"""
+    try:
+        # Get base predictions from Supabase with date filters
+        predictions = prediction_history.db.get_predictions(start_date=start_date, end_date=end_date)
+        
+        if predictions.empty:
             return predictions
             
-        except Exception as e:
-            logging.error(f"Error getting predictions: {str(e)}")
-            return pd.DataFrame()
-
-    def update_match_results(self, match_id, result):
-        """Update match results in the database"""
-        try:
-            # First get the match details from Supabase
-            match_result = self.db.supabase.table('predictions').select('predicted_outcome,home_odds,draw_odds,away_odds').eq('match_id', match_id).execute()
+        # Apply additional filters in memory
+        if status:
+            predictions = predictions[predictions['status'] == status]
             
-            if not match_result.data:
-                print(f"No prediction found for match {match_id}")
-                return
+        if confidence_levels and "All" not in confidence_levels:
+            mask = pd.Series(False, index=predictions.index)
             
-            match_data = match_result.data[0]
-            predicted_outcome = match_data['predicted_outcome']
-            home_odds = match_data['home_odds']
-            draw_odds = match_data['draw_odds']
-            away_odds = match_data['away_odds']
-            
-            # Parse the result
-            if isinstance(result, dict):
-                home_score = result.get('home_score')
-                away_score = result.get('away_score')
-                status = result.get('status', 'Completed')
-            else:
-                home_score = result
-                away_score = None
-                status = 'Completed'
-            
-            # Initialize variables
-            actual_outcome = None
-            profit_loss = 0.0  # Default to 0
-            bet_amount = 1.0  # Fixed $1 bet amount
-            
-            # Only calculate outcome and profit/loss if the match is completed
-            if status == 'Completed' and home_score is not None and away_score is not None:
-                # Determine actual outcome
-                if home_score > away_score:
-                    actual_outcome = 'HOME'
-                elif away_score > home_score:
-                    actual_outcome = 'AWAY'
-                else:
-                    actual_outcome = 'DRAW'
+            for level in confidence_levels:
+                if level == "High":
+                    mask |= predictions['confidence'] >= 70
+                elif level == "Medium":
+                    mask |= (predictions['confidence'] >= 50) & (predictions['confidence'] < 70)
+                elif level == "Low":
+                    mask |= predictions['confidence'] < 50
                     
-                # Calculate profit/loss using $1 bet amount
-                try:
-                    if all([home_odds, draw_odds, away_odds]):  # Only if we have odds
-                        # Convert odds to float and handle any string formatting
-                        home_odds = float(str(home_odds).strip())
-                        away_odds = float(str(away_odds).strip())
-                        draw_odds = float(str(draw_odds).strip())
-                        
-                        if predicted_outcome == actual_outcome:
-                            # Won: Calculate profit based on the predicted outcome's odds
-                            if predicted_outcome == 'HOME':
-                                profit_loss = float(round((home_odds * bet_amount) - bet_amount, 2))
-                            elif predicted_outcome == 'AWAY':
-                                profit_loss = float(round((away_odds * bet_amount) - bet_amount, 2))
-                            else:  # DRAW
-                                profit_loss = float(round((draw_odds * bet_amount) - bet_amount, 2))
-                            print(f'Won bet! Odds: {home_odds}/{draw_odds}/{away_odds}, Profit: {profit_loss}')
-                        else:
-                            # Lost: Lose the bet amount
-                            profit_loss = float(-bet_amount)
-                            print(f'Lost bet! Predicted: {predicted_outcome}, Actual: {actual_outcome}, Loss: {profit_loss}')
-                    else:
-                        print(f'Missing odds: {home_odds}/{draw_odds}/{away_odds}')
-                except (ValueError, TypeError) as e:
-                    print(f'Error calculating profit/loss: {str(e)}')
+            predictions = predictions[mask]
             
-            # Prepare update data
-            update_data = {
-                'status': status,
-                'home_score': home_score,
-                'away_score': away_score,
-                'actual_outcome': actual_outcome,
-                'profit_loss': profit_loss
-            }
-            
-            # Debug print before update
-            print(f"Updating match {match_id} with data: {update_data}")
-            
+        if leagues and "All" not in leagues:
+            predictions = predictions[predictions['league'].isin(leagues)]
+        
+        # Ensure numeric columns
+        numeric_columns = ['bet_amount', 'confidence', 'home_odds', 'draw_odds', 'away_odds', 'profit_loss']
+        for col in numeric_columns:
+            if col in predictions.columns:
+                predictions[col] = pd.to_numeric(predictions[col], errors='coerce')
+        
+        # Ensure proper profit_loss values
+        predictions.loc[predictions['status'] != 'Completed', 'profit_loss'] = 0.0
+        
+        # Sort by date (newest first)
+        predictions = predictions.sort_values('date', ascending=False)
+        
+        logging.info(f"After filtering: {len(predictions)} records from {predictions['date'].min()} to {predictions['date'].max()}")
+        return predictions
+        
+    except Exception as e:
+        logging.error(f"Error getting predictions: {str(e)}")
+        return pd.DataFrame()
+
+def update_match_results(match_id, result):
+    """Update match results in the database"""
+    try:
+        # First get the match details from Supabase
+        match_result = prediction_history.db.supabase.table('predictions').select('predicted_outcome,home_odds,draw_odds,away_odds').eq('match_id', match_id).execute()
+        
+        if not match_result.data:
+            print(f"No prediction found for match {match_id}")
+            return
+        
+        match_data = match_result.data[0]
+        predicted_outcome = match_data['predicted_outcome']
+        home_odds = match_data['home_odds']
+        draw_odds = match_data['draw_odds']
+        away_odds = match_data['away_odds']
+        
+        # Parse the result
+        if isinstance(result, dict):
+            home_score = result.get('home_score')
+            away_score = result.get('away_score')
+            status = result.get('status', 'Completed')
+        else:
+            home_score = result
+            away_score = None
+            status = 'Completed'
+        
+        # Initialize variables
+        actual_outcome = None
+        profit_loss = 0.0  # Default to 0
+        bet_amount = 1.0  # Fixed $1 bet amount
+        
+        # Only calculate outcome and profit/loss if the match is completed
+        if status == 'Completed' and home_score is not None and away_score is not None:
+            # Determine actual outcome
+            if home_score > away_score:
+                actual_outcome = 'HOME'
+            elif away_score > home_score:
+                actual_outcome = 'AWAY'
+            else:
+                actual_outcome = 'DRAW'
+                
+            # Calculate profit/loss using $1 bet amount
             try:
-                # Get current data to check what fields exist
-                current = self.db.supabase.table('predictions')\
-                    .select('*')\
+                if all([home_odds, draw_odds, away_odds]):  # Only if we have odds
+                    # Convert odds to float and handle any string formatting
+                    home_odds = float(str(home_odds).strip())
+                    away_odds = float(str(away_odds).strip())
+                    draw_odds = float(str(draw_odds).strip())
+                    
+                    if predicted_outcome == actual_outcome:
+                        # Won: Calculate profit based on the predicted outcome's odds
+                        if predicted_outcome == 'HOME':
+                            profit_loss = float(round((home_odds * bet_amount) - bet_amount, 2))
+                        elif predicted_outcome == 'AWAY':
+                            profit_loss = float(round((away_odds * bet_amount) - bet_amount, 2))
+                        else:  # DRAW
+                            profit_loss = float(round((draw_odds * bet_amount) - bet_amount, 2))
+                        print(f'Won bet! Odds: {home_odds}/{draw_odds}/{away_odds}, Profit: {profit_loss}')
+                    else:
+                        # Lost: Lose the bet amount
+                        profit_loss = float(-bet_amount)
+                        print(f'Lost bet! Predicted: {predicted_outcome}, Actual: {actual_outcome}, Loss: {profit_loss}')
+                else:
+                    print(f'Missing odds: {home_odds}/{draw_odds}/{away_odds}')
+            except (ValueError, TypeError) as e:
+                print(f'Error calculating profit/loss: {str(e)}')
+        
+        # Prepare update data
+        update_data = {
+            'status': status,
+            'home_score': home_score,
+            'away_score': away_score,
+            'actual_outcome': actual_outcome,
+            'profit_loss': profit_loss
+        }
+        
+        # Debug print before update
+        print(f"Updating match {match_id} with data: {update_data}")
+        
+        try:
+            # Get current data to check what fields exist
+            current = prediction_history.db.supabase.table('predictions')\
+                .select('*')\
+                .eq('match_id', match_id)\
+                .execute()
+            
+            if current.data:
+                # Only include fields that exist in the table
+                existing_fields = current.data[0].keys()
+                update_data = {k: v for k, v in update_data.items() if k in existing_fields}
+                
+                # Update with only existing fields
+                prediction_history.db.supabase.table('predictions')\
+                    .update(update_data)\
                     .eq('match_id', match_id)\
                     .execute()
-                
-                if current.data:
-                    # Only include fields that exist in the table
-                    existing_fields = current.data[0].keys()
-                    update_data = {k: v for k, v in update_data.items() if k in existing_fields}
-                    
-                    # Update with only existing fields
-                    self.db.supabase.table('predictions')\
-                        .update(update_data)\
-                        .eq('match_id', match_id)\
-                        .execute()
-                    print(f"Successfully updated match {match_id} with fields: {list(update_data.keys())}")
-            except Exception as e:
-                print(f"Error updating match {match_id}: {str(e)}")
-            
+                print(f"Successfully updated match {match_id} with fields: {list(update_data.keys())}")
         except Exception as e:
-            print(f"Error processing match {match_id}: {str(e)}")
+            print(f"Error updating match {match_id}: {str(e)}")
+        
+    except Exception as e:
+        print(f"Error processing match {match_id}: {str(e)}")
 
-    def update_match_results_all(self):
-        """Update match results for pending predictions only"""
-        import logging
-        logging.basicConfig(level=logging.INFO)
-        logger = logging.getLogger(__name__)
-        
-        analyzer = MatchAnalyzer("633379bdd5c4c3eb26919d8570866801e1c07f399197ba8c5311446b8ea77a49")
-        
-        # Get only pending predictions that have a match_id
-        result = self.db.supabase.table('predictions') \
-            .select('id,match_id,home_team,away_team,date,predicted_outcome,home_odds,draw_odds,away_odds') \
-            .filter('match_id', 'neq', None) \
-            .filter('status', 'eq', 'Pending') \
-            .execute()
-        pending_predictions = result.data
-        logger.info(f"Found {len(pending_predictions)} pending predictions to check")
-        
-        updated_count = 0
-        for pred in pending_predictions:
-            try:
-                match_id = pred['match_id']
-                home_team = pred['home_team']
-                away_team = pred['away_team']
-                match_date = pred['date']
-                
-                if not match_id:
-                    logger.warning(f"Missing match_id for {home_team} vs {away_team} on {match_date}")
-                    continue
-                
-                # Get current match result from API
-                result = analyzer.analyze_match_result(match_id)
-                if not result:
-                    logger.debug(f"Match still pending: {home_team} vs {away_team}")
-                    continue
-                
-                # Only update if the API shows the match is completed
-                api_status = result.get('status')
-                if api_status == 'Completed':
-                    # Update the result
-                    self.update_match_results(match_id, result)
-                    logger.info(f"Updated {home_team} vs {away_team} - Match completed with result")
-                    updated_count += 1
-                
-            except Exception as e:
-                logger.error(f"Error processing match {match_id}: {str(e)}")
-                continue
-        
-        logger.info(f"Updated {updated_count} pending matches")
-
-    def calculate_statistics(self, confidence_levels=None, leagues=None, start_date=None, end_date=None):
-        """Calculate prediction statistics with optional confidence level and league filters"""
+def update_match_results_all():
+    """Update match results for pending predictions only"""
+    import logging
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
+    
+    analyzer = MatchAnalyzer("633379bdd5c4c3eb26919d8570866801e1c07f399197ba8c5311446b8ea77a49")
+    
+    # Get only pending predictions that have a match_id
+    result = prediction_history.db.supabase.table('predictions') \
+        .select('id,match_id,home_team,away_team,date,predicted_outcome,home_odds,draw_odds,away_odds') \
+        .filter('match_id', 'neq', None) \
+        .filter('status', 'eq', 'Pending') \
+        .execute()
+    pending_predictions = result.data
+    logger.info(f"Found {len(pending_predictions)} pending predictions to check")
+    
+    updated_count = 0
+    for pred in pending_predictions:
         try:
-            # Get all predictions first using our paginated get_predictions method
-            predictions = self.get_predictions(
-                start_date=start_date,
-                end_date=end_date,
-                confidence_levels=confidence_levels,
-                leagues=leagues
-            )
+            match_id = pred['match_id']
+            home_team = pred['home_team']
+            away_team = pred['away_team']
+            match_date = pred['date']
             
-            if predictions.empty:
-                return [0, 0, 0.0, 0.0, 0.0], 0
+            if not match_id:
+                logger.warning(f"Missing match_id for {home_team} vs {away_team} on {match_date}")
+                continue
             
-            # Calculate statistics
-            completed_predictions = predictions[predictions['status'] == 'Completed']
-            pending_predictions = predictions[predictions['status'] == 'Pending']
+            # Get current match result from API
+            result = analyzer.analyze_match_result(match_id)
+            if not result:
+                logger.debug(f"Match still pending: {home_team} vs {away_team}")
+                continue
             
-            total_predictions = len(predictions)
-            completed_count = len(completed_predictions)
-            pending_count = len(pending_predictions)
-            
-            if completed_count == 0:
-                return [total_predictions, 0, 0.0, 0.0, 0.0], pending_count
-            
-            # Calculate correct predictions
-            correct_predictions = len(
-                completed_predictions[
-                    completed_predictions['predicted_outcome'] == 
-                    completed_predictions['actual_outcome']
-                ]
-            )
-            
-            # Calculate success rate
-            success_rate = (correct_predictions / completed_count * 100) if completed_count > 0 else 0.0
-            
-            # Calculate total profit/loss and ROI
-            total_profit = completed_predictions['profit_loss'].sum()
-            
-            # Calculate ROI using completed bets only (each bet is £1)
-            roi = (total_profit / completed_count * 100) if completed_count > 0 else 0.0
-            
-            # Debug info
-            logging.info(f"Statistics calculation:")
-            logging.info(f"Total predictions: {total_predictions}")
-            logging.info(f"Completed predictions: {completed_count}")
-            logging.info(f"Pending predictions: {pending_count}")
-            logging.info(f"Correct predictions: {correct_predictions}")
-            logging.info(f"Success rate: {success_rate:.2f}%")
-            logging.info(f"Total profit: £{total_profit:.2f}")
-            logging.info(f"ROI: {roi:.2f}%")
-            logging.info(f"Date range: {predictions['date'].min()} to {predictions['date'].max()}")
-            
-            return [total_predictions, correct_predictions, success_rate, total_profit, roi], pending_count
-            
+            # Only update if the API shows the match is completed
+            api_status = result.get('status')
+            if api_status == 'Completed':
+                # Update the result
+                update_match_results(match_id, result)
+                logger.info(f"Updated {home_team} vs {away_team} - Match completed with result")
+                updated_count += 1
+                
         except Exception as e:
-            logging.error(f"Error calculating statistics: {str(e)}")
+            logger.error(f"Error processing prediction {pred.get('id')}: {str(e)}")
+    
+    logger.info(f"Updated results for {updated_count} matches")
+
+def calculate_statistics(confidence_levels=None, leagues=None, start_date=None, end_date=None):
+    """Calculate prediction statistics with optional confidence level and league filters"""
+    try:
+        # Get all predictions first using our paginated get_predictions method
+        predictions = get_predictions(
+            start_date=start_date,
+            end_date=end_date,
+            confidence_levels=confidence_levels,
+            leagues=leagues
+        )
+        
+        if predictions.empty:
             return [0, 0, 0.0, 0.0, 0.0], 0
+        
+        # Calculate statistics
+        completed_predictions = predictions[predictions['status'] == 'Completed']
+        pending_predictions = predictions[predictions['status'] == 'Pending']
+        
+        total_predictions = len(predictions)
+        completed_count = len(completed_predictions)
+        pending_count = len(pending_predictions)
+        
+        if completed_count == 0:
+            return [total_predictions, 0, 0.0, 0.0, 0.0], pending_count
+        
+        # Calculate correct predictions
+        correct_predictions = len(
+            completed_predictions[
+                completed_predictions['predicted_outcome'] == 
+                completed_predictions['actual_outcome']
+            ]
+        )
+        
+        # Calculate success rate
+        success_rate = (correct_predictions / completed_count * 100) if completed_count > 0 else 0.0
+        
+        # Calculate total profit/loss and ROI
+        total_profit = completed_predictions['profit_loss'].sum()
+        
+        # Calculate ROI using completed bets only (each bet is £1)
+        roi = (total_profit / completed_count * 100) if completed_count > 0 else 0.0
+        
+        # Debug info
+        logging.info("Statistics calculation:")
+        logging.info(f"Total predictions: {total_predictions}")
+        logging.info(f"Completed predictions: {completed_count}")
+        logging.info(f"Pending predictions: {pending_count}")
+        logging.info(f"Correct predictions: {correct_predictions}")
+        logging.info(f"Success rate: {success_rate:.2f}%")
+        logging.info(f"Total profit: £{total_profit:.2f}")
+        logging.info(f"ROI: {roi:.2f}%")
+        logging.info(f"Date range: {predictions['date'].min()} to {predictions['date'].max()}")
+        
+        return [total_predictions, correct_predictions, success_rate, total_profit, roi], pending_count
+        
+    except Exception as e:
+        logging.error(f"Error calculating statistics: {str(e)}")
+        return [0, 0, 0.0, 0.0, 0.0], 0
 
 def style_dataframe(df):
     """Style the predictions dataframe with colors and formatting"""

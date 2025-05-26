@@ -14,7 +14,8 @@ import joblib
 from sklearn.preprocessing import StandardScaler
 import logging
 import xgboost as xgb
-from history import show_history_page, PredictionHistory
+from history import show_history_page
+from prediction_history import PredictionHistory
 from session_state import init_session_state, check_login_state
 import json
 from scipy.stats import poisson
