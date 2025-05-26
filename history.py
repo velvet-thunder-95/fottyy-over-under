@@ -1,5 +1,6 @@
 # history.py
 
+import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
 from football_api import get_match_by_teams, get_match_result
