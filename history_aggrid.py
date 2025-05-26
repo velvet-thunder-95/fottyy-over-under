@@ -501,7 +501,6 @@ def display_predictions_with_buttons(predictions_df):
                 height=min(600, (len(display_data) + 1) * 50 + 50) if len(display_data) > 0 else 200,
                 width='100%',
                 reload_data=False,
-                allow_unsafe_jscode=True,
                 custom_css={
                     ".ag-header-cell-label": {"justifyContent": "center"},
                     ".ag-cell": {"display": "flex", "alignItems": "center", "justifyContent": "center"},
