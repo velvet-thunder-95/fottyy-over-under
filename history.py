@@ -944,48 +944,54 @@ def show_history_page():
                         st.session_state.edit_prediction_id = None
                     if 'delete_prediction_id' not in st.session_state:
                         st.session_state.delete_prediction_id = None
+                    if 'selected_prediction_index' not in st.session_state:
+                        st.session_state.selected_prediction_index = None
                     
-                    # Create action columns for edit and delete buttons
-                    final_df['Edit'] = '✏️ Edit'
-                    final_df['Delete'] = '🗑️ Delete'
-                    
-                    # Create a container for the dataframe and action buttons
+                    # Create a container for the dataframe and action interface
                     predictions_container = st.container()
                     
-                    # Display the dataframe with action buttons
+                    # Display the dataframe with selection capability
                     with predictions_container:
-                        # Create columns for the dataframe and action buttons
-                        df_col, edit_col, delete_col = st.columns([10, 1, 1])
+                        # Apply styling to the dataframe
+                        styled_df = style_dataframe(final_df)
                         
-                        # Display the main dataframe - need to create a display version without the action columns
-                        # We need to work with the original DataFrame, not the Styler object
-                        display_df = final_df.drop(columns=['Edit', 'Delete', 'ID']).copy()
+                        # Display the styled dataframe
+                        st.dataframe(
+                            styled_df,
+                            use_container_width=True,
+                            hide_index=True,
+                            on_click=lambda idx: st.session_state.update({'selected_prediction_index': idx})
+                        )
                         
-                        # Apply styling to the display dataframe
-                        display_styled_df = style_dataframe(display_df)
-                        
-                        with df_col:
-                            st.dataframe(
-                                display_styled_df,
-                                use_container_width=True,
-                                hide_index=True
-                            )
-                        
-                        # Create edit buttons for each row
-                        with edit_col:
-                            st.write("Edit")
-                            for i in range(len(final_df)):
-                                if st.button("✏️", key=f"edit_{i}"):
-                                    st.session_state.edit_prediction_id = final_df.iloc[i]['ID']
-                                    st.rerun()
-                        
-                        # Create delete buttons for each row
-                        with delete_col:
-                            st.write("Delete")
-                            for i in range(len(final_df)):
-                                if st.button("🗑️", key=f"delete_{i}"):
-                                    st.session_state.delete_prediction_id = final_df.iloc[i]['ID']
-                                    st.rerun()
+                        # Show selection interface if a row is selected
+                        if st.session_state.selected_prediction_index is not None:
+                            # Get the selected row index
+                            idx = st.session_state.selected_prediction_index.get('row')
+                            
+                            if idx is not None and idx < len(final_df):
+                                # Get the prediction data
+                                selected_prediction = final_df.iloc[idx]
+                                
+                                # Display selection info
+                                st.info(f"Selected: {selected_prediction['Date']} - {selected_prediction['Home Team']} vs {selected_prediction['Away Team']}")
+                                
+                                # Create action buttons
+                                col1, col2, col3 = st.columns([1, 1, 2])
+                                
+                                with col1:
+                                    if st.button("✏️ Edit", key="edit_selected"):
+                                        st.session_state.edit_prediction_id = selected_prediction['ID']
+                                        st.rerun()
+                                
+                                with col2:
+                                    if st.button("🗑️ Delete", key="delete_selected"):
+                                        st.session_state.delete_prediction_id = selected_prediction['ID']
+                                        st.rerun()
+                                        
+                                with col3:
+                                    if st.button("Clear Selection", key="clear_selection"):
+                                        st.session_state.selected_prediction_index = None
+                                        st.rerun()
                         
                     # Create a container for the edit and delete forms
                     edit_delete_container = st.container()
