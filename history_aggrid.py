@@ -5,15 +5,34 @@ from datetime import datetime, timedelta
 from st_aggrid import AgGrid, GridOptionsBuilder, JsCode, GridUpdateMode, ColumnsAutoSizeMode
 
 def prepare_data_for_grid(df):
-    """Prepare DataFrame for AgGrid by converting all columns to strings"""
+    """
+    Prepare DataFrame for AgGrid by ensuring all columns are JSON-serializable.
+    Returns a tuple of (processed_df, column_defs)
+    """
     # Create a clean copy
     clean_df = df.copy()
     
     # Convert all columns to strings to avoid serialization issues
     for col in clean_df.columns:
-        clean_df[col] = clean_df[col].astype(str)
+        # Convert datetime to string
+        if pd.api.types.is_datetime64_any_dtype(clean_df[col]):
+            clean_df[col] = clean_df[col].astype(str)
+        # Convert other non-numeric types to string
+        elif not pd.api.types.is_numeric_dtype(clean_df[col]):
+            clean_df[col] = clean_df[col].astype(str)
     
-    return clean_df
+    # Generate column definitions
+    column_defs = []
+    for col in clean_df.columns:
+        col_def = {
+            'field': col,
+            'headerName': col.replace('_', ' ').title(),
+            'sortable': col not in ['Edit', 'Delete'],
+            'filter': col not in ['Edit', 'Delete']
+        }
+        column_defs.append(col_def)
+    
+    return clean_df, column_defs
 
 def display_predictions_with_buttons(predictions_df):
     """
@@ -199,26 +218,16 @@ def display_predictions_with_buttons(predictions_df):
         </script>
         """
         
-        # Prepare data for the grid by converting all columns to strings
-        grid_data = prepare_data_for_grid(display_df)
-        
-        # Get column definitions from the grid options
-        column_defs = [{
-            'field': col,
-            'headerName': col.replace('_', ' ').title(),
-            'sortable': col not in ['Edit', 'Delete'],
-            'filter': col not in ['Edit', 'Delete']
-        } for col in grid_data.columns]
+        # Prepare data and column definitions
+        grid_data, column_defs = prepare_data_for_grid(display_df)
         
         # Update grid options with column definitions
         grid_options['columnDefs'] = column_defs
         
-        # Convert to list of dictionaries for AgGrid
-        grid_records = grid_data.to_dict('records')
-        
         # Display the AgGrid component with the configured options
+        # Pass the DataFrame directly to avoid conversion issues
         grid_response = AgGrid(
-            data=grid_records,
+            grid_data,
             gridOptions=grid_options,
             update_mode=GridUpdateMode.MODEL_CHANGED | GridUpdateMode.VALUE_CHANGED,
             fit_columns_on_grid_load=True,
