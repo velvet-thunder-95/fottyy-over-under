@@ -957,10 +957,16 @@ def show_history_page():
                         # Create columns for the dataframe and action buttons
                         df_col, edit_col, delete_col = st.columns([10, 1, 1])
                         
-                        # Display the main dataframe
+                        # Display the main dataframe - need to create a display version without the action columns
+                        # We need to work with the original DataFrame, not the Styler object
+                        display_df = final_df.drop(columns=['Edit', 'Delete', 'ID']).copy()
+                        
+                        # Apply styling to the display dataframe
+                        display_styled_df = style_dataframe(display_df)
+                        
                         with df_col:
                             st.dataframe(
-                                styled_df.drop(columns=['Edit', 'Delete', 'ID']),
+                                display_styled_df,
                                 use_container_width=True,
                                 hide_index=True
                             )
