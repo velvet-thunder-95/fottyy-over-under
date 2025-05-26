@@ -551,7 +551,8 @@ def display_predictions_with_buttons(predictions_df):
             except Exception as e:
                 st.error(f"Error displaying predictions table: {str(e)}")
                 st.error("Please try refreshing the page or contact support if the issue persists.")
-                return None
+                # Return a default response to prevent NoneType errors
+                return {"action": "none", "prediction_id": None}
             
             # JavaScript for handling button clicks
             button_clicked_js = """

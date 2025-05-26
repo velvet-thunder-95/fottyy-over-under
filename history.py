@@ -685,13 +685,18 @@ def show_history_page():
                         # Use the AgGrid implementation to display predictions with edit and delete buttons
                         grid_result = display_predictions_with_buttons(final_df)
                         
-                        # Check if a button was clicked
-                        if grid_result["action"] == "edit":
-                            st.session_state.edit_prediction_id = grid_result["prediction_id"]
-                            st.rerun()
-                        elif grid_result["action"] == "delete":
-                            st.session_state.delete_prediction_id = grid_result["prediction_id"]
-                            st.rerun()
+                        # Check if grid_result is not None and has the expected structure
+                        if grid_result and isinstance(grid_result, dict) and "action" in grid_result:
+                            if grid_result["action"] == "edit":
+                                st.session_state.edit_prediction_id = grid_result.get("prediction_id")
+                                st.rerun()
+                            elif grid_result["action"] == "delete":
+                                st.session_state.delete_prediction_id = grid_result.get("prediction_id")
+                                st.rerun()
+                        else:
+                            # Handle the case where grid_result is None or malformed
+                            st.warning("Unable to process the table display. Please try refreshing the page.")
+                            st.stop()
 
                     # Create a container for the edit and delete forms
                     edit_delete_container = st.container()
