@@ -960,6 +960,11 @@ def show_history_page():
                     editable_df['Edit'] = ['Edit' for _ in range(len(editable_df))]
                     editable_df['Delete'] = ['Delete' for _ in range(len(editable_df))]
                     
+                    # Define column order to exclude ID column
+                    columns_to_display = ['Date', 'League', 'Home Team', 'Away Team', 'Prediction', 
+                                         'Confidence', 'Actual Outcome', 'Result', 'Profit/Loss', 'Status',
+                                         'Edit', 'Delete']
+                    
                     # Display the editable dataframe
                     with predictions_container:
                         # Use data_editor for direct editing in the dataframe
@@ -967,6 +972,7 @@ def show_history_page():
                             editable_df,
                             use_container_width=True,
                             hide_index=True,
+                            column_order=columns_to_display,
                             column_config={
                                 'Edit': st.column_config.TextColumn(
                                     'Edit',
@@ -981,13 +987,6 @@ def show_history_page():
                                     disabled=False,
                                     required=True,
                                     default='Delete'
-                                ),
-                                'ID': st.column_config.TextColumn(
-                                    'ID',
-                                    help='Prediction ID',
-                                    disabled=True,
-                                    required=True,
-                                    visible=False
                                 )
                             },
                             disabled=['Date', 'League', 'Home Team', 'Away Team', 'Prediction', 
