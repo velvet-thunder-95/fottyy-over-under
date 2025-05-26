@@ -6,8 +6,7 @@ from st_aggrid import AgGrid, GridOptionsBuilder, JsCode, GridUpdateMode, Column
 
 def prepare_data_for_aggrid(df):
     """
-    Prepare DataFrame for AgGrid by ensuring all data is JSON-serializable
-    and in a format that AgGrid can handle.
+    Prepare DataFrame for AgGrid by ensuring all data is in a format that AgGrid can handle.
     
     Args:
         df: Input DataFrame to prepare
@@ -18,18 +17,15 @@ def prepare_data_for_aggrid(df):
     # Create a clean copy of the DataFrame
     clean_df = df.copy()
     
-    # Convert all columns to string representation to avoid serialization issues
+    # Convert datetime columns to string
+    for col in clean_df.select_dtypes(include=['datetime64']).columns:
+        clean_df[col] = clean_df[col].dt.strftime('%Y-%m-%d %H:%M:%S')
+    
+    # Convert any remaining non-string columns to string
     for col in clean_df.columns:
-        # Skip if column is already string type
         if clean_df[col].dtype == 'object':
             continue
-            
-        # Convert datetime to ISO format string
-        if pd.api.types.is_datetime64_any_dtype(clean_df[col]):
-            clean_df[col] = clean_df[col].dt.strftime('%Y-%m-%d %H:%M:%S')
-        # Convert numeric types to string
-        elif pd.api.types.is_numeric_dtype(clean_df[col]):
-            clean_df[col] = clean_df[col].astype(str)
+        clean_df[col] = clean_df[col].astype(str)
     
     # Generate column definitions
     column_defs = []
@@ -38,7 +34,9 @@ def prepare_data_for_aggrid(df):
             'field': col,
             'headerName': col.replace('_', ' ').title(),
             'sortable': col not in ['Edit', 'Delete'],
-            'filter': col not in ['Edit', 'Delete']
+            'filter': col not in ['Edit', 'Delete'],
+            'resizable': True,
+            'suppressMenu': True
         }
         column_defs.append(col_def)
     
@@ -348,12 +346,10 @@ def display_predictions_with_buttons(predictions_df):
         # Get the grid options
         grid_options = gb.build()
         
-        # Convert DataFrame to list of dictionaries to avoid pandas issues
-        grid_data_dict = grid_data.to_dict('records')
-        
         # Display the AgGrid component with the configured options
+        # Pass the DataFrame directly and let AgGrid handle the conversion
         grid_response = AgGrid(
-            data=grid_data_dict,
+            grid_data,  # Pass the DataFrame directly
             gridOptions=grid_options,
             update_mode=GridUpdateMode.MODEL_CHANGED | GridUpdateMode.VALUE_CHANGED,
             fit_columns_on_grid_load=True,
