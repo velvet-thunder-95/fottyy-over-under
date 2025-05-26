@@ -24,20 +24,22 @@ def prepare_data_for_aggrid(df):
         # Create a clean copy of the DataFrame
         clean_df = df.copy()
         
+        # Ensure all column names are strings
+        clean_df.columns = clean_df.columns.astype(str)
+        
         # Convert all datetime columns to string
         datetime_cols = clean_df.select_dtypes(include=['datetime64']).columns
         for col in datetime_cols:
             clean_df[col] = clean_df[col].dt.strftime('%Y-%m-%d %H:%M:%S')
         
-        # Convert all non-string columns to string to avoid serialization issues
+        # Convert all columns to string to avoid serialization issues
         for col in clean_df.columns:
-            if clean_df[col].dtype == 'object':
-                # Handle any remaining non-string objects
+            if pd.api.types.is_object_dtype(clean_df[col]):
+                # Handle object/string columns
                 clean_df[col] = clean_df[col].astype(str)
             elif pd.api.types.is_numeric_dtype(clean_df[col]):
                 # Convert numeric columns to string, handling NaN/None values
-                clean_df[col] = clean_df[col].replace({np.nan: None}).astype('object')
-                clean_df[col] = clean_df[col].astype(str).replace('None', '')
+                clean_df[col] = clean_df[col].astype('object').fillna('').astype(str)
             else:
                 # For other types, convert to string
                 clean_df[col] = clean_df[col].astype(str)
@@ -55,9 +57,6 @@ def prepare_data_for_aggrid(df):
                 'cellStyle': {'textAlign': 'center'}
             }
             column_defs.append(col_def)
-        
-        # Ensure all column names are strings
-        clean_df.columns = clean_df.columns.astype(str)
         
         return clean_df, column_defs
         
@@ -482,13 +481,21 @@ def display_predictions_with_buttons(predictions_df):
             
             # Ensure all values are JSON serializable
             for col in grid_data.columns:
-                if grid_data[col].dtype == 'object':
+                if pd.api.types.is_object_dtype(grid_data[col]):
+                    grid_data[col] = grid_data[col].astype(str)
+                elif pd.api.types.is_numeric_dtype(grid_data[col]):
+                    # Convert numeric columns to string, handling NaN/None values
+                    grid_data[col] = grid_data[col].astype('object').fillna('').astype(str)
+                else:
                     grid_data[col] = grid_data[col].astype(str)
             
-            # Display the AgGrid component
+            # Convert to dictionary records for better compatibility
+            grid_records = grid_data.to_dict('records')
+            
+            # Display the AgGrid component with simplified options
             grid_response = AgGrid(
-                grid_data,  # Use the processed DataFrame
-                gridOptions=grid_options,
+                pd.DataFrame(grid_records),  # Convert back to DataFrame to ensure proper handling
+                grid_options=grid_options,
                 update_mode=GridUpdateMode.MODEL_CHANGED | GridUpdateMode.VALUE_CHANGED,
                 fit_columns_on_grid_load=True,
                 theme='streamlit',
@@ -506,11 +513,13 @@ def display_predictions_with_buttons(predictions_df):
                 columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS,
                 enable_enterprise_modules=False,
                 data_return_mode='FILTERED_AND_SORTED',
-                try_to_convert_back_to_data_frame=False,  # We'll handle conversion manually
+                try_to_convert_back_to_data_frame=True,  # Let AgGrid handle the conversion
                 key='predictions_grid',
                 suppressColumnVirtualisation=True,
                 suppressRowVirtualisation=True,
-                update_data_on_first_render=True
+                update_data_on_first_render=True,
+                allow_unsafe_html=True,
+                allow_unsafe_jscode=True
             )
             
             # Add the JavaScript for handling button clicks
