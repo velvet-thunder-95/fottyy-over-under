@@ -80,6 +80,42 @@ class PredictionHistory:
         except Exception as e:
             logging.error(f"Error updating prediction result: {str(e)}")
             return False
+            
+    def update_prediction(self, prediction_id, prediction_data):
+        """Update an existing prediction with new data"""
+        try:
+            # Ensure confidence is a float
+            if 'confidence' in prediction_data:
+                prediction_data['confidence'] = float(prediction_data['confidence'])
+            
+            # Ensure odds are floats
+            for odds_field in ['home_odds', 'draw_odds', 'away_odds']:
+                if odds_field in prediction_data:
+                    prediction_data['odds_field'] = float(prediction_data[odds_field])
+            
+            # Ensure bet_amount is a float
+            if 'bet_amount' in prediction_data:
+                prediction_data['bet_amount'] = float(prediction_data['bet_amount'])
+                
+            # Update in Supabase
+            result = self.db.supabase.table('predictions').update(prediction_data).eq('id', prediction_id).execute()
+            
+            logging.info(f"Successfully updated prediction with ID: {prediction_id}")
+            return True
+            
+        except Exception as e:
+            logging.error(f"Error updating prediction: {str(e)}")
+            return False
+            
+    def delete_prediction(self, prediction_id):
+        """Delete a prediction from the database"""
+        try:
+            result = self.db.supabase.table('predictions').delete().eq('id', prediction_id).execute()
+            logging.info(f"Successfully deleted prediction with ID: {prediction_id}")
+            return True
+        except Exception as e:
+            logging.error(f"Error deleting prediction: {str(e)}")
+            return False
 
     def get_predictions(self, start_date=None, end_date=None, status=None, confidence_levels=None, leagues=None):
         """Get predictions with optional filters"""
@@ -877,7 +913,8 @@ def show_history_page():
                         'actual_outcome': 'Actual Outcome',
                         'Result': 'Result',
                         'profit_loss': 'Profit/Loss',
-                        'status': 'Status'  # Add back status column
+                        'status': 'Status',  # Add back status column
+                        'id': 'ID'  # Include ID for edit functionality
                     }
                     
                     # Create final dataframe with explicit column selection
@@ -902,12 +939,277 @@ def show_history_page():
                     # Apply styling
                     styled_df = style_dataframe(final_df)
                     
-                    # Display the styled dataframe
-                    st.dataframe(
-                        styled_df,
-                        use_container_width=True,
-                        hide_index=True
-                    )
+                    # Add Edit buttons to each row
+                    # We'll use a container to hold our dataframe and edit forms
+                    predictions_container = st.container()
+                    
+                    # Store the selected prediction ID in session state
+                    if 'edit_prediction_id' not in st.session_state:
+                        st.session_state.edit_prediction_id = None
+                    if 'delete_prediction_id' not in st.session_state:
+                        st.session_state.delete_prediction_id = None
+                    
+                    # Create a column for edit buttons
+                    final_df['Edit'] = 'Edit'
+                    final_df['Delete'] = 'Delete'
+                    
+                    # Display the styled dataframe with clickable cells
+                    with predictions_container:
+                        clicked = st.dataframe(
+                            styled_df,
+                            use_container_width=True,
+                            hide_index=True,
+                            column_config={
+                                'Edit': st.column_config.ButtonColumn(
+                                    'Edit',
+                                    help='Edit this prediction'
+                                ),
+                                'Delete': st.column_config.ButtonColumn(
+                                    'Delete',
+                                    help='Delete this prediction'
+                                ),
+                                'ID': st.column_config.Column(
+                                    'ID',
+                                    help='Prediction ID',
+                                    disabled=True,
+                                    required=True,
+                                    width='small',
+                                    visible=False
+                                )
+                            }
+                        )
+                        
+                        # Check if a button was clicked
+                        if clicked:
+                            # Get the row and column that was clicked
+                            row_clicked = clicked.get('row', None)
+                            col_clicked = clicked.get('column', None)
+                            
+                            # If Edit button was clicked
+                            if col_clicked == 'Edit' and row_clicked is not None:
+                                # Get the prediction ID from the clicked row
+                                prediction_id = final_df.iloc[row_clicked]['ID']
+                                st.session_state.edit_prediction_id = prediction_id
+                            
+                            # If Delete button was clicked
+                            if col_clicked == 'Delete' and row_clicked is not None:
+                                # Get the prediction ID from the clicked row
+                                prediction_id = final_df.iloc[row_clicked]['ID']
+                                st.session_state.delete_prediction_id = prediction_id
+                    
+                    # Show edit form if a prediction is selected for editing
+                    if st.session_state.edit_prediction_id:
+                        with predictions_container:
+                            st.markdown("### Edit Prediction")
+                            
+                            # Get the prediction data
+                            prediction_data = predictions[predictions['id'] == st.session_state.edit_prediction_id].iloc[0].to_dict()
+                            
+                            # Create a form for editing
+                            with st.form(key="edit_prediction_form"):
+                                # Create columns for a cleaner layout
+                                col1, col2 = st.columns(2)
+                                
+                                with col1:
+                                    # Required fields
+                                    edited_date = st.date_input("Date", value=pd.to_datetime(prediction_data['date']).date())
+                                    edited_league = st.text_input("League", value=prediction_data['league'])
+                                    edited_home_team = st.text_input("Home Team", value=prediction_data['home_team'])
+                                    edited_away_team = st.text_input("Away Team", value=prediction_data['away_team'])
+                                    edited_predicted_outcome = st.selectbox(
+                                        "Predicted Outcome", 
+                                        options=["HOME", "DRAW", "AWAY"],
+                                        index=["HOME", "DRAW", "AWAY"].index(prediction_data['predicted_outcome']) if prediction_data['predicted_outcome'] in ["HOME", "DRAW", "AWAY"] else 0
+                                    )
+                                    edited_confidence = st.number_input(
+                                        "Confidence", 
+                                        min_value=0.0, 
+                                        max_value=100.0, 
+                                        value=float(prediction_data['confidence']) if prediction_data['confidence'] is not None else 0.0,
+                                        step=0.1
+                                    )
+                                
+                                with col2:
+                                    edited_home_odds = st.number_input(
+                                        "Home Odds", 
+                                        min_value=1.0, 
+                                        value=float(prediction_data['home_odds']) if prediction_data['home_odds'] is not None else 1.0,
+                                        step=0.01
+                                    )
+                                    edited_draw_odds = st.number_input(
+                                        "Draw Odds", 
+                                        min_value=1.0, 
+                                        value=float(prediction_data['draw_odds']) if prediction_data['draw_odds'] is not None else 1.0,
+                                        step=0.01
+                                    )
+                                    edited_away_odds = st.number_input(
+                                        "Away Odds", 
+                                        min_value=1.0, 
+                                        value=float(prediction_data['away_odds']) if prediction_data['away_odds'] is not None else 1.0,
+                                        step=0.01
+                                    )
+                                    edited_bet_amount = st.number_input(
+                                        "Bet Amount", 
+                                        min_value=0.0, 
+                                        value=float(prediction_data['bet_amount']) if prediction_data['bet_amount'] is not None else 1.0,
+                                        step=0.1
+                                    )
+                                    
+                                # Optional fields
+                                st.markdown("#### Optional Fields")
+                                col3, col4 = st.columns(2)
+                                
+                                with col3:
+                                    edited_actual_outcome = st.selectbox(
+                                        "Actual Outcome", 
+                                        options=[None, "HOME", "DRAW", "AWAY"],
+                                        index=0 if prediction_data['actual_outcome'] is None else 
+                                              [None, "HOME", "DRAW", "AWAY"].index(prediction_data['actual_outcome'])
+                                    )
+                                    edited_status = st.selectbox(
+                                        "Status", 
+                                        options=["Pending", "Completed"],
+                                        index=0 if prediction_data['status'] == "Pending" else 1
+                                    )
+                                    edited_prediction_type = st.text_input(
+                                        "Prediction Type", 
+                                        value=prediction_data.get('prediction_type', '') or ''
+                                    )
+                                
+                                with col4:
+                                    edited_home_market_value = st.number_input(
+                                        "Home Market Value", 
+                                        min_value=0.0, 
+                                        value=float(prediction_data['home_market_value']) if prediction_data.get('home_market_value') is not None else 0.0,
+                                        step=0.1
+                                    )
+                                    edited_away_market_value = st.number_input(
+                                        "Away Market Value", 
+                                        min_value=0.0, 
+                                        value=float(prediction_data['away_market_value']) if prediction_data.get('away_market_value') is not None else 0.0,
+                                        step=0.1
+                                    )
+                                    edited_home_score = st.number_input(
+                                        "Home Score", 
+                                        min_value=0.0, 
+                                        value=float(prediction_data['home_score']) if prediction_data.get('home_score') is not None else 0.0,
+                                        step=1.0
+                                    )
+                                    edited_away_score = st.number_input(
+                                        "Away Score", 
+                                        min_value=0.0, 
+                                        value=float(prediction_data['away_score']) if prediction_data.get('away_score') is not None else 0.0,
+                                        step=1.0
+                                    )
+                                
+                                # Submit and cancel buttons
+                                col5, col6 = st.columns(2)
+                                with col5:
+                                    submit_button = st.form_submit_button(label="Save Changes")
+                                with col6:
+                                    cancel_button = st.form_submit_button(label="Cancel")
+                            
+                            # Handle form submission
+                            if submit_button:
+                                # Prepare updated data
+                                updated_data = {
+                                    'date': edited_date.strftime("%Y-%m-%d"),
+                                    'league': edited_league,
+                                    'home_team': edited_home_team,
+                                    'away_team': edited_away_team,
+                                    'predicted_outcome': edited_predicted_outcome,
+                                    'confidence': edited_confidence,
+                                    'home_odds': edited_home_odds,
+                                    'draw_odds': edited_draw_odds,
+                                    'away_odds': edited_away_odds,
+                                    'bet_amount': edited_bet_amount,
+                                    'status': edited_status,
+                                    'prediction_type': edited_prediction_type if edited_prediction_type else None
+                                }
+                                
+                                # Only include optional fields if they have values
+                                if edited_actual_outcome:
+                                    updated_data['actual_outcome'] = edited_actual_outcome
+                                
+                                if edited_home_market_value > 0:
+                                    updated_data['home_market_value'] = edited_home_market_value
+                                
+                                if edited_away_market_value > 0:
+                                    updated_data['away_market_value'] = edited_away_market_value
+                                
+                                if edited_home_score > 0 or edited_status == 'Completed':
+                                    updated_data['home_score'] = edited_home_score
+                                
+                                if edited_away_score > 0 or edited_status == 'Completed':
+                                    updated_data['away_score'] = edited_away_score
+                                
+                                # If status is Completed, calculate profit/loss
+                                if edited_status == 'Completed' and edited_actual_outcome:
+                                    # Calculate profit/loss based on the outcome
+                                    if edited_predicted_outcome == edited_actual_outcome:
+                                        # Won: Calculate profit based on the predicted outcome's odds
+                                        if edited_predicted_outcome == 'HOME':
+                                            profit_loss = float(round((edited_home_odds * edited_bet_amount) - edited_bet_amount, 2))
+                                        elif edited_predicted_outcome == 'AWAY':
+                                            profit_loss = float(round((edited_away_odds * edited_bet_amount) - edited_bet_amount, 2))
+                                        else:  # DRAW
+                                            profit_loss = float(round((edited_draw_odds * edited_bet_amount) - edited_bet_amount, 2))
+                                    else:
+                                        # Lost: Lose the bet amount
+                                        profit_loss = float(-edited_bet_amount)
+                                    
+                                    updated_data['profit_loss'] = profit_loss
+                                
+                                # Update the prediction
+                                success = history.update_prediction(st.session_state.edit_prediction_id, updated_data)
+                                
+                                if success:
+                                    st.success("Prediction updated successfully!")
+                                    # Clear the edit ID and refresh the page
+                                    st.session_state.edit_prediction_id = None
+                                    st.rerun()
+                                else:
+                                    st.error("Failed to update prediction. Please try again.")
+                            
+                            if cancel_button:
+                                # Clear the edit ID
+                                st.session_state.edit_prediction_id = None
+                                st.rerun()
+                    
+                    # Show delete confirmation if a prediction is selected for deletion
+                    if st.session_state.delete_prediction_id:
+                        with predictions_container:
+                            st.markdown("### Delete Prediction")
+                            st.warning("Are you sure you want to delete this prediction? This action cannot be undone.")
+                            
+                            # Get the prediction data for display
+                            prediction_data = predictions[predictions['id'] == st.session_state.delete_prediction_id].iloc[0]
+                            
+                            # Show prediction details
+                            st.markdown(f"**Date:** {pd.to_datetime(prediction_data['date']).strftime('%Y-%m-%d')}")
+                            st.markdown(f"**Match:** {prediction_data['home_team']} vs {prediction_data['away_team']}")
+                            st.markdown(f"**Prediction:** {prediction_data['predicted_outcome']} with {prediction_data['confidence']:.1f}% confidence")
+                            
+                            # Confirm and cancel buttons
+                            col1, col2 = st.columns(2)
+                            with col1:
+                                if st.button("Confirm Delete", key="confirm_delete"):
+                                    # Delete the prediction
+                                    success = history.delete_prediction(st.session_state.delete_prediction_id)
+                                    
+                                    if success:
+                                        st.success("Prediction deleted successfully!")
+                                        # Clear the delete ID and refresh the page
+                                        st.session_state.delete_prediction_id = None
+                                        st.rerun()
+                                    else:
+                                        st.error("Failed to delete prediction. Please try again.")
+                            
+                            with col2:
+                                if st.button("Cancel", key="cancel_delete"):
+                                    # Clear the delete ID
+                                    st.session_state.delete_prediction_id = None
+                                    st.rerun()
                     
                 except Exception as e:
                     st.error(f"Error displaying predictions table: {str(e)}")
