@@ -38,7 +38,7 @@ def prepare_data_for_aggrid(df):
                 clean_df[col] = clean_df[col].astype(str)
             elif pd.api.types.is_numeric_dtype(clean_df[col]):
                 # Convert numeric columns to string, handling NaN/None values
-                clean_df[col] = clean_df[col].astype('object').fillna('').astype(str)
+                clean_df[col] = clean_df[col].astype('object').fillna('').astype(str).infer_objects(copy=False)
             else:
                 # For other types, convert to string
                 clean_df[col] = clean_df[col].astype(str)
@@ -484,17 +484,39 @@ def display_predictions_with_buttons(predictions_df):
                     grid_data[col] = grid_data[col].astype(str)
                 elif pd.api.types.is_numeric_dtype(grid_data[col]):
                     # Convert numeric columns to string, handling NaN/None values
-                    grid_data[col] = grid_data[col].astype('object').fillna('').astype(str)
+                    grid_data[col] = grid_data[col].astype('object').fillna('').astype(str).infer_objects(copy=False)
                 else:
                     grid_data[col] = grid_data[col].astype(str)
             
             # Convert to dictionary records for better compatibility
+            # Use items() instead of iteritems() which is deprecated
             grid_records = grid_data.to_dict('records')
             
             # Display the AgGrid component with simplified options
+            # Create a new DataFrame to avoid any reference issues
+            grid_df = pd.DataFrame(grid_records)
+            
+            # Configure grid options
+            ag_grid_options = {
+                'enableCellTextSelection': True,
+                'ensureDomOrder': True,
+                'suppressRowClickSelection': True,
+                'suppressColumnVirtualisation': True,
+                'suppressRowVirtualisation': True,
+                'suppressDragLeaveHidesColumns': True,
+                'columnDefs': grid_options['columnDefs'],
+                'defaultColDef': {
+                    'sortable': True,
+                    'filter': True,
+                    'resizable': True,
+                    'suppressMenu': True
+                }
+            }
+            
+            # Display the AgGrid component
             grid_response = AgGrid(
-                pd.DataFrame(grid_records),  # Convert back to DataFrame to ensure proper handling
-                grid_options=grid_options,
+                grid_df,
+                gridOptions=ag_grid_options,
                 update_mode=GridUpdateMode.MODEL_CHANGED | GridUpdateMode.VALUE_CHANGED,
                 fit_columns_on_grid_load=True,
                 theme='streamlit',
@@ -511,7 +533,7 @@ def display_predictions_with_buttons(predictions_df):
                 columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS,
                 enable_enterprise_modules=False,
                 data_return_mode='FILTERED_AND_SORTED',
-                try_to_convert_back_to_data_frame=True,  # Let AgGrid handle the conversion
+                try_to_convert_back_to_data_frame=True,
                 key='predictions_grid',
                 suppressColumnVirtualisation=True,
                 suppressRowVirtualisation=True,
