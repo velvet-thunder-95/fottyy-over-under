@@ -23,6 +23,72 @@ def prepare_data_for_grid(df):
     
     return clean_df
 
+# JavaScript code for the edit button
+edit_button_js = """
+function(params) {
+    const button = document.createElement('button');
+    button.innerHTML = '✏️ Edit';
+    button.style.cursor = 'pointer';
+    button.style.padding = '4px 8px';
+    button.style.border = '1px solid #ccc';
+    button.style.borderRadius = '4px';
+    button.style.backgroundColor = '#f8f9fa';
+    button.style.color = '#333';
+    
+    button.onclick = (e) => {
+        e.stopPropagation();
+        const rowData = params.node.data;
+        const rowId = rowData.ID !== undefined ? rowData.ID : rowData.id;
+        if (rowId !== undefined) {
+            document.body.dispatchEvent(
+                new CustomEvent('button_click', { 
+                    detail: { 
+                        action: 'edit',
+                        id: rowId
+                    }
+                })
+            );
+        }
+    };
+    
+    return button;
+}
+"""
+
+# JavaScript code for the delete button
+delete_button_js = """
+function(params) {
+    const button = document.createElement('button');
+    button.innerHTML = '🗑️ Delete';
+    button.style.cursor = 'pointer';
+    button.style.padding = '4px 8px';
+    button.style.border = '1px solid #ffebee';
+    button.style.borderRadius = '4px';
+    button.style.backgroundColor = '#ffebee';
+    button.style.color = '#c62828';
+    
+    button.onclick = (e) => {
+        e.stopPropagation();
+        if (confirm('Are you sure you want to delete this prediction?')) {
+            const rowData = params.node.data;
+            const rowId = rowData.ID !== undefined ? rowData.ID : rowData.id;
+            if (rowId !== undefined) {
+                document.body.dispatchEvent(
+                    new CustomEvent('button_click', { 
+                        detail: { 
+                            action: 'delete',
+                            id: rowId
+                        }
+                    })
+                );
+            }
+        }
+    };
+    
+    return button;
+}
+"""
+
 def display_predictions_with_buttons(predictions_df):
     """
     Display predictions dataframe with edit and delete buttons directly in the table
@@ -222,13 +288,20 @@ def display_predictions_with_buttons(predictions_df):
             groupable=False
         )
         
-        # Configure action buttons
-        gb.configure_column('Edit', width=80, cellRenderer=JsCode(edit_button_js))
-        gb.configure_column('Delete', width=90, cellRenderer=JsCode(delete_button_js))
+        # Configure action buttons if they exist in the DataFrame
+        if 'Edit' in display_df.columns:
+            gb.configure_column('Edit', 
+                             width=80, 
+                             cellRenderer=JsCode(edit_button_js),
+                             sortable=False, 
+                             filter=False)
         
-        # Disable sorting and filtering for action columns
-        for col in ['Edit', 'Delete']:
-            gb.configure_column(col, sortable=False, filter=False)
+        if 'Delete' in display_df.columns:
+            gb.configure_column('Delete', 
+                             width=90, 
+                             cellRenderer=JsCode(delete_button_js),
+                             sortable=False, 
+                             filter=False)
         
         # Configure grid options
         gb.configure_grid_options(
