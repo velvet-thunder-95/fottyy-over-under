@@ -4,24 +4,45 @@ import json
 from datetime import datetime, timedelta
 from st_aggrid import AgGrid, GridOptionsBuilder, JsCode, GridUpdateMode, ColumnsAutoSizeMode
 
-def prepare_data_for_grid(df):
+def prepare_data_for_aggrid(df):
     """
-    Prepare DataFrame for AgGrid by ensuring all columns are JSON-serializable.
-    This function is kept for backward compatibility but is no longer the main data processor.
+    Prepare DataFrame for AgGrid by ensuring all data is JSON-serializable
+    and in a format that AgGrid can handle.
+    
+    Args:
+        df: Input DataFrame to prepare
+        
+    Returns:
+        Tuple of (processed_df, column_defs)
     """
-    # Create a clean copy
+    # Create a clean copy of the DataFrame
     clean_df = df.copy()
     
-    # Convert all data to native Python types
+    # Convert all columns to string representation to avoid serialization issues
     for col in clean_df.columns:
-        # Convert datetime to string
+        # Skip if column is already string type
+        if clean_df[col].dtype == 'object':
+            continue
+            
+        # Convert datetime to ISO format string
         if pd.api.types.is_datetime64_any_dtype(clean_df[col]):
-            clean_df[col] = clean_df[col].astype(str)
-        # Convert other non-numeric types to string
-        elif not pd.api.types.is_numeric_dtype(clean_df[col]):
+            clean_df[col] = clean_df[col].dt.strftime('%Y-%m-%d %H:%M:%S')
+        # Convert numeric types to string
+        elif pd.api.types.is_numeric_dtype(clean_df[col]):
             clean_df[col] = clean_df[col].astype(str)
     
-    return clean_df
+    # Generate column definitions
+    column_defs = []
+    for col in clean_df.columns:
+        col_def = {
+            'field': col,
+            'headerName': col.replace('_', ' ').title(),
+            'sortable': col not in ['Edit', 'Delete'],
+            'filter': col not in ['Edit', 'Delete']
+        }
+        column_defs.append(col_def)
+    
+    return clean_df, column_defs
 
 # JavaScript code for the edit button
 edit_button_js = """
@@ -273,35 +294,46 @@ def display_predictions_with_buttons(predictions_df):
         </script>
         """
         
-        # Create a copy of the DataFrame for display
+        # Create a clean copy of the DataFrame and prepare it for AgGrid
         display_df = display_df.copy()
         
-        # Initialize GridOptionsBuilder
-        gb = GridOptionsBuilder.from_dataframe(display_df)
+        # Prepare data for AgGrid
+        grid_data, column_defs = prepare_data_for_aggrid(display_df)
         
-        # Configure grid options
+        # Initialize GridOptionsBuilder with the prepared data
+        gb = GridOptionsBuilder.from_dataframe(
+            grid_data,
+            enableRowGroup=False,
+            enableValue=False,
+            enablePivot=False
+        )
+        
+        # Configure default column properties
         gb.configure_default_column(
             filterable=True,
             sortable=True,
             resizable=True,
             editable=False,
-            groupable=False
+            groupable=False,
+            suppressMenu=True
         )
         
         # Configure action buttons if they exist in the DataFrame
-        if 'Edit' in display_df.columns:
+        if 'Edit' in grid_data.columns:
             gb.configure_column('Edit', 
                              width=80, 
                              cellRenderer=JsCode(edit_button_js),
                              sortable=False, 
-                             filter=False)
+                             filter=False,
+                             suppressMenu=True)
         
-        if 'Delete' in display_df.columns:
+        if 'Delete' in grid_data.columns:
             gb.configure_column('Delete', 
                              width=90, 
                              cellRenderer=JsCode(delete_button_js),
                              sortable=False, 
-                             filter=False)
+                             filter=False,
+                             suppressMenu=True)
         
         # Configure grid options
         gb.configure_grid_options(
@@ -309,20 +341,24 @@ def display_predictions_with_buttons(predictions_df):
             ensureDomOrder=True,
             suppressRowClickSelection=True,
             suppressColumnVirtualisation=True,
-            suppressRowVirtualisation=True
+            suppressRowVirtualisation=True,
+            suppressDragLeaveHidesColumns=True
         )
         
         # Get the grid options
         grid_options = gb.build()
         
+        # Convert DataFrame to list of dictionaries to avoid pandas issues
+        grid_data_dict = grid_data.to_dict('records')
+        
         # Display the AgGrid component with the configured options
         grid_response = AgGrid(
-            display_df,
+            data=grid_data_dict,
             gridOptions=grid_options,
             update_mode=GridUpdateMode.MODEL_CHANGED | GridUpdateMode.VALUE_CHANGED,
             fit_columns_on_grid_load=True,
             theme='streamlit',
-            height=min(600, (len(display_df) + 1) * 50 + 50) if len(display_df) > 0 else 200,
+            height=min(600, (len(grid_data) + 1) * 50 + 50) if len(grid_data) > 0 else 200,
             width='100%',
             reload_data=False,
             allow_unsafe_jscode=True,
@@ -336,7 +372,9 @@ def display_predictions_with_buttons(predictions_df):
             enable_enterprise_modules=False,
             data_return_mode='FILTERED_AND_SORTED',
             try_to_convert_back_to_data_frame=False,
-            key='predictions_grid'
+            key='predictions_grid',
+            suppressColumnVirtualisation=True,
+            suppressRowVirtualisation=True
         )
         
         # Add the JavaScript for handling button clicks
