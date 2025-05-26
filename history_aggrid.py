@@ -75,14 +75,20 @@ def display_predictions_with_buttons(predictions_df):
         button.onclick = (e) => {
             e.stopPropagation();
             const rowData = params.node.data;
-            document.body.dispatchEvent(
-                new CustomEvent('button_click', { 
-                    detail: { 
-                        action: params.value.toLowerCase(),
-                        id: rowData.ID
-                    }
-                })
-            );
+            // Handle both 'ID' and 'id' column names for compatibility
+            const rowId = rowData.ID !== undefined ? rowData.ID : rowData.id;
+            if (rowId !== undefined) {
+                document.body.dispatchEvent(
+                    new CustomEvent('button_click', { 
+                        detail: { 
+                            action: params.value.toLowerCase(),
+                            id: rowId
+                        }
+                    })
+                );
+            } else {
+                console.error('Could not find ID in row data:', rowData);
+            }
         };
         
         return button;
@@ -182,12 +188,16 @@ def display_predictions_with_buttons(predictions_df):
         </script>
         """
         
-        # Convert DataFrame to a list of dictionaries to avoid pandas compatibility issues
-        grid_data = display_df.to_dict('records')
+        # Ensure we're working with a copy of the display DataFrame
+        display_df = display_df.copy()
         
+        # Convert any datetime columns to strings to avoid serialization issues
+        for col in display_df.select_dtypes(include=['datetime64']).columns:
+            display_df[col] = display_df[col].astype(str)
+            
         # Display the AgGrid component with the configured options
         grid_response = AgGrid(
-            data=grid_data,  # Use the converted data
+            display_df,  # Pass the DataFrame directly
             gridOptions=grid_options,
             update_mode=GridUpdateMode.MODEL_CHANGED | GridUpdateMode.VALUE_CHANGED,
             fit_columns_on_grid_load=True,
@@ -204,7 +214,8 @@ def display_predictions_with_buttons(predictions_df):
             },
             columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS,
             enable_enterprise_modules=False,
-            try_to_convert_back_to_data_frame=False  # Prevent conversion back to DataFrame
+            data_return_mode='AS_INPUT',
+            try_to_convert_back_to_data_frame=True
         )
         
         # Add the JavaScript for handling button clicks
