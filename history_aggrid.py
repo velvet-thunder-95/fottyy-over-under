@@ -288,21 +288,69 @@ def display_predictions_with_buttons(predictions_df):
     
     # Display the AgGrid with buttons
     with container:
-        # Add JavaScript to handle button clicks
+        # JavaScript for handling button clicks
         button_clicked = """
         <script>
-        document.body.addEventListener('button_click', function(e) {
-            const data = e.detail;
-            const jsonData = JSON.stringify(data);
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.id = 'button_click_data';
-            input.value = jsonData;
-            document.body.appendChild(input);
+        document.addEventListener('DOMContentLoaded', function() {
+            // Function to handle button clicks
+            function handleButtonClick(event) {
+                try {
+                    const button = event.target.closest('.action-button');
+                    if (!button) return;
+                    
+                    const action = button.getAttribute('data-action');
+                    const rowId = button.closest('tr').getAttribute('row-id');
+                    
+                    if (!action || !rowId) {
+                        console.error('Missing action or rowId');
+                        return;
+                    }
+                    
+                    // Send message to Streamlit
+                    const message = {
+                        'action': action,
+                        'row_id': rowId,
+                        'timestamp': new Date().getTime()
+                    };
+                    
+                    window.parent.postMessage({
+                        'isStreamlitMessage': true,
+                        'type': 'streamlit:component_message',
+                        'api': 'component_1',
+                        'args': JSON.stringify(message)
+                    }, '*');
+                    
+                    // Store in session storage as fallback
+                    sessionStorage.setItem('last_button_click', JSON.stringify(message));
+                    
+                } catch (error) {
+                    console.error('Error handling button click:', error);
+                }
+            }
             
-            // Trigger a Streamlit component update
-            const event = new Event('input', { bubbles: true });
-            input.dispatchEvent(event);
+            // Add event listeners to all action buttons
+            function setupButtonListeners() {
+                document.removeEventListener('click', handleButtonClick);
+                document.addEventListener('click', handleButtonClick);
+                
+                // Also set up a mutation observer to handle dynamic content
+                if (!window.gridObserver) {
+                    window.gridObserver = new MutationObserver(function(mutations) {
+                        setupButtonListeners();
+                    });
+                    
+                    window.gridObserver.observe(document.body, {
+                        childList: true,
+                        subtree: true
+                    });
+                }
+            }
+            
+            // Initial setup
+            setupButtonListeners();
+            
+            // Also set up a periodic check to ensure buttons stay connected
+            setInterval(setupButtonListeners, 1000);
         });
         </script>
         """
@@ -393,10 +441,28 @@ def display_predictions_with_buttons(predictions_df):
                 suppressColumnVirtualisation=True,
                 suppressRowVirtualisation=True
             )
+            
+            # Add the JavaScript for handling button clicks
+            st.components.v1.html(button_clicked, height=0)
+            
+            return {
+                'data': grid_response['data'],
+                'selected_rows': grid_response['selected_rows'],
+                'action': st.session_state.get('last_button_clicked', {}).get('action', ''),
+                'row_id': st.session_state.get('last_button_clicked', {}).get('row_id', '')
+            }
+            
         except Exception as e:
             st.error(f"Error displaying predictions table: {str(e)}")
             st.error("Please try refreshing the page or contact support if the issue persists.")
-            return None
+            
+            # Return a properly formatted response even on error
+            return {
+                'data': pd.DataFrame(),
+                'selected_rows': [],
+                'action': '',
+                'row_id': ''
+            }
         
         # Add the JavaScript for handling button clicks
         st.components.v1.html(button_clicked, height=0)
