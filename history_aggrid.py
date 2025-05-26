@@ -128,20 +128,12 @@ def display_predictions_with_buttons(predictions_df):
     # Configure grid options
     grid_options = gb.build()
     
-    # Add cell styling
-    grid_options.getRowStyle = JsCode("""
-    function(params) {
-        if (params.node.rowIndex % 2 === 0) {
-            return { backgroundColor: '#f9f9f9' };
-        }
-        return null;
-    }
-    """)
-    
-    # Configure grid to be responsive
-    grid_options.domLayout = 'autoHeight'
-    grid_options.animateRows = True
-    grid_options.rowHeight = 50
+    # Set grid display options
+    grid_options.update({
+        'domLayout': 'autoHeight',
+        'animateRows': True,
+        'rowHeight': 50
+    })
     
     # Add custom CSS for the grid
     st.markdown("""
@@ -190,22 +182,25 @@ def display_predictions_with_buttons(predictions_df):
         </script>
         """
         
-        # Display the AgGrid component
+        # Display the AgGrid component with the configured options
         grid_response = AgGrid(
             display_df,
             gridOptions=grid_options,
             update_mode=GridUpdateMode.MODEL_CHANGED | GridUpdateMode.VALUE_CHANGED,
             fit_columns_on_grid_load=True,
             theme='streamlit',
-            height=min(600, (len(display_df) + 1) * 50 + 50),
+            height=min(600, (len(display_df) + 1) * 50 + 50) if len(display_df) > 0 else 200,
             width='100%',
             reload_data=False,
             allow_unsafe_jscode=True,
             custom_css={
-                ".ag-header-cell-label": {"justify-content": "center"},
-                ".ag-cell": {"display": "flex", "align-items": "center", "justify-content": "center"}
+                ".ag-header-cell-label": {"justifyContent": "center"},
+                ".ag-cell": {"display": "flex", "alignItems": "center", "justifyContent": "center"},
+                ".ag-row-odd": {"backgroundColor": "#f9f9f9"},
+                ".ag-row-hover": {"backgroundColor": "#f0f0f0 !important"}
             },
-            columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS
+            columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS,
+            enable_enterprise_modules=False
         )
         
         # Add the JavaScript for handling button clicks
