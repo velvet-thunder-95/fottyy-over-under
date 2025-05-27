@@ -1100,7 +1100,7 @@ def show_history_page():
                     # Define callbacks to handle edit/delete button clicks without refreshing
                     def handle_edit_click():
                         try:
-                            # This function is called when the form is submitted
+                            # This function is called when the data editor changes (especially when Apply is checked)
                             # Check if the prediction_editor exists in session state
                             if 'prediction_editor' not in st.session_state:
                                 logger.warning("prediction_editor not found in session state")
@@ -1121,6 +1121,16 @@ def show_history_page():
                                     logger.warning(f"Column '{col}' not found in dataframe")
                                     return
                                     
+                            # Find rows with Apply checked - these are the ones we need to process
+                            apply_rows = current_df[current_df['apply'] == True]
+                            if apply_rows.empty:
+                                # No rows with Apply checked, just update the state and return
+                                st.session_state.edit_state['current_df'] = current_df.copy(deep=True)
+                                return
+                                
+                            # Log that we're processing rows with Apply checked
+                            logger.info(f"Processing {len(apply_rows)} rows with Apply checked")
+                                    
                             # Store the current dataframe in session state for future reference
                             st.session_state.edit_state['current_df'] = current_df.copy(deep=True)
                             
@@ -1134,14 +1144,94 @@ def show_history_page():
                                     
                                     # Clear the edit checkbox to prevent auto-refresh
                                     current_df.at[idx, 'edit'] = False
+                                    
+                            # Process direct edits with Apply checked but not marked for delete or edit
+                            direct_edit_rows = current_df[(current_df['apply'] == True) & 
+                                                         (current_df['delete'] == False) & 
+                                                         (current_df['edit'] == False)]
+                            
+                            if not direct_edit_rows.empty and 'original_edit_df' in st.session_state:
+                                original_df = st.session_state.original_edit_df
+                                
+                                # Compare each row with Apply checked for changes
+                                for idx, row in direct_edit_rows.iterrows():
+                                    row_id = row['id']
+                                    
+                                    try:
+                                        # Find the original row data
+                                        original_rows = original_df[original_df['id'] == row_id]
+                                        if original_rows.empty:
+                                            logger.warning(f"Original row not found for ID: {row_id}")
+                                            continue
+                                            
+                                        original_row = original_rows.iloc[0]
+                                        
+                                        # Compare with original to detect changes
+                                        # Ensure we're comparing the same types by converting to float
+                                        try:
+                                            home_odds_changed = abs(float(row['home_odds']) - float(original_row['home_odds'])) > 0.001
+                                            draw_odds_changed = abs(float(row['draw_odds']) - float(original_row['draw_odds'])) > 0.001
+                                            away_odds_changed = abs(float(row['away_odds']) - float(original_row['away_odds'])) > 0.001
+                                            profit_loss_changed = abs(float(row['profit_loss']) - float(original_row['profit_loss'])) > 0.001
+                                        except (ValueError, TypeError) as e:
+                                            logger.error(f"Error comparing values: {e}")
+                                            continue
+                                        
+                                        # Only process changes if changes are detected
+                                        if (home_odds_changed or draw_odds_changed or away_odds_changed or profit_loss_changed):
+                                            logger.info(f"Changes detected for row ID {row_id}: home_odds={home_odds_changed}, draw_odds={draw_odds_changed}, away_odds={away_odds_changed}, profit_loss={profit_loss_changed}")
+                                            
+                                            # Prepare update data - use edited odds values directly
+                                            update_data = {
+                                                'home_odds': float(row['home_odds']) if pd.notna(row['home_odds']) else 0.0,
+                                                'draw_odds': float(row['draw_odds']) if pd.notna(row['draw_odds']) else 0.0,
+                                                'away_odds': float(row['away_odds']) if pd.notna(row['away_odds']) else 0.0,
+                                                'profit_loss': float(row['profit_loss']) if pd.notna(row['profit_loss']) else 0.0
+                                            }
+                                            
+                                            # Update prediction in database
+                                            logger.info(f"Updating prediction ID: {row_id} with data: {update_data}")
+                                            if history.update_prediction(row_id, update_data):
+                                                st.success(f"Updated prediction for {row['home_team']} vs {row['away_team']}")
+                                                # Clear history dataframe to force reload
+                                                if 'history_df' in st.session_state:
+                                                    del st.session_state.history_df
+                                                # Clear the apply checkbox after processing
+                                                current_df.at[idx, 'apply'] = False
+                                                # Force page refresh
+                                                st.rerun()
+                                            else:
+                                                st.error(f"Failed to update prediction ID: {row_id}")
+                                        else:
+                                            # No changes detected, just clear the apply checkbox
+                                            current_df.at[idx, 'apply'] = False
+                                    except Exception as row_error:
+                                        logger.error(f"Error processing row {row_id}: {str(row_error)}")
+                                        st.error(f"Error processing row: {str(row_error)}")
+                                        continue
                             
                             # Process delete checkboxes - only if Apply is also checked
                             delete_rows = current_df[(current_df['delete'] == True) & (current_df['apply'] == True)]
                             if not delete_rows.empty:
                                 for idx, row in delete_rows.iterrows():
-                                    # Store the row ID for deletion
-                                    st.session_state.delete_row_id = row['id']
-                                    st.session_state.delete_row_data = row.to_dict()
+                                    row_id = row['id']
+                                    logger.info(f"Attempting to delete prediction ID: {row_id}")
+                                    
+                                    # Attempt to delete from database immediately
+                                    try:
+                                        success = history.delete_prediction(row_id)
+                                        if success:
+                                            st.success(f"Deleted prediction for {row['home_team']} vs {row['away_team']}")
+                                            # Clear session state to force data reload
+                                            if 'history_df' in st.session_state:
+                                                del st.session_state.history_df
+                                            # Force page refresh
+                                            st.rerun()
+                                        else:
+                                            st.error(f"Failed to delete prediction ID: {row_id}")
+                                    except Exception as delete_error:
+                                        st.error(f"Error deleting prediction: {str(delete_error)}")
+                                        logger.error(f"Delete error: {str(delete_error)}")
                                     
                                     # Clear the checkboxes to prevent multiple deletions
                                     current_df.at[idx, 'delete'] = False
@@ -1155,12 +1245,10 @@ def show_history_page():
                             logger.error(f"Error in handle_edit_click: {str(e)}")
                             # Don't re-raise the exception to prevent the app from crashing
                     
-                    # Create a form to prevent auto-refresh when checkboxes are clicked
-                    with st.form(key="prediction_editor_form"):
-                        # Use Streamlit's data editor without on_change callback
-                        edited_df = st.data_editor(
-                            st.session_state.edit_state['current_df'],
-                            column_config={
+                    # Use Streamlit's data editor with on_change callback to detect Apply checkbox
+                    edited_df = st.data_editor(
+                        st.session_state.edit_state['current_df'],
+                        column_config={
                             "id": st.column_config.TextColumn("ID", disabled=True),
                             "date": st.column_config.TextColumn("Date", disabled=True, help="Format: YYYY-MM-DD"),
                             "league": st.column_config.TextColumn("League", disabled=True),
@@ -1229,17 +1317,11 @@ def show_history_page():
                         hide_index=True,
                         num_rows="fixed",
                         use_container_width=True,
-                        key="prediction_editor"
-                        )
-                        
-                        # Add a submit button to the form
-                        submitted = st.form_submit_button("Process Changes", type="primary")
-                        
-                        # Only process changes when the form is submitted
-                        if submitted:
-                            handle_edit_click()
+                        key="prediction_editor",
+                        on_change=handle_edit_click
+                    )
                     
-                    # Process edits and deletions outside the form
+                    # Process edits and deletions
                     if edited_df is not None:
                         # Display edit UI if a row was selected for editing
                         if 'edit_row_data' in st.session_state:
