@@ -1098,16 +1098,15 @@ def show_history_page():
                         st.session_state.original_edit_df = edit_df.copy(deep=True)
                     
                     # Define callbacks to handle edit/delete button clicks without refreshing
-                    def handle_edit_click():
+                    def handle_edit_click(current_df=None):
                         try:
-                            # This function is called when the data editor changes (especially when Apply is checked)
-                            # Check if the prediction_editor exists in session state
-                            if 'prediction_editor' not in st.session_state:
-                                logger.warning("prediction_editor not found in session state")
-                                return
-                                
-                            # Get the current dataframe from session state
-                            current_df = st.session_state.prediction_editor
+                            # This function processes the changes in the data editor
+                            # If current_df is not provided, try to get it from session state
+                            if current_df is None:
+                                if 'prediction_editor' not in st.session_state:
+                                    logger.warning("prediction_editor not found in session state")
+                                    return
+                                current_df = st.session_state.prediction_editor
                             
                             # Make sure it's a dataframe
                             if not isinstance(current_df, pd.DataFrame):
@@ -1145,66 +1144,57 @@ def show_history_page():
                                     # Clear the edit checkbox to prevent auto-refresh
                                     current_df.at[idx, 'edit'] = False
                                     
-                            # Process direct edits with Apply checked but not marked for delete or edit
-                            direct_edit_rows = current_df[(current_df['apply'] == True) & 
-                                                         (current_df['delete'] == False) & 
-                                                         (current_df['edit'] == False)]
+                            # Process all rows with Apply checked (including those with edit checked)
+                            apply_rows = current_df[current_df['apply'] == True]
                             
-                            if not direct_edit_rows.empty and 'original_edit_df' in st.session_state:
-                                original_df = st.session_state.original_edit_df
+                            if not apply_rows.empty:
+                                # Log how many rows we're processing
+                                logger.info(f"Processing {len(apply_rows)} rows with Apply checked")
                                 
                                 # Compare each row with Apply checked for changes
-                                for idx, row in direct_edit_rows.iterrows():
+                                for idx, row in apply_rows.iterrows():
                                     row_id = row['id']
                                     
+                                    # Skip rows marked for deletion as they're handled separately
+                                    if row['delete'] == True:
+                                        continue
+                                    
                                     try:
-                                        # Find the original row data
-                                        original_rows = original_df[original_df['id'] == row_id]
-                                        if original_rows.empty:
-                                            logger.warning(f"Original row not found for ID: {row_id}")
-                                            continue
-                                            
-                                        original_row = original_rows.iloc[0]
+                                        # Log that we're processing this row
+                                        logger.info(f"Processing row ID {row_id} with Apply checked")
                                         
-                                        # Compare with original to detect changes
-                                        # Ensure we're comparing the same types by converting to float
-                                        try:
-                                            home_odds_changed = abs(float(row['home_odds']) - float(original_row['home_odds'])) > 0.001
-                                            draw_odds_changed = abs(float(row['draw_odds']) - float(original_row['draw_odds'])) > 0.001
-                                            away_odds_changed = abs(float(row['away_odds']) - float(original_row['away_odds'])) > 0.001
-                                            profit_loss_changed = abs(float(row['profit_loss']) - float(original_row['profit_loss'])) > 0.001
-                                        except (ValueError, TypeError) as e:
-                                            logger.error(f"Error comparing values: {e}")
-                                            continue
+                                        # Always update the odds values regardless of whether they've changed
+                                        # This ensures that any edits are saved
+                                        update_data = {
+                                            'home_odds': float(row['home_odds']) if pd.notna(row['home_odds']) else 0.0,
+                                            'draw_odds': float(row['draw_odds']) if pd.notna(row['draw_odds']) else 0.0,
+                                            'away_odds': float(row['away_odds']) if pd.notna(row['away_odds']) else 0.0
+                                        }
                                         
-                                        # Only process changes if changes are detected
-                                        if (home_odds_changed or draw_odds_changed or away_odds_changed or profit_loss_changed):
-                                            logger.info(f"Changes detected for row ID {row_id}: home_odds={home_odds_changed}, draw_odds={draw_odds_changed}, away_odds={away_odds_changed}, profit_loss={profit_loss_changed}")
-                                            
-                                            # Prepare update data - use edited odds values directly
-                                            update_data = {
-                                                'home_odds': float(row['home_odds']) if pd.notna(row['home_odds']) else 0.0,
-                                                'draw_odds': float(row['draw_odds']) if pd.notna(row['draw_odds']) else 0.0,
-                                                'away_odds': float(row['away_odds']) if pd.notna(row['away_odds']) else 0.0,
-                                                'profit_loss': float(row['profit_loss']) if pd.notna(row['profit_loss']) else 0.0
-                                            }
-                                            
-                                            # Update prediction in database
-                                            logger.info(f"Updating prediction ID: {row_id} with data: {update_data}")
-                                            if history.update_prediction(row_id, update_data):
-                                                st.success(f"Updated prediction for {row['home_team']} vs {row['away_team']}")
-                                                # Clear history dataframe to force reload
-                                                if 'history_df' in st.session_state:
-                                                    del st.session_state.history_df
-                                                # Clear the apply checkbox after processing
-                                                current_df.at[idx, 'apply'] = False
-                                                # Force page refresh
-                                                st.rerun()
-                                            else:
-                                                st.error(f"Failed to update prediction ID: {row_id}")
-                                        else:
-                                            # No changes detected, just clear the apply checkbox
+                                        # If profit/loss is editable, include it in the update
+                                        if 'profit_loss' in row and pd.notna(row['profit_loss']):
+                                            update_data['profit_loss'] = float(row['profit_loss'])
+                                        
+                                        # Log the update data
+                                        logger.info(f"Updating prediction ID: {row_id} with data: {update_data}")
+                                        
+                                        # Update prediction in database
+                                        if history.update_prediction(row_id, update_data):
+                                            st.success(f"Updated prediction for {row['home_team']} vs {row['away_team']}")
+                                            # Clear history dataframe to force reload
+                                            if 'history_df' in st.session_state:
+                                                del st.session_state.history_df
+                                            # Clear the apply checkbox after processing
                                             current_df.at[idx, 'apply'] = False
+                                            # Update the original dataframe to reflect the changes
+                                            if 'original_edit_df' in st.session_state:
+                                                st.session_state.original_edit_df.loc[st.session_state.original_edit_df['id'] == row_id, 'home_odds'] = update_data['home_odds']
+                                                st.session_state.original_edit_df.loc[st.session_state.original_edit_df['id'] == row_id, 'draw_odds'] = update_data['draw_odds']
+                                                st.session_state.original_edit_df.loc[st.session_state.original_edit_df['id'] == row_id, 'away_odds'] = update_data['away_odds']
+                                                if 'profit_loss' in update_data:
+                                                    st.session_state.original_edit_df.loc[st.session_state.original_edit_df['id'] == row_id, 'profit_loss'] = update_data['profit_loss']
+                                        else:
+                                            st.error(f"Failed to update prediction ID: {row_id}")
                                     except Exception as row_error:
                                         logger.error(f"Error processing row {row_id}: {str(row_error)}")
                                         st.error(f"Error processing row: {str(row_error)}")
@@ -1225,17 +1215,14 @@ def show_history_page():
                                             # Clear session state to force data reload
                                             if 'history_df' in st.session_state:
                                                 del st.session_state.history_df
-                                            # Force page refresh
-                                            st.rerun()
+                                            # Clear the checkboxes to prevent multiple deletions
+                                            current_df.at[idx, 'delete'] = False
+                                            current_df.at[idx, 'apply'] = False
                                         else:
                                             st.error(f"Failed to delete prediction ID: {row_id}")
                                     except Exception as delete_error:
                                         st.error(f"Error deleting prediction: {str(delete_error)}")
                                         logger.error(f"Delete error: {str(delete_error)}")
-                                    
-                                    # Clear the checkboxes to prevent multiple deletions
-                                    current_df.at[idx, 'delete'] = False
-                                    current_df.at[idx, 'apply'] = False
                             
                             # Update the dataframe in session state
                             st.session_state.edit_state['current_df'] = current_df.copy(deep=True)
@@ -1245,10 +1232,12 @@ def show_history_page():
                             logger.error(f"Error in handle_edit_click: {str(e)}")
                             # Don't re-raise the exception to prevent the app from crashing
                     
-                    # Use Streamlit's data editor with on_change callback to detect Apply checkbox
-                    edited_df = st.data_editor(
-                        st.session_state.edit_state['current_df'],
-                        column_config={
+                    # Use Streamlit's data editor without on_change callback to prevent auto-refresh
+                    # We'll use a form to control when the editor changes are processed
+                    with st.form(key="prediction_editor_form"):
+                        edited_df = st.data_editor(
+                            st.session_state.edit_state['current_df'],
+                            column_config={
                             "id": st.column_config.TextColumn("ID", disabled=True),
                             "date": st.column_config.TextColumn("Date", disabled=True, help="Format: YYYY-MM-DD"),
                             "league": st.column_config.TextColumn("League", disabled=True),
@@ -1317,9 +1306,22 @@ def show_history_page():
                         hide_index=True,
                         num_rows="fixed",
                         use_container_width=True,
-                        key="prediction_editor",
-                        on_change=handle_edit_click
-                    )
+                        key="prediction_editor"
+                        )
+                        
+                        # Add a submit button that only processes changes when clicked
+                        submitted = st.form_submit_button("Apply Changes", type="primary")
+                        
+                        # Only process changes when the form is submitted
+                        if submitted:
+                            # Store the current dataframe in session state
+                            st.session_state.edit_state['current_df'] = edited_df.copy(deep=True)
+                            
+                            # Process the changes
+                            handle_edit_click(edited_df)
+                            
+                            # Refresh the page to show updated data
+                            st.rerun()
                     
                     # Process edits and deletions
                     if edited_df is not None:
