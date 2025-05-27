@@ -990,8 +990,13 @@ def show_history_page():
                     edit_df = pd.DataFrame(editable_data)
                     
                     # Store the original dataframe in session state for comparison
+                    # Make sure we're storing a complete copy with all columns
                     if 'original_edit_df' not in st.session_state:
-                        st.session_state.original_edit_df = edit_df.copy()
+                        st.session_state.original_edit_df = edit_df.copy(deep=True)
+                    else:
+                        # Update the original dataframe if columns don't match
+                        if set(st.session_state.original_edit_df.columns) != set(edit_df.columns):
+                            st.session_state.original_edit_df = edit_df.copy(deep=True)
                     
                     # Display instructions
                     st.write("### Edit Predictions")
@@ -1100,13 +1105,19 @@ def show_history_page():
                                     original_row = original_df.iloc[idx]
                                     row_id = row['id']
                                     
-                                    # Check if any fields have changed
+                                    # Check if any fields have changed (safely)
                                     changed = False
                                     for col in edited_df.columns:
-                                        if col not in ['id', 'edit', 'delete', 'profit_loss']:
-                                            if row[col] != original_row[col]:
-                                                changed = True
-                                                break
+                                        # Skip special columns and check if column exists in both dataframes
+                                        if col not in ['id', 'edit', 'delete', 'profit_loss'] and col in original_row.index and col in row.index:
+                                            # Compare values safely
+                                            try:
+                                                if row[col] != original_row[col]:
+                                                    changed = True
+                                                    break
+                                            except Exception as e:
+                                                logger.error(f"Error comparing column {col}: {e}")
+                                                continue
                                     
                                     if changed:
                                         # Get original data for odds values
