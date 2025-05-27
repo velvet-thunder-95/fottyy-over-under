@@ -1196,20 +1196,29 @@ def show_history_page():
                         
                         # Handle cell value changes
                         cell_changed = False
-                        if 'grid_data' in st.session_state:
-                            old_data = st.session_state.grid_data
-                            new_data = grid_response['data']
+                        if 'grid_data' in st.session_state and 'data' in grid_response:
+                            old_data = st.session_state.grid_data if isinstance(st.session_state.grid_data, list) else []
+                            new_data = grid_response['data'] if isinstance(grid_response['data'], list) else []
+                            
+                            # Ensure both lists have the same length
+                            if len(old_data) != len(new_data):
+                                st.warning("Data length mismatch. Refreshing...")
+                                st.session_state.refresh_data = True
+                                st.rerun()
                             
                             # Find changed rows
                             for idx, (old_row, new_row) in enumerate(zip(old_data, new_data)):
+                                if not isinstance(old_row, dict) or not isinstance(new_row, dict):
+                                    continue
+                                    
                                 if old_row != new_row:
                                     # Find changed fields
                                     changed_fields = {}
                                     for key in old_row:
-                                        if key != 'id' and old_row[key] != new_row[key]:
+                                        if key != 'id' and key in new_row and old_row.get(key) != new_row.get(key):
                                             changed_fields[key] = new_row[key]
                                     
-                                    if changed_fields:
+                                    if changed_fields and 'id' in old_row and old_row['id']:
                                         try:
                                             # Update in database
                                             if history.update_prediction(old_row['id'], changed_fields):
@@ -1219,23 +1228,36 @@ def show_history_page():
                                                 st.error(f"❌ Failed to update prediction {old_row['id']}")
                                         except Exception as e:
                                             st.error(f"❌ Error updating prediction {old_row['id']}: {str(e)}")
+                                            st.session_state.refresh_data = True
+                                            st.rerun()
                         
                         # Store current data for next comparison
                         st.session_state.grid_data = grid_response['data'].copy()
                         
                         # Handle delete actions
                         for row in grid_response['data']:
-                            if st.session_state.get(f"delete_{row['id']}"):
-                                if st.button(f"Confirm delete prediction {row['id']}?", key=f"confirm_delete_{row['id']}"):
+                            # Safely get row ID with type checking
+                            row_id = None
+                            if isinstance(row, dict):
+                                row_id = row.get('id')
+                            elif hasattr(row, 'get'):  # Handle other dict-like objects
+                                row_id = row.get('id')
+                            
+                            if not row_id:
+                                continue  # Skip if no valid ID found
+                                
+                            delete_key = f"delete_{row_id}"
+                            if st.session_state.get(delete_key):
+                                if st.button(f"Confirm delete prediction {row_id}?", key=f"confirm_delete_{row_id}"):
                                     try:
-                                        if history.delete_prediction(row['id']):
-                                            st.success(f"✅ Prediction {row['id']} deleted successfully!")
+                                        if history.delete_prediction(row_id):
+                                            st.success(f"✅ Prediction {row_id} deleted successfully!")
                                             st.session_state.refresh_data = True
                                             st.rerun()
                                         else:
-                                            st.error(f"❌ Failed to delete prediction {row['id']}")
+                                            st.error(f"❌ Failed to delete prediction {row_id}")
                                     except Exception as e:
-                                        st.error(f"❌ Error deleting prediction {row['id']}: {str(e)}")
+                                        st.error(f"❌ Error deleting prediction {row_id}: {str(e)}")
                                 st.stop()
                         
                         # Add a small delay to avoid rapid updates
