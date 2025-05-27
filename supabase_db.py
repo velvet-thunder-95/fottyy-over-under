@@ -14,7 +14,14 @@ SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 
 class SupabaseDB:
     def __init__(self):
+        # Create Supabase client with default settings
         self.supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+        
+        # Configure client with longer timeout
+        if hasattr(self.supabase, 'postgrest'):
+            self.supabase.postgrest.timeout = 60.0  # 60 seconds timeout
+        
+        # Initialize database
         self.init_database()
 
     def init_database(self):

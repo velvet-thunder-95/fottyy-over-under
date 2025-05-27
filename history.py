@@ -13,6 +13,7 @@ import logging
 import sys
 sys.path.append('.')
 import importlib
+from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
 filter_storage = importlib.import_module('filter_storage')
 
 class PredictionHistory:
@@ -79,6 +80,36 @@ class PredictionHistory:
             
         except Exception as e:
             logging.error(f"Error updating prediction result: {str(e)}")
+            return False
+            
+    def update_prediction(self, prediction_id, update_data):
+        """Update prediction with custom data"""
+        try:
+            # Ensure numeric values are properly formatted
+            if 'confidence' in update_data and update_data['confidence'] is not None:
+                update_data['confidence'] = float(update_data['confidence'])
+            if 'home_odds' in update_data and update_data['home_odds'] is not None:
+                update_data['home_odds'] = float(update_data['home_odds'])
+            if 'draw_odds' in update_data and update_data['draw_odds'] is not None:
+                update_data['draw_odds'] = float(update_data['draw_odds'])
+            if 'away_odds' in update_data and update_data['away_odds'] is not None:
+                update_data['away_odds'] = float(update_data['away_odds'])
+                
+            result = self.db.supabase.table('predictions').update(update_data).eq('id', prediction_id).execute()
+            return True
+            
+        except Exception as e:
+            logging.error(f"Error updating prediction: {str(e)}")
+            return False
+            
+    def delete_prediction(self, prediction_id):
+        """Delete a prediction from the database"""
+        try:
+            result = self.db.supabase.table('predictions').delete().eq('id', prediction_id).execute()
+            return True
+            
+        except Exception as e:
+            logging.error(f"Error deleting prediction: {str(e)}")
             return False
 
     def get_predictions(self, start_date=None, end_date=None, status=None, confidence_levels=None, leagues=None):
@@ -880,34 +911,387 @@ def show_history_page():
                         'status': 'Status'  # Add back status column
                     }
                     
-                    # Create final dataframe with explicit column selection
-                    final_df = predictions[list(display_columns.keys())].copy()
+                    # Prepare data for editable table
+                    editable_data = []
                     
-                    # Format profit/loss values
-                    def format_pl(row):
-                        if pd.isna(row['profit_loss']) or row['status'] != 'Completed':
-                            return '-'
+                    for i, row in predictions.iterrows():
+                        # Format date properly
                         try:
-                            value = float(row['profit_loss'])
-                            return f'+{value:.2f}U' if value > 0 else f'-{abs(value):.2f}U' if value < 0 else '0.00U'
-                        except (ValueError, TypeError):
-                            return '-'
+                            # Handle different date formats including timestamps
+                            if isinstance(row['date'], (int, float)) and len(str(int(row['date']))) > 10:
+                                # This is likely a timestamp in milliseconds
+                                date_obj = pd.to_datetime(row['date'], unit='ms')
+                            elif isinstance(row['date'], str) and row['date'].isdigit() and len(row['date']) > 10:
+                                # String timestamp in milliseconds
+                                date_obj = pd.to_datetime(int(row['date']), unit='ms')
+                            else:
+                                # Regular date string or datetime object
+                                date_obj = pd.to_datetime(row['date'])
+                                
+                            date_str = date_obj.strftime('%Y-%m-%d')
+                        except Exception as e:
+                            # Fallback if date conversion fails
+                            st.error(f"Date conversion error for {row['date']}: {e}")
+                            date_str = str(row['date'])
+                            
+                        # Store original values for reference
+                        row_id = str(row['id'])
+                        
+                        # Create row data with original values (excluding odds and scores)
+                        row_data = {
+                            'id': row_id,
+                            'date': date_str,
+                            'league': str(row['league']),
+                            'home_team': str(row['home_team']),
+                            'away_team': str(row['away_team']),
+                            'predicted_outcome': str(row['predicted_outcome']),
+                            'confidence': float(row['confidence']) if pd.notna(row['confidence']) else 0.0,
+                            'actual_outcome': str(row['actual_outcome']) if pd.notna(row['actual_outcome']) else '',
+                            'status': str(row['status']),
+                            'profit_loss': float(row['profit_loss']) if pd.notna(row['profit_loss']) else 0.0,
+                            'edit': False,  # Add an edit column for row selection
+                            'delete': False  # Add a delete column for row deletion
+                        }
+                        
+                        editable_data.append(row_data)
                     
-                    # Apply formatting
-                    final_df['profit_loss'] = final_df.apply(format_pl, axis=1)
+                    # Create dataframe for editing
+                    if not editable_data:
+                        st.info("No predictions found for the selected filters.")
+                        return
+                        
+                    edit_df = pd.DataFrame(editable_data)
                     
-                    # Rename columns for display
-                    final_df = final_df.rename(columns=display_columns)
+                    # Store the original dataframe in session state for comparison
+                    if 'original_edit_df' not in st.session_state:
+                        st.session_state.original_edit_df = edit_df.copy()
                     
-                    # Apply styling
-                    styled_df = style_dataframe(final_df)
+                    # Display instructions
+                    st.write("### Edit Predictions")
+                    st.write("Click on any cell to edit it directly. Check the 'edit' box to open the edit dialog for more options.")
                     
-                    # Display the styled dataframe
-                    st.dataframe(
-                        styled_df,
+                    # Convert date strings to datetime objects for proper editing
+                    try:
+                        edit_df['date'] = pd.to_datetime(edit_df['date'])
+                    except Exception as e:
+                        st.error(f"Error converting dates: {e}")
+                        # Keep as string if conversion fails
+                        pass
+                        
+                    # Use Streamlit's data editor for direct editing
+                    edited_df = st.data_editor(
+                        edit_df,
+                        column_config={
+                            "id": st.column_config.TextColumn("ID", disabled=True),
+                            "date": st.column_config.TextColumn("Date", disabled=True),
+                            "league": st.column_config.TextColumn("League"),
+                            "home_team": st.column_config.TextColumn("Home Team"),
+                            "away_team": st.column_config.TextColumn("Away Team"),
+                            "predicted_outcome": st.column_config.SelectboxColumn(
+                                "Prediction",
+                                options=["HOME", "DRAW", "AWAY"]
+                            ),
+                            "confidence": st.column_config.NumberColumn(
+                                "Confidence",
+                                min_value=0.0,
+                                max_value=100.0,
+                                format="%.1f%%"
+                            ),
+                            "actual_outcome": st.column_config.SelectboxColumn(
+                                "Actual Outcome",
+                                options=["", "HOME", "DRAW", "AWAY"]
+                            ),
+                            "status": st.column_config.SelectboxColumn(
+                                "Status",
+                                options=["Pending", "Completed"]
+                            ),
+                            "profit_loss": st.column_config.NumberColumn("Profit/Loss", format="%.2fU", disabled=True),
+                            "edit": st.column_config.CheckboxColumn("Edit"),
+                            "delete": st.column_config.CheckboxColumn("Delete")
+                        },
+                        hide_index=True,
+                        num_rows="fixed",
                         use_container_width=True,
-                        hide_index=True
+                        key="prediction_editor"
                     )
+                    
+                    # Process edits and deletions
+                    if edited_df is not None:
+                        # Check for rows marked for deletion
+                        rows_to_delete = edited_df[edited_df['delete'] == True]
+                        if not rows_to_delete.empty:
+                            for idx, row in rows_to_delete.iterrows():
+                                row_id = row['id']
+                                if history.delete_prediction(row_id):
+                                    st.success(f"Deleted prediction for {row['home_team']} vs {row['away_team']}")
+                                    # Clear the session state to refresh data
+                                    st.session_state.pop('history_df', None)
+                                    st.session_state.pop('original_edit_df', None)
+                                    st.rerun()
+                        
+                        # Check for rows marked for detailed editing
+                        rows_to_edit = edited_df[edited_df['edit'] == True]
+                        if not rows_to_edit.empty:
+                            # Get the first row marked for editing
+                            edit_row = rows_to_edit.iloc[0]
+                            row_id = edit_row['id']
+                            
+                            # Store edit data in session state
+                            st.session_state.edit_prediction = True
+                            st.session_state.edit_prediction_id = row_id
+                            st.session_state.edit_prediction_data = edit_row.to_dict()
+                            
+                        # Check for direct edits in the table
+                        if 'original_edit_df' in st.session_state:
+                            original_df = st.session_state.original_edit_df
+                            
+                            # Find changed rows (excluding edit/delete columns)
+                            for idx, row in edited_df.iterrows():
+                                if idx < len(original_df):
+                                    original_row = original_df.iloc[idx]
+                                    row_id = row['id']
+                                    
+                                    # Check if any fields have changed
+                                    changed = False
+                                    for col in edited_df.columns:
+                                        if col not in ['id', 'edit', 'delete', 'profit_loss']:
+                                            if row[col] != original_row[col]:
+                                                changed = True
+                                                break
+                                    
+                                    if changed:
+                                        # Get original data for odds values
+                                        original_data = predictions.loc[predictions['id'] == int(row_id)].iloc[0] if not predictions.empty else None
+                                        
+                                        if original_data is None:
+                                            st.error(f"Could not find original data for prediction ID {row_id}")
+                                            continue
+                                        
+                                        # Prepare update data
+                                        update_data = {
+                                            'date': pd.to_datetime(row['date']).strftime("%Y-%m-%d") if isinstance(row['date'], str) else row['date'].strftime("%Y-%m-%d"),
+                                            'league': row['league'],
+                                            'home_team': row['home_team'],
+                                            'away_team': row['away_team'],
+                                            'predicted_outcome': row['predicted_outcome'],
+                                            'confidence': float(row['confidence']),
+                                            'home_odds': float(original_data['home_odds']) if pd.notna(original_data['home_odds']) else 0.0,
+                                            'draw_odds': float(original_data['draw_odds']) if pd.notna(original_data['draw_odds']) else 0.0,
+                                            'away_odds': float(original_data['away_odds']) if pd.notna(original_data['away_odds']) else 0.0,
+                                            'status': row['status']
+                                        }
+                                        
+                                        # Add completed match details if status is Completed
+                                        if row['status'] == 'Completed':
+                                            # Get scores from original data
+                                            original_data = predictions.loc[predictions['id'] == int(row_id)].iloc[0] if not predictions.empty else None
+                                            
+                                            if original_data is not None:
+                                                home_score = int(original_data['home_score']) if pd.notna(original_data['home_score']) else 0
+                                                away_score = int(original_data['away_score']) if pd.notna(original_data['away_score']) else 0
+                                            else:
+                                                # Fallback if we can't find original data
+                                                home_score = 0
+                                                away_score = 0
+                                            
+                                            # Determine actual outcome
+                                            if home_score > away_score:
+                                                actual_outcome = "HOME"
+                                            elif away_score > home_score:
+                                                actual_outcome = "AWAY"
+                                            else:
+                                                actual_outcome = "DRAW"
+                                            
+                                            # Calculate profit/loss using original data for odds
+                                            bet_amount = 1.0  # Fixed $1 bet
+                                            if row['predicted_outcome'] == actual_outcome:
+                                                if row['predicted_outcome'] == "HOME":
+                                                    profit_loss = float(round((original_data['home_odds'] * bet_amount) - bet_amount, 2))
+                                                elif row['predicted_outcome'] == "AWAY":
+                                                    profit_loss = float(round((original_data['away_odds'] * bet_amount) - bet_amount, 2))
+                                                else:  # DRAW
+                                                    profit_loss = float(round((original_data['draw_odds'] * bet_amount) - bet_amount, 2))
+                                            else:
+                                                profit_loss = float(-bet_amount)
+                                            
+                                            update_data.update({
+                                                'home_score': home_score,
+                                                'away_score': away_score,
+                                                'actual_outcome': actual_outcome,
+                                                'profit_loss': profit_loss
+                                            })
+                                        
+                                        # Update prediction in database silently (no success messages)
+                                        if history.update_prediction(row_id, update_data):
+                                            # Update session state
+                                            st.session_state.original_edit_df = edited_df.copy()
+                                            # Clear history dataframe to force reload
+                                            st.session_state.pop('history_df', None)
+                    
+                    # Selection is handled through the selectbox above
+                        
+
+                    
+                    # Create edit dialog
+                    if st.session_state.get('edit_prediction', False):
+                        with st.dialog("Edit Prediction"):
+                            edit_data = st.session_state.edit_prediction_data
+                            
+                            # Create form for editing
+                            with st.form("edit_prediction_form"):
+                                st.subheader(f"Edit: {edit_data.get('home_team')} vs {edit_data.get('away_team')}")
+                                
+                                # Match details
+                                col1, col2 = st.columns(2)
+                                with col1:
+                                    date = st.date_input("Date", value=pd.to_datetime(edit_data.get('date')).date())
+                                    league = st.text_input("League", value=edit_data.get('league', ''))
+                                    home_team = st.text_input("Home Team", value=edit_data.get('home_team', ''))
+                                    away_team = st.text_input("Away Team", value=edit_data.get('away_team', ''))
+                                
+                                with col2:
+                                    predicted_outcome = st.selectbox(
+                                        "Predicted Outcome", 
+                                        options=["HOME", "DRAW", "AWAY"],
+                                        index=["HOME", "DRAW", "AWAY"].index(edit_data.get('predicted_outcome', 'HOME'))
+                                    )
+                                    
+                                    confidence = st.number_input(
+                                        "Confidence (%)", 
+                                        min_value=0.0, 
+                                        max_value=100.0, 
+                                        value=float(edit_data.get('confidence', 50.0))
+                                    )
+                                    
+                                    status = st.selectbox(
+                                        "Status", 
+                                        options=["Pending", "Completed"],
+                                        index=0 if edit_data.get('status') == "Pending" else 1
+                                    )
+                                
+                                # Odds
+                                st.subheader("Odds")
+                                col1, col2, col3 = st.columns(3)
+                                with col1:
+                                    home_odds = st.number_input(
+                                        "Home Odds", 
+                                        min_value=1.0, 
+                                        value=float(edit_data.get('home_odds', 1.5))
+                                    )
+                                with col2:
+                                    draw_odds = st.number_input(
+                                        "Draw Odds", 
+                                        min_value=1.0, 
+                                        value=float(edit_data.get('draw_odds', 3.5))
+                                    )
+                                with col3:
+                                    away_odds = st.number_input(
+                                        "Away Odds", 
+                                        min_value=1.0, 
+                                        value=float(edit_data.get('away_odds', 5.0))
+                                    )
+                                
+                                # Result (only if status is Completed)
+                                if status == "Completed":
+                                    st.subheader("Match Result")
+                                    col1, col2 = st.columns(2)
+                                    with col1:
+                                        home_score = st.number_input(
+                                            "Home Score", 
+                                            min_value=0, 
+                                            value=int(edit_data.get('home_score', 0) or 0)
+                                        )
+                                    with col2:
+                                        away_score = st.number_input(
+                                            "Away Score", 
+                                            min_value=0, 
+                                            value=int(edit_data.get('away_score', 0) or 0)
+                                        )
+                                    
+                                    # Determine actual outcome based on scores
+                                    if home_score > away_score:
+                                        actual_outcome = "HOME"
+                                    elif away_score > home_score:
+                                        actual_outcome = "AWAY"
+                                    else:
+                                        actual_outcome = "DRAW"
+                                    
+                                    # Calculate profit/loss
+                                    bet_amount = 1.0  # Fixed $1 bet
+                                    if predicted_outcome == actual_outcome:
+                                        if predicted_outcome == "HOME":
+                                            profit_loss = float(round((home_odds * bet_amount) - bet_amount, 2))
+                                        elif predicted_outcome == "AWAY":
+                                            profit_loss = float(round((away_odds * bet_amount) - bet_amount, 2))
+                                        else:  # DRAW
+                                            profit_loss = float(round((draw_odds * bet_amount) - bet_amount, 2))
+                                    else:
+                                        profit_loss = float(-bet_amount)
+                                else:
+                                    home_score = None
+                                    away_score = None
+                                    actual_outcome = None
+                                    profit_loss = 0.0
+                                
+                                # Submit and Delete buttons
+                                col1, col2 = st.columns(2)
+                                submitted = col1.form_submit_button("Save Changes")
+                                deleted = col2.form_submit_button("Delete Prediction")
+                                
+                                if submitted:
+                                    # Prepare update data
+                                    update_data = {
+                                        'date': date.strftime("%Y-%m-%d"),
+                                        'league': league,
+                                        'home_team': home_team,
+                                        'away_team': away_team,
+                                        'predicted_outcome': predicted_outcome,
+                                        'confidence': confidence,
+                                        'home_odds': home_odds,
+                                        'draw_odds': draw_odds,
+                                        'away_odds': away_odds,
+                                        'status': status
+                                    }
+                                    
+                                    if status == "Completed":
+                                        update_data.update({
+                                            'home_score': home_score,
+                                            'away_score': away_score,
+                                            'actual_outcome': actual_outcome,
+                                            'profit_loss': profit_loss
+                                        })
+                                    
+                                    # Update prediction in database
+                                    if history.update_prediction(st.session_state.edit_prediction_id, update_data):
+                                        st.success("Prediction updated successfully!")
+                                        # Clear session state and refresh
+                                        st.session_state.pop('edit_prediction', None)
+                                        st.session_state.pop('edit_prediction_id', None)
+                                        st.session_state.pop('edit_prediction_data', None)
+                                        st.session_state.pop('history_df', None)
+                                        st.rerun()
+                                    else:
+                                        st.error("Failed to update prediction.")
+                                
+                                elif deleted:
+                                    # Delete prediction from database
+                                    if history.delete_prediction(st.session_state.edit_prediction_id):
+                                        st.success("Prediction deleted successfully!")
+                                        # Clear session state and refresh
+                                        st.session_state.pop('edit_prediction', None)
+                                        st.session_state.pop('edit_prediction_id', None)
+                                        st.session_state.pop('edit_prediction_data', None)
+                                        st.session_state.pop('history_df', None)
+                                        st.rerun()
+                                    else:
+                                        st.error("Failed to delete prediction.")
+                            
+                            # Cancel button outside the form
+                            if st.button("Cancel"):
+                                st.session_state.pop('edit_prediction', None)
+                                st.session_state.pop('edit_prediction_id', None)
+                                st.session_state.pop('edit_prediction_data', None)
+                                st.rerun()
                     
                 except Exception as e:
                     st.error(f"Error displaying predictions table: {str(e)}")
