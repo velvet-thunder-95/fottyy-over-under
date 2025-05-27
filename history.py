@@ -1120,6 +1120,9 @@ def show_history_page():
                                     logger.warning(f"Column '{col}' not found in dataframe")
                                     return
                                     
+                            # Store the current dataframe in session state
+                            st.session_state.edit_state['current_df'] = current_df.copy(deep=True)
+                                    
                             # Find rows with Apply checked - these are the ones we need to process
                             apply_rows = current_df[current_df['apply'] == True]
                             if apply_rows.empty:
@@ -1129,6 +1132,9 @@ def show_history_page():
                                 
                             # Log that we're processing rows with Apply checked
                             logger.info(f"Processing {len(apply_rows)} rows with Apply checked")
+                            
+                            # Force processing of all rows with Apply checked
+                            need_refresh = False
                                     
                             # Store the current dataframe in session state for future reference
                             st.session_state.edit_state['current_df'] = current_df.copy(deep=True)
@@ -1210,6 +1216,8 @@ def show_history_page():
                                     # Clear history dataframe to force reload
                                     if 'history_df' in st.session_state:
                                         del st.session_state.history_df
+                                    # Set flag to refresh the page
+                                    need_refresh = True
                                 
                                 # Display any error messages
                                 for error in error_messages:
@@ -1250,6 +1258,8 @@ def show_history_page():
                                     # Clear session state to force data reload
                                     if 'history_df' in st.session_state:
                                         del st.session_state.history_df
+                                    # Set flag to refresh the page
+                                    need_refresh = True
                                 
                                 # Display any error messages
                                 for error in error_messages:
@@ -1258,12 +1268,25 @@ def show_history_page():
                             # Update the dataframe in session state
                             st.session_state.edit_state['current_df'] = current_df.copy(deep=True)
                             
+                            # Refresh the page if needed (after edits or deletions)
+                            if need_refresh:
+                                # Clear the apply checkboxes before refreshing
+                                for idx in current_df.index:
+                                    current_df.at[idx, 'apply'] = False
+                                st.session_state.edit_state['current_df'] = current_df.copy(deep=True)
+                                st.rerun()
+                            
                         except Exception as e:
                             # Log the error but don't crash
                             logger.error(f"Error in handle_edit_click: {str(e)}")
                             # Don't re-raise the exception to prevent the app from crashing
                     
-                    # Use Streamlit's data editor with on_change callback to detect Apply checkbox
+                    # Store the previous state of the dataframe for comparison
+                    if 'previous_df' not in st.session_state:
+                        st.session_state.previous_df = st.session_state.edit_state['current_df'].copy(deep=True)
+                    
+                    # Use Streamlit's data editor without on_change callback to prevent auto-refresh
+                    # We'll detect changes manually by comparing with the previous state
                     edited_df = st.data_editor(
                         st.session_state.edit_state['current_df'],
                         column_config={
@@ -1335,9 +1358,18 @@ def show_history_page():
                         hide_index=True,
                         num_rows="fixed",
                         use_container_width=True,
-                        key="prediction_editor",
-                        on_change=handle_edit_click
+                        key="prediction_editor"
                     )
+                    
+                    # Manually detect changes by comparing with previous state
+                    if edited_df is not None:
+                        # Check if any apply checkboxes are checked
+                        apply_rows = edited_df[edited_df['apply'] == True]
+                        if not apply_rows.empty:
+                            # Process the changes for rows with Apply checked
+                            handle_edit_click(edited_df)
+                            # Update the previous state
+                            st.session_state.previous_df = edited_df.copy(deep=True)
                     
                     # Process edits and deletions
                     if edited_df is not None:
