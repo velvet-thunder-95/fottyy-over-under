@@ -187,6 +187,18 @@ class SupabaseDB:
             # Convert to DataFrame and sort
             if all_records:
                 df = pd.DataFrame(all_records)
+                
+                # Ensure date column is properly formatted as string
+                if 'date' in df.columns:
+                    # Convert any date objects to string format YYYY-MM-DD
+                    try:
+                        df['date'] = df['date'].astype(str)
+                        # Ensure any timestamps are converted to YYYY-MM-DD
+                        df['date'] = df['date'].apply(lambda x: 
+                            pd.to_datetime(x).strftime('%Y-%m-%d') if x and not x.startswith('20') else x)
+                    except Exception as e:
+                        logger.error(f"Error formatting dates: {e}")
+                
                 df = df.sort_values('date', ascending=False)  # Sort newest first
                 logger.info(f"Final dataset: {len(df)} records from {df['date'].min()} to {df['date'].max()}")
                 return df
