@@ -1038,96 +1038,225 @@ def show_history_page():
                         except (ValueError, TypeError):
                             return '-'
                     
-                    # Display the filtered data with inline editing
+                    # Display the filtered data with AG Grid and edit form
                     if not final_df.empty:
-                        # Make a copy of the dataframe for editing
-                        editable_df = final_df.copy()
+                        # Configure AG Grid
+                        gb = GridOptionsBuilder.from_dataframe(final_df)
                         
-                        # Configure column types for editing
-                        column_config = {
-                            "id": None,  # Hide ID column
-                            "date": {
-                                "type": "datetime",
-                                "format": "YYYY-MM-DD HH:mm:ss",
-                                "step": 60 * 60 * 24  # 1 day
-                            },
-                            "status": {
-                                "type": "selectbox",
-                                "options": ["Pending", "Completed"]
-                            },
-                            "predicted_outcome": {
-                                "type": "selectbox",
-                                "options": ["HOME", "DRAW", "AWAY"]
-                            },
-                            "actual_outcome": {
-                                "type": "selectbox",
-                                "options": ["", "HOME", "DRAW", "AWAY"],
-                                "required": False
-                            },
-                            "confidence": {
-                                "type": "number",
-                                "min_value": 0,
-                                "max_value": 100,
-                                "step": 1,
-                                "format": "%d%%"
-                            }
-                        }
-                        
-                        # Display the data editor
-                        st.caption("Double-click a cell to edit. Changes are saved automatically.")
-                        edited_df = st.data_editor(
-                            editable_df,
-                            column_config=column_config,
-                            use_container_width=True,
-                            hide_index=True,
-                            disabled=["id"],  # Make ID column read-only
-                            key=f"data_editor_{len(final_df)}"  # Force re-render on data change
+                        # Configure grid options
+                        gb.configure_default_column(
+                            resizable=True,
+                            filterable=True,
+                            sortable=True,
+                            editable=False
                         )
                         
-                        # Check for changes
-                        if not edited_df.equals(editable_df):
-                            # Find changed rows
-                            changed_rows = edited_df[~edited_df.apply(tuple, 1).isin(editable_df.apply(tuple, 1))]
-                            
-                            if not changed_rows.empty:
-                                with st.spinner("Saving changes..."):
-                                    for _, row in changed_rows.iterrows():
-                                        try:
-                                            # Get the original row to compare
-                                            original_row = editable_df[editable_df['id'] == row['id']].iloc[0]
-                                            
-                                            # Find changed fields
-                                            changed_fields = {}
-                                            for col in editable_df.columns:
-                                                if col != 'id' and row[col] != original_row[col]:
-                                                    changed_fields[col] = row[col]
-                                            
-                                            if changed_fields:
-                                                if history.update_prediction(row['id'], changed_fields):
-                                                    st.toast(f"✅ Updated prediction {row['id']}", icon="✅")
-                                                else:
-                                                    st.error(f"❌ Failed to update prediction {row['id']}")
-                                        except Exception as e:
-                                            st.error(f"❌ Error updating prediction {row['id']}: {str(e)}")
-                                
-                                # Refresh the data
-                                st.session_state.refresh_data = True
-                                st.rerun()
+                        # Add action buttons
+                        gb.configure_column(
+                            'actions',
+                            header_name='Actions',
+                            cellRenderer=JsCode('''
+                                function(params) {
+                                    return `
+                                        <div style="display: flex; gap: 5px;">
+                                            <button class="edit-btn" style="padding: 2px 8px; border: none; border-radius: 4px; background: #4CAF50; color: white; cursor: pointer;">
+                                                Edit
+                                            </button>
+                                            <button class="delete-btn" style="padding: 2px 8px; border: none; border-radius: 4px; background: #f44336; color: white; cursor: pointer;">
+                                                Delete
+                                            </button>
+                                        </div>
+                                    `;
+                                }
+                            '''),
+                            width=150,
+                            sortable=False,
+                            filterable=False,
+                            pinned='right'
+                        )
                         
-                        # Add delete buttons for each row
-                        st.subheader("Delete Predictions")
-                        for _, row in editable_df.iterrows():
-                            with st.expander(f"Delete {row['home_team']} vs {row['away_team']} ({row['date'].split()[0]})"):
-                                if st.button("Delete Prediction", key=f"delete_{row['id']}"):
+                        # Configure selection
+                        gb.configure_selection(
+                            'single',
+                            use_checkbox=False,
+                            rowMultiSelectWithClick=False
+                        )
+                        
+                        grid_options = gb.build()
+                        
+                        # Handle button clicks
+                        grid_options['onCellClicked'] = JsCode('''
+                            function(params) {
+                                const target = params.event.target;
+                                const row = params.data;
+                                
+                                if (target.classList.contains('edit-btn')) {
+                                    window.parent.postMessage({
+                                        type: 'EDIT_ROW',
+                                        data: row
+                                    }, '*');
+                                } else if (target.classList.contains('delete-btn')) {
+                                    if (confirm('Are you sure you want to delete this prediction?')) {
+                                        window.parent.postMessage({
+                                            type: 'DELETE_ROW',
+                                            data: row.id
+                                        }, '*');
+                                    }
+                                }
+                            }
+                        ''')
+                        
+                        # Display the grid
+                        grid_response = AgGrid(
+                            final_df,
+                            gridOptions=grid_options,
+                            height=min(600, 50 + len(final_df) * 35),
+                            width='100%',
+                            theme='streamlit',
+                            allow_unsafe_jscode=True,
+                            enable_enterprise_modules=False,
+                            update_mode='VALUE_CHANGED',
+                            data_return_mode='AS_INPUT',
+                            fit_columns_on_grid_load=True,
+                            reload_data=False
+                        )
+                        
+                        # Handle edit/delete actions
+                        if 'edit_row' not in st.session_state:
+                            st.session_state.edit_row = None
+                        
+                        # Check for messages from the grid
+                        if 'grid_messages' not in st.session_state:
+                            st.session_state.grid_messages = []
+                        
+                        # Listen for messages from the grid
+                        grid_js = """
+                        <script>
+                        window.addEventListener('message', (event) => {
+                            if (event.data.type === 'EDIT_ROW' || event.data.type === 'DELETE_ROW') {
+                                const data = event.data;
+                                const message = {
+                                    type: data.type,
+                                    data: data.data
+                                };
+                                const input = document.createElement('input');
+                                input.type = 'hidden';
+                                input.id = 'grid_message';
+                                input.value = JSON.stringify(message);
+                                document.body.appendChild(input);
+                                input.dispatchEvent(new Event('input'));
+                            }
+                        });
+                        </script>
+                        """
+                        
+                        # Add the JavaScript to the page
+                        st.components.v1.html(grid_js, height=0)
+                        
+                        # Handle grid messages
+                        grid_message = st.text_input("Grid Message", key="grid_message", label_visibility="collapsed")
+                        
+                        if grid_message:
+                            try:
+                                message = json.loads(grid_message)
+                                if message['type'] == 'EDIT_ROW':
+                                    st.session_state.edit_row = message['data']
+                                    st.session_state.show_edit_form = True
+                                    st.rerun()
+                                elif message['type'] == 'DELETE_ROW':
                                     try:
-                                        if history.delete_prediction(row['id']):
-                                            st.success(f"✅ Prediction {row['id']} deleted successfully!")
+                                        if history.delete_prediction(message['data']):
+                                            st.success("✅ Prediction deleted successfully!")
                                             st.session_state.refresh_data = True
                                             st.rerun()
                                         else:
-                                            st.error(f"❌ Failed to delete prediction {row['id']}")
+                                            st.error("❌ Failed to delete prediction")
                                     except Exception as e:
-                                        st.error(f"❌ Error deleting prediction {row['id']}: {str(e)}")
+                                        st.error(f"❌ Error deleting prediction: {str(e)}")
+                            except Exception as e:
+                                st.error(f"Error processing action: {str(e)}")
+                        
+                        # Show edit form if a row is selected
+                        if st.session_state.get('show_edit_form') and st.session_state.edit_row:
+                            with st.form(key='edit_prediction_form'):
+                                st.subheader("Edit Prediction")
+                                
+                                # Get the row data
+                                row = st.session_state.edit_row
+                                
+                                # Create form columns
+                                col1, col2 = st.columns(2)
+                                
+                                with col1:
+                                    date = st.date_input("Date", value=pd.to_datetime(row.get('date', datetime.now())))
+                                    home_team = st.text_input("Home Team", value=row.get('home_team', ''))
+                                    away_team = st.text_input("Away Team", value=row.get('away_team', ''))
+                                    league = st.text_input("League", value=row.get('league', ''))
+                                    
+                                with col2:
+                                    status = st.selectbox(
+                                        "Status",
+                                        ["Pending", "Completed"],
+                                        index=0 if row.get('status') == "Pending" else 1
+                                    )
+                                    predicted_outcome = st.selectbox(
+                                        "Predicted Outcome",
+                                        ["HOME", "DRAW", "AWAY"],
+                                        index=["HOME", "DRAW", "AWAY"].index(row.get('predicted_outcome', 'HOME'))
+                                    )
+                                    actual_outcome = st.selectbox(
+                                        "Actual Outcome",
+                                        ["", "HOME", "DRAW", "AWAY"],
+                                        index=["", "HOME", "DRAW", "AWAY"].index(row.get('actual_outcome', ""))
+                                    )
+                                    confidence = st.slider("Confidence", 0, 100, int(row.get('confidence', 50)))
+                                
+                                # Form buttons
+                                col1, col2, col3 = st.columns([1, 1, 2])
+                                
+                                with col1:
+                                    if st.form_submit_button("💾 Save Changes"):
+                                        # Prepare update data
+                                        update_data = {
+                                            'date': date.strftime('%Y-%m-%d %H:%M:%S'),
+                                            'home_team': home_team,
+                                            'away_team': away_team,
+                                            'league': league,
+                                            'status': status,
+                                            'predicted_outcome': predicted_outcome,
+                                            'actual_outcome': actual_outcome if actual_outcome else None,
+                                            'confidence': confidence
+                                        }
+                                        
+                                        try:
+                                            # Update in database
+                                            if history.update_prediction(row['id'], update_data):
+                                                st.success("✅ Prediction updated successfully!")
+                                                st.session_state.refresh_data = True
+                                                st.session_state.show_edit_form = False
+                                                st.rerun()
+                                            else:
+                                                st.error("❌ Failed to update prediction")
+                                        except Exception as e:
+                                            st.error(f"❌ Error updating prediction: {str(e)}")
+                                
+                                with col2:
+                                    if st.form_submit_button("❌ Cancel"):
+                                        st.session_state.show_edit_form = False
+                                        st.rerun()
+                                
+                                with col3:
+                                    if st.form_submit_button("🗑️ Delete Prediction"):
+                                        try:
+                                            if history.delete_prediction(row['id']):
+                                                st.success("✅ Prediction deleted successfully!")
+                                                st.session_state.refresh_data = True
+                                                st.session_state.show_edit_form = False
+                                                st.rerun()
+                                            else:
+                                                st.error("❌ Failed to delete prediction")
+                                        except Exception as e:
+                                            st.error(f"❌ Error deleting prediction: {str(e)}")
                     else:
                         st.warning("No predictions found matching the selected filters.")
                     
