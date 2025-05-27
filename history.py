@@ -977,7 +977,24 @@ def show_history_page():
                         # Store original values for reference
                         row_id = str(row['id'])
                         
-                        # Create row data with original values including odds
+                        # Determine result status
+                        if pd.notna(row['predicted_outcome']) and pd.notna(row['actual_outcome']) and row['predicted_outcome'] == row['actual_outcome']:
+                            result_str = '✅ Won'
+                        elif pd.notna(row['actual_outcome']):
+                            result_str = '❌ Lost'
+                        else:
+                            result_str = '⏳ Pending'
+                            
+                        # Convert confidence to text format
+                        confidence_value = float(row['confidence']) if pd.notna(row['confidence']) else 0.0
+                        if confidence_value >= 70:
+                            confidence_str = 'High'
+                        elif confidence_value >= 50:
+                            confidence_str = 'Medium'
+                        else:
+                            confidence_str = 'Low'
+                        
+                        # Create row data with original values including odds and result
                         row_data = {
                             'id': row_id,
                             'date': date_str,
@@ -985,15 +1002,18 @@ def show_history_page():
                             'home_team': str(row['home_team']),
                             'away_team': str(row['away_team']),
                             'predicted_outcome': str(row['predicted_outcome']),
-                            'confidence': float(row['confidence']) if pd.notna(row['confidence']) else 0.0,
+                            'confidence': confidence_str,  # Display as text (High/Medium/Low)
+                            'confidence_value': confidence_value,  # Keep numeric value for calculations
+                            'actual_outcome': str(row['actual_outcome']) if pd.notna(row['actual_outcome']) else '',
+                            'status': str(row['status']),
+                            'result': result_str,  # Add result column
                             'home_odds': float(row['home_odds']) if pd.notna(row['home_odds']) else 0.0,
                             'draw_odds': float(row['draw_odds']) if pd.notna(row['draw_odds']) else 0.0,
                             'away_odds': float(row['away_odds']) if pd.notna(row['away_odds']) else 0.0,
-                            'actual_outcome': str(row['actual_outcome']) if pd.notna(row['actual_outcome']) else '',
-                            'status': str(row['status']),
                             'profit_loss': float(row['profit_loss']) if pd.notna(row['profit_loss']) else 0.0,
                             'edit': False,  # Add an edit column for row selection
-                            'delete': False  # Add a delete column for row deletion
+                            'delete': False,  # Add a delete column for row deletion
+                            'apply': False   # Add an apply column to confirm changes
                         }
                         
                         editable_data.append(row_data)
@@ -1040,11 +1060,31 @@ def show_history_page():
                                 options=["HOME", "DRAW", "AWAY"],
                                 disabled=True
                             ),
-                            "confidence": st.column_config.NumberColumn(
+                            "confidence": st.column_config.TextColumn(
                                 "Confidence",
+                                disabled=True,
+                                help="High: ≥70%, Medium: 50-70%, Low: <50%"
+                            ),
+                            "confidence_value": st.column_config.NumberColumn(
+                                "Confidence Value",
                                 min_value=0.0,
                                 max_value=100.0,
                                 format="%.1f%%",
+                                disabled=True,
+                                help="Numeric confidence value"
+                            ),
+                            "actual_outcome": st.column_config.SelectboxColumn(
+                                "Actual Outcome",
+                                options=["", "HOME", "DRAW", "AWAY"],
+                                disabled=True
+                            ),
+                            "status": st.column_config.SelectboxColumn(
+                                "Status",
+                                options=["Pending", "Completed"],
+                                disabled=True
+                            ),
+                            "result": st.column_config.TextColumn(
+                                "Result",
                                 disabled=True
                             ),
                             "home_odds": st.column_config.NumberColumn(
@@ -1065,20 +1105,16 @@ def show_history_page():
                                 min_value=1.01,
                                 max_value=100.0
                             ),
-                            "actual_outcome": st.column_config.SelectboxColumn(
-                                "Actual Outcome",
-                                options=["", "HOME", "DRAW", "AWAY"],
-                                disabled=True
-                            ),
-                            "status": st.column_config.SelectboxColumn(
-                                "Status",
-                                options=["Pending", "Completed"],
-                                disabled=True
-                            ),
                             "profit_loss": st.column_config.NumberColumn("Profit/Loss", format="%.2fU"),
                             "edit": st.column_config.CheckboxColumn("Edit"),
-                            "delete": st.column_config.CheckboxColumn("Delete")
+                            "delete": st.column_config.CheckboxColumn("Delete"),
+                            "apply": st.column_config.CheckboxColumn("Apply")
                         },
+                        column_order=[
+                            "date", "league", "home_team", "away_team", "predicted_outcome", 
+                            "confidence", "actual_outcome", "status", "result", 
+                            "home_odds", "draw_odds", "away_odds", "profit_loss", "edit", "delete", "apply"
+                        ],
                         hide_index=True,
                         num_rows="fixed",
                         use_container_width=True,
@@ -1091,58 +1127,51 @@ def show_history_page():
                         if 'previous_edit_df' not in st.session_state:
                             st.session_state.previous_edit_df = edited_df.copy(deep=True)
                             
-                        # Check for rows marked for deletion
-                        rows_to_delete = edited_df[edited_df['delete'] == True]
+                        # Check for rows marked for deletion AND apply is checked
+                        rows_to_delete = edited_df[(edited_df['delete'] == True) & (edited_df['apply'] == True)]
                         if not rows_to_delete.empty:
                             # Process each deletion
                             for idx, row in rows_to_delete.iterrows():
                                 row_id = row['id']
                                 
-                                # Check if this is a new deletion (not already processed)
-                                if 'previous_edit_df' in st.session_state:
-                                    prev_df = st.session_state.previous_edit_df
-                                    if idx < len(prev_df) and not prev_df.iloc[idx]['delete']:
-                                        # This is a new deletion request
-                                        logger.info(f"Deleting prediction ID: {row_id}")
-                                        if history.delete_prediction(row_id):
-                                            st.success(f"Deleted prediction for {row['home_team']} vs {row['away_team']}")
-                                            # Clear the session state to refresh data
-                                            st.session_state.pop('history_df', None)
-                                            st.session_state.pop('original_edit_df', None)
-                                            st.session_state.pop('previous_edit_df', None)
-                                            # Use a javascript hack to refresh without using st.rerun()
-                                            st.markdown(
-                                                """<script>window.parent.document.querySelector('section.main').scrollTop = 0;</script>""", 
-                                                unsafe_allow_html=True
-                                            )
-                                            time.sleep(0.5)  # Small delay
-                                            st.experimental_rerun()
+                                # This is a confirmed deletion request
+                                logger.info(f"Deleting prediction ID: {row_id}")
+                                if history.delete_prediction(row_id):
+                                    st.success(f"Deleted prediction for {row['home_team']} vs {row['away_team']}")
+                                    # Clear the session state to refresh data
+                                    st.session_state.pop('history_df', None)
+                                    st.session_state.pop('original_edit_df', None)
+                                    st.session_state.pop('previous_edit_df', None)
+                                    # Use a javascript hack to refresh without using st.rerun()
+                                    st.markdown(
+                                        """<script>window.parent.document.querySelector('section.main').scrollTop = 0;</script>""", 
+                                        unsafe_allow_html=True
+                                    )
+                                    time.sleep(0.5)  # Small delay
+                                    st.experimental_rerun()
                         
-                        # Check for rows marked for detailed editing
-                        rows_to_edit = edited_df[edited_df['edit'] == True]
+                        # Check for rows marked for detailed editing AND apply is checked
+                        rows_to_edit = edited_df[(edited_df['edit'] == True) & (edited_df['apply'] == True)]
                         if not rows_to_edit.empty:
                             # Get the first row marked for editing
                             edit_row = rows_to_edit.iloc[0]
                             row_id = edit_row['id']
                             
-                            # Check if this is a new edit request
-                            is_new_edit = True
-                            if 'previous_edit_df' in st.session_state:
-                                prev_df = st.session_state.previous_edit_df
-                                for i, r in prev_df.iterrows():
-                                    if r['id'] == row_id and r['edit'] == True:
-                                        is_new_edit = False
-                                        break
+                            logger.info(f"Editing prediction ID: {row_id}")
+                            # Store edit data in session state
+                            st.session_state.edit_prediction = True
+                            st.session_state.edit_prediction_id = row_id
+                            st.session_state.edit_prediction_data = edit_row.to_dict()
                             
-                            if is_new_edit:
-                                logger.info(f"Editing prediction ID: {row_id}")
-                                # Store edit data in session state
-                                st.session_state.edit_prediction = True
-                                st.session_state.edit_prediction_id = row_id
-                                st.session_state.edit_prediction_data = edit_row.to_dict()
-                                
-                                # Update previous state
-                                st.session_state.previous_edit_df = edited_df.copy(deep=True)
+                            # Update previous state
+                            st.session_state.previous_edit_df = edited_df.copy(deep=True)
+                            
+                            # Show success message
+                            st.success(f"Editing prediction for {edit_row['home_team']} vs {edit_row['away_team']}")
+                            
+                            # Clear the apply checkbox after processing
+                            edited_df.at[edit_row.name, 'apply'] = False
+                            st.session_state.original_edit_df = edited_df.copy(deep=True)
                             
                         # Check for direct edits in the table
                         if 'original_edit_df' in st.session_state:
@@ -1177,13 +1206,14 @@ def show_history_page():
                                             continue
                                         
                                         # Prepare update data - use edited odds values directly
+                                        # Use confidence_value instead of confidence (which is now a text field)
                                         update_data = {
                                             'date': ensure_date_format(row['date']),  # Use our consistent date formatter
                                             'league': row['league'],
                                             'home_team': row['home_team'],
                                             'away_team': row['away_team'],
                                             'predicted_outcome': row['predicted_outcome'],
-                                            'confidence': float(row['confidence']),
+                                            'confidence': float(row['confidence_value']) if 'confidence_value' in row else float(original_row['confidence']),
                                             'home_odds': float(row['home_odds']) if pd.notna(row['home_odds']) else 0.0,
                                             'draw_odds': float(row['draw_odds']) if pd.notna(row['draw_odds']) else 0.0,
                                             'away_odds': float(row['away_odds']) if pd.notna(row['away_odds']) else 0.0,
@@ -1230,15 +1260,29 @@ def show_history_page():
                                                 'profit_loss': profit_loss
                                             })
                                         
-                                        # Update prediction in database with confirmation
-                                        logger.info(f"Updating prediction ID: {row_id} with data: {update_data}")
-                                        if history.update_prediction(row_id, update_data):
-                                            st.toast(f"Updated prediction for {row['home_team']} vs {row['away_team']}")
-                                            # Update session state
-                                            st.session_state.original_edit_df = edited_df.copy(deep=True)
-                                            st.session_state.previous_edit_df = edited_df.copy(deep=True)
-                                            # Clear history dataframe to force reload
-                                            st.session_state.pop('history_df', None)
+                                        # Compare with original to detect changes
+                                        original_row = original_df.loc[original_df['id'] == row_id].iloc[0]
+                                        
+                                        # Check if odds or profit/loss have changed
+                                        # Ensure we're comparing the same types
+                                        home_odds_changed = float(row['home_odds']) != float(original_row['home_odds'])
+                                        draw_odds_changed = float(row['draw_odds']) != float(original_row['draw_odds'])
+                                        away_odds_changed = float(row['away_odds']) != float(original_row['away_odds'])
+                                        profit_loss_changed = float(row['profit_loss']) != float(original_row['profit_loss'])
+                                        
+                                        # Only process changes if Apply is checked
+                                        if row['apply'] and (home_odds_changed or draw_odds_changed or away_odds_changed or profit_loss_changed):
+                                            # Update prediction in database with confirmation
+                                            logger.info(f"Updating prediction ID: {row_id} with data: {update_data}")
+                                            if history.update_prediction(row_id, update_data):
+                                                st.toast(f"Updated prediction for {row['home_team']} vs {row['away_team']}")
+                                                # Update session state
+                                                st.session_state.original_edit_df = edited_df.copy(deep=True)
+                                                st.session_state.previous_edit_df = edited_df.copy(deep=True)
+                                                # Clear history dataframe to force reload
+                                                st.session_state.pop('history_df', None)
+                                                # Clear the apply checkbox after processing
+                                                edited_df.at[i, 'apply'] = False
                     
                     # Selection is handled through the selectbox above
                         
