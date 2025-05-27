@@ -962,11 +962,6 @@ def show_history_page():
             
             # Display predictions table
             if not predictions.empty:
-                st.markdown("""
-                    <h2 style='color: #1e3c72; font-size: 1.5em; margin: 30px 0 20px;'>
-                        Recent Predictions
-                    </h2>
-                """, unsafe_allow_html=True)
                 
                 try:
                     # Ensure predictions is a DataFrame
@@ -1069,9 +1064,7 @@ def show_history_page():
                         if set(st.session_state.original_edit_df.columns) != set(edit_df.columns):
                             st.session_state.original_edit_df = edit_df.copy(deep=True)
                     
-                    # Display instructions
-                    st.write("### Edit Predictions")
-                    st.write("Click on any cell to edit it directly. Check the 'edit' box to open the edit dialog for more options.")
+
                     
                     # Ensure all dates are properly formatted as YYYY-MM-DD strings
                     if 'date' in edit_df.columns:
@@ -1082,7 +1075,7 @@ def show_history_page():
                         edit_df['date'] = edit_df['date'].astype(str)
                         
                     # Add instructions for using the editor
-                    st.info("📝 To edit a prediction: 1) Check the 'Edit' box, 2) Make your changes, 3) Check 'Apply' to save changes")
+                    st.info("📝 To edit a prediction: 1) Click directly on the cell you want to edit, 2) Make your changes, 3) Check 'Apply' to save changes")
                     st.warning("⚠️ To delete a prediction: 1) Check the 'Delete' box for the row, 2) Check 'Apply' to confirm deletion")
                     
                     # Initialize session state for edit tracking
@@ -1114,7 +1107,7 @@ def show_history_page():
                                 return
                                 
                             # Check if required columns exist
-                            required_cols = ['edit', 'delete', 'apply', 'id']
+                            required_cols = ['delete', 'apply', 'id']
                             for col in required_cols:
                                 if col not in current_df.columns:
                                     logger.warning(f"Column '{col}' not found in dataframe")
@@ -1139,18 +1132,9 @@ def show_history_page():
                             # Store the current dataframe in session state for future reference
                             st.session_state.edit_state['current_df'] = current_df.copy(deep=True)
                             
-                            # Process edit checkboxes
-                            edit_rows = current_df[current_df['edit'] == True]
-                            if not edit_rows.empty:
-                                for idx, row in edit_rows.iterrows():
-                                    # Store the row ID for editing
-                                    st.session_state.edit_row_id = row['id']
-                                    st.session_state.edit_row_data = row.to_dict()
+                            # We no longer need to process edit checkboxes as we can edit cells directly
                                     
-                                    # Clear the edit checkbox to prevent auto-refresh
-                                    current_df.at[idx, 'edit'] = False
-                                    
-                            # Process all rows with Apply checked (including those with edit checked)
+                            # Process all rows with Apply checked
                             apply_rows = current_df[current_df['apply'] == True]
                             updated_count = 0
                             
@@ -1162,7 +1146,7 @@ def show_history_page():
                                 success_messages = []
                                 error_messages = []
                                 
-                                # Compare each row with Apply checked for changes
+                                # Process each row with Apply checked
                                 for idx, row in apply_rows.iterrows():
                                     row_id = row['id']
                                     
@@ -1346,14 +1330,13 @@ def show_history_page():
                                 max_value=100.0
                             ),
                             "profit_loss": st.column_config.NumberColumn("Profit/Loss", format="%.2fU"),
-                            "edit": st.column_config.CheckboxColumn("Edit"),
                             "delete": st.column_config.CheckboxColumn("Delete"),
                             "apply": st.column_config.CheckboxColumn("Apply")
                         },
                         column_order=[
                             "date", "league", "home_team", "away_team", "predicted_outcome", 
                             "confidence", "actual_outcome", "status", "result", 
-                            "home_odds", "draw_odds", "away_odds", "profit_loss", "edit", "delete", "apply"
+                            "home_odds", "draw_odds", "away_odds", "profit_loss", "delete", "apply"
                         ],
                         hide_index=True,
                         num_rows="fixed",
@@ -1373,14 +1356,6 @@ def show_history_page():
                     
                     # Process edits and deletions
                     if edited_df is not None:
-                        # Display edit UI if a row was selected for editing
-                        if 'edit_row_data' in st.session_state:
-                            row = st.session_state.edit_row_data
-                            st.info(f"Editing row for {row['home_team']} vs {row['away_team']}. Make changes to odds and click Apply when done.")
-                            # Clear the edit_row_data after displaying the info
-                            # This prevents the info from showing again on the next render
-                            del st.session_state.edit_row_data
-                        
                         # Display delete confirmation if a row was selected for deletion
                         if 'delete_row_data' in st.session_state:
                             row = st.session_state.delete_row_data
