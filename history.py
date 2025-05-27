@@ -4,52 +4,26 @@
 
 import streamlit as st
 import pandas as pd
-import numpy as np
 from datetime import datetime, timedelta
+from football_api import get_match_by_teams, get_match_result
+from session_state import init_session_state, check_login_state
+from match_analyzer import MatchAnalyzer
+from supabase_db import SupabaseDB
 import logging
-import json
-import os
 import sys
-import time
-from typing import List, Dict, Any, Tuple, Optional, Union
-
-# Add current directory to path
 sys.path.append('.')
-
-# Import project modules
-try:
-    from football_api import get_match_by_teams, get_match_result
-    from session_state import init_session_state, check_login_state
-    from match_analyzer import MatchAnalyzer
-    from supabase_db import SupabaseDB
-    import filter_storage
-except ImportError as e:
-    st.error(f"Error importing required modules: {str(e)}")
-    raise
-
-# Import AG Grid components
-try:
-    from st_aggrid import AgGrid, GridOptionsBuilder, JsCode, ColumnsAutoSizeMode
-except ImportError:
-    st.error("AG Grid components not found. Please install with: pip install streamlit-aggrid")
-    raise
+import importlib
+filter_storage = importlib.import_module('filter_storage')
 
 class PredictionHistory:
     def __init__(self):
         """Initialize the Supabase database connection."""
-        try:
-            self.db = SupabaseDB()
-        except Exception as e:
-            st.error(f"Failed to initialize database: {str(e)}")
-            raise
+        self.db = SupabaseDB()
 
     def init_database(self):
         """Initialize the Supabase database"""
-        try:
-            self.db.init_database()
-        except Exception as e:
-            st.error(f"Failed to initialize database: {str(e)}")
-            raise
+        # No need to create tables as they are managed in Supabase dashboard
+        self.db.init_database()
 
     def add_prediction(self, prediction_data):
         """Add a new prediction to the database"""
@@ -86,24 +60,6 @@ class PredictionHistory:
             logging.error(f"Error adding prediction: {str(e)}")
             return False
 
-    def update_prediction(self, prediction_id, update_data):
-        """Update prediction with new data"""
-        try:
-            result = self.db.supabase.table('predictions').update(update_data).eq('id', prediction_id).execute()
-            return bool(result.data)
-        except Exception as e:
-            st.error(f"Error updating prediction: {str(e)}")
-            return False
-            
-    def delete_prediction(self, prediction_id):
-        """Delete a prediction"""
-        try:
-            result = self.db.supabase.table('predictions').delete().eq('id', prediction_id).execute()
-            return bool(result.data)
-        except Exception as e:
-            st.error(f"Error deleting prediction: {str(e)}")
-            return False
-            
     def update_prediction_result(self, prediction_id, actual_outcome, profit_loss, home_score=None, away_score=None):
         """Update prediction with actual result and profit/loss"""
         try:
@@ -118,7 +74,8 @@ class PredictionHistory:
             if away_score is not None:
                 update_data['away_score'] = away_score
                 
-            return self.update_prediction(prediction_id, update_data)
+            result = self.db.supabase.table('predictions').update(update_data).eq('id', prediction_id).execute()
+            return True
             
         except Exception as e:
             logging.error(f"Error updating prediction result: {str(e)}")
@@ -383,86 +340,6 @@ class PredictionHistory:
             logging.error(f"Error calculating statistics: {str(e)}")
             return [0, 0, 0.0, 0.0, 0.0], 0
 
-def edit_prediction(history, pred_id, df):
-    """Display a form to edit a prediction"""
-    prediction = df[df['id'] == pred_id].iloc[0].to_dict()
-    
-    with st.form(key=f"edit_form_{pred_id}"):
-        st.subheader(f"Edit Prediction: {prediction['home_team']} vs {prediction['away_team']}")
-        
-        # Create form columns
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            date = st.date_input("Date", value=pd.to_datetime(prediction['date']))
-            home_team = st.text_input("Home Team", value=prediction['home_team'])
-            away_team = st.text_input("Away Team", value=prediction['away_team'])
-            league = st.text_input("League", value=prediction['league'])
-            
-        with col2:
-            status = st.selectbox(
-                "Status",
-                ["Pending", "Completed"],
-                index=0 if prediction.get('status') == "Pending" else 1
-            )
-            predicted_outcome = st.selectbox(
-                "Predicted Outcome",
-                ["HOME", "DRAW", "AWAY"],
-                index=["HOME", "DRAW", "AWAY"].index(prediction['predicted_outcome'])
-            )
-            actual_outcome = st.selectbox(
-                "Actual Outcome",
-                ["", "HOME", "DRAW", "AWAY"],
-                index=["", "HOME", "DRAW", "AWAY"].index(prediction.get('actual_outcome', ""))
-            )
-            confidence = st.slider("Confidence", 0, 100, int(prediction.get('confidence', 50)))
-        
-        # Odds
-        st.subheader("Odds")
-        odds_col1, odds_col2, odds_col3 = st.columns(3)
-        with odds_col1:
-            home_odds = st.number_input("Home Odds", value=float(prediction.get('home_odds', 2.0)), step=0.1)
-        with odds_col2:
-            draw_odds = st.number_input("Draw Odds", value=float(prediction.get('draw_odds', 3.0)), step=0.1)
-        with odds_col3:
-            away_odds = st.number_input("Away Odds", value=float(prediction.get('away_odds', 3.5)), step=0.1)
-        
-        # Form buttons
-        submit_button = st.form_submit_button("💾 Save Changes")
-        cancel_button = st.form_submit_button("❌ Cancel")
-        
-        if submit_button:
-            # Prepare update data
-            update_data = {
-                'date': date.strftime('%Y-%m-%d %H:%M:%S'),
-                'home_team': home_team,
-                'away_team': away_team,
-                'league': league,
-                'status': status,
-                'predicted_outcome': predicted_outcome,
-                'actual_outcome': actual_outcome if actual_outcome else None,
-                'home_odds': home_odds,
-                'draw_odds': draw_odds,
-                'away_odds': away_odds,
-                'confidence': confidence
-            }
-            
-            # Update in database
-            if history.update_prediction(pred_id, update_data):
-                st.success("✅ Prediction updated successfully!")
-                st.session_state.refresh_data = True
-                st.rerun()
-            else:
-                st.error("❌ Failed to update prediction.")
-
-def delete_prediction(history, pred_id):
-    """Delete a prediction from the database"""
-    if history.delete_prediction(pred_id):
-        st.success("✅ Prediction deleted successfully!")
-        st.session_state.refresh_data = True
-    else:
-        st.error("❌ Failed to delete prediction.")
-
 def style_dataframe(df):
     """Style the predictions dataframe with colors and formatting"""
     def style_row(row):
@@ -580,41 +457,24 @@ def get_confidence_level(confidence):
         return "Unknown"
 
 def show_history_page():
-    """Display prediction history page with AG Grid editing capabilities"""
+    """Display prediction history page"""
     st.markdown("""
         <style>
-        .ag-header-cell-label {
-            justify-content: center;
+        .stDataFrame {
+            font-size: 14px;
+            width: 100%;
         }
-        .ag-cell {
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .stDataFrame [data-testid="StyledDataFrameDataCell"] {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            padding: 12px 15px;
+            color: #333333;
         }
-        .ag-theme-streamlit {
-            --ag-font-size: 14px;
-            --ag-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-        }
-        .action-button {
-            padding: 4px 8px;
-            margin: 2px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            transition: all 0.3s;
-        }
-        .edit-button {
-            background-color: #4CAF50;
-            color: white;
-        }
-        .delete-button {
-            background-color: #f44336;
-            color: white;
-        }
-        .action-button:hover {
-            opacity: 0.8;
-            transform: translateY(-1px);
+        .stDataFrame [data-testid="StyledDataFrameHeaderCell"] {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            padding: 12px 15px;
+            background-color: #f8f9fa;
+            color: #333333;
+            font-weight: 600;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -708,20 +568,15 @@ def show_history_page():
         if 'history_data_loaded' not in st.session_state:
             st.session_state.history_data_loaded = False
             
-        # Initialize PredictionHistory
-        history = PredictionHistory()
-        
-        # Handle row editing
-        if 'editing_row' not in st.session_state:
-            st.session_state.editing_row = None
-            
-        # Initialize or update history_df in session state
-        if 'history_df' not in st.session_state or st.session_state.get('refresh_data', False):
+        if 'history_df' not in st.session_state:
+            # Initialize PredictionHistory
+            history = PredictionHistory()
             # Get initial data with default filters
             df = history.get_predictions()
             st.session_state.history_df = df
             st.session_state.history_data_loaded = True
-            st.session_state.refresh_data = False
+        else:
+            history = PredictionHistory()
         
         # Initialize filter state variables
         if 'history_filter_params' not in st.session_state:
@@ -1038,235 +893,25 @@ def show_history_page():
                         except (ValueError, TypeError):
                             return '-'
                     
-                    # Display the filtered data with AG Grid and edit form
-                    if not final_df.empty:
-                        # Configure AG Grid
-                        gb = GridOptionsBuilder.from_dataframe(final_df)
-                        
-                        # Configure grid options
-                        gb.configure_default_column(
-                            resizable=True,
-                            filterable=True,
-                            sortable=True,
-                            editable=False
-                        )
-                        
-                        # Add action buttons
-                        gb.configure_column(
-                            'actions',
-                            header_name='Actions',
-                            cellRenderer=JsCode('''
-                                function(params) {
-                                    return `
-                                        <div style="display: flex; gap: 5px;">
-                                            <button class="edit-btn" style="padding: 2px 8px; border: none; border-radius: 4px; background: #4CAF50; color: white; cursor: pointer;">
-                                                Edit
-                                            </button>
-                                            <button class="delete-btn" style="padding: 2px 8px; border: none; border-radius: 4px; background: #f44336; color: white; cursor: pointer;">
-                                                Delete
-                                            </button>
-                                        </div>
-                                    `;
-                                }
-                            '''),
-                            width=150,
-                            sortable=False,
-                            filterable=False,
-                            pinned='right'
-                        )
-                        
-                        # Configure selection
-                        gb.configure_selection(
-                            'single',
-                            use_checkbox=False,
-                            rowMultiSelectWithClick=False
-                        )
-                        
-                        grid_options = gb.build()
-                        
-                        # Handle button clicks
-                        grid_options['onCellClicked'] = JsCode('''
-                            function(params) {
-                                const target = params.event.target;
-                                const row = params.data;
-                                
-                                if (target.classList.contains('edit-btn')) {
-                                    window.parent.postMessage({
-                                        type: 'EDIT_ROW',
-                                        data: row
-                                    }, '*');
-                                } else if (target.classList.contains('delete-btn')) {
-                                    if (confirm('Are you sure you want to delete this prediction?')) {
-                                        window.parent.postMessage({
-                                            type: 'DELETE_ROW',
-                                            data: row.id
-                                        }, '*');
-                                    }
-                                }
-                            }
-                        ''')
-                        
-                        # Display the grid
-                        grid_response = AgGrid(
-                            final_df,
-                            gridOptions=grid_options,
-                            height=min(600, 50 + len(final_df) * 35),
-                            width='100%',
-                            theme='streamlit',
-                            allow_unsafe_jscode=True,
-                            enable_enterprise_modules=False,
-                            update_mode='VALUE_CHANGED',
-                            data_return_mode='AS_INPUT',
-                            fit_columns_on_grid_load=True,
-                            reload_data=False
-                        )
-                        
-                        # Handle edit/delete actions
-                        if 'edit_row' not in st.session_state:
-                            st.session_state.edit_row = None
-                        
-                        # Check for messages from the grid
-                        if 'grid_messages' not in st.session_state:
-                            st.session_state.grid_messages = []
-                        
-                        # Listen for messages from the grid
-                        grid_js = """
-                        <script>
-                        window.addEventListener('message', (event) => {
-                            if (event.data.type === 'EDIT_ROW' || event.data.type === 'DELETE_ROW') {
-                                const data = event.data;
-                                const message = {
-                                    type: data.type,
-                                    data: data.data
-                                };
-                                const input = document.createElement('input');
-                                input.type = 'hidden';
-                                input.id = 'grid_message';
-                                input.value = JSON.stringify(message);
-                                document.body.appendChild(input);
-                                input.dispatchEvent(new Event('input'));
-                            }
-                        });
-                        </script>
-                        """
-                        
-                        # Add the JavaScript to the page
-                        st.components.v1.html(grid_js, height=0)
-                        
-                        # Handle grid messages
-                        grid_message = st.text_input("Grid Message", key="grid_message", label_visibility="collapsed")
-                        
-                        if grid_message:
-                            try:
-                                message = json.loads(grid_message)
-                                if message['type'] == 'EDIT_ROW':
-                                    st.session_state.edit_row = message['data']
-                                    st.session_state.show_edit_form = True
-                                    st.rerun()
-                                elif message['type'] == 'DELETE_ROW':
-                                    try:
-                                        if history.delete_prediction(message['data']):
-                                            st.success("✅ Prediction deleted successfully!")
-                                            st.session_state.refresh_data = True
-                                            st.rerun()
-                                        else:
-                                            st.error("❌ Failed to delete prediction")
-                                    except Exception as e:
-                                        st.error(f"❌ Error deleting prediction: {str(e)}")
-                            except Exception as e:
-                                st.error(f"Error processing action: {str(e)}")
-                        
-                        # Show edit form if a row is selected
-                        if st.session_state.get('show_edit_form') and st.session_state.edit_row:
-                            with st.form(key='edit_prediction_form'):
-                                st.subheader("Edit Prediction")
-                                
-                                # Get the row data
-                                row = st.session_state.edit_row
-                                
-                                # Create form columns
-                                col1, col2 = st.columns(2)
-                                
-                                with col1:
-                                    date = st.date_input("Date", value=pd.to_datetime(row.get('date', datetime.now())))
-                                    home_team = st.text_input("Home Team", value=row.get('home_team', ''))
-                                    away_team = st.text_input("Away Team", value=row.get('away_team', ''))
-                                    league = st.text_input("League", value=row.get('league', ''))
-                                    
-                                with col2:
-                                    status = st.selectbox(
-                                        "Status",
-                                        ["Pending", "Completed"],
-                                        index=0 if row.get('status') == "Pending" else 1
-                                    )
-                                    predicted_outcome = st.selectbox(
-                                        "Predicted Outcome",
-                                        ["HOME", "DRAW", "AWAY"],
-                                        index=["HOME", "DRAW", "AWAY"].index(row.get('predicted_outcome', 'HOME'))
-                                    )
-                                    actual_outcome = st.selectbox(
-                                        "Actual Outcome",
-                                        ["", "HOME", "DRAW", "AWAY"],
-                                        index=["", "HOME", "DRAW", "AWAY"].index(row.get('actual_outcome', ""))
-                                    )
-                                    confidence = st.slider("Confidence", 0, 100, int(row.get('confidence', 50)))
-                                
-                                # Form buttons
-                                col1, col2, col3 = st.columns([1, 1, 2])
-                                
-                                with col1:
-                                    if st.form_submit_button("💾 Save Changes"):
-                                        # Prepare update data
-                                        update_data = {
-                                            'date': date.strftime('%Y-%m-%d %H:%M:%S'),
-                                            'home_team': home_team,
-                                            'away_team': away_team,
-                                            'league': league,
-                                            'status': status,
-                                            'predicted_outcome': predicted_outcome,
-                                            'actual_outcome': actual_outcome if actual_outcome else None,
-                                            'confidence': confidence
-                                        }
-                                        
-                                        try:
-                                            # Update in database
-                                            if history.update_prediction(row['id'], update_data):
-                                                st.success("✅ Prediction updated successfully!")
-                                                st.session_state.refresh_data = True
-                                                st.session_state.show_edit_form = False
-                                                st.rerun()
-                                            else:
-                                                st.error("❌ Failed to update prediction")
-                                        except Exception as e:
-                                            st.error(f"❌ Error updating prediction: {str(e)}")
-                                
-                                with col2:
-                                    if st.form_submit_button("❌ Cancel"):
-                                        st.session_state.show_edit_form = False
-                                        st.rerun()
-                                
-                                with col3:
-                                    if st.form_submit_button("🗑️ Delete Prediction"):
-                                        try:
-                                            if history.delete_prediction(row['id']):
-                                                st.success("✅ Prediction deleted successfully!")
-                                                st.session_state.refresh_data = True
-                                                st.session_state.show_edit_form = False
-                                                st.rerun()
-                                            else:
-                                                st.error("❌ Failed to delete prediction")
-                                        except Exception as e:
-                                            st.error(f"❌ Error deleting prediction: {str(e)}")
-                    else:
-                        st.warning("No predictions found matching the selected filters.")
+                    # Apply formatting
+                    final_df['profit_loss'] = final_df.apply(format_pl, axis=1)
                     
-                    # Add some space at the bottom of the page
-                    st.markdown("<br><br>", unsafe_allow_html=True)
+                    # Rename columns for display
+                    final_df = final_df.rename(columns=display_columns)
+                    
+                    # Apply styling
+                    styled_df = style_dataframe(final_df)
+                    
+                    # Display the styled dataframe
+                    st.dataframe(
+                        styled_df,
+                        use_container_width=True,
+                        hide_index=True
+                    )
                     
                 except Exception as e:
-                    st.error(f"An error occurred: {str(e)}")
+                    st.error(f"Error displaying predictions table: {str(e)}")
                     st.exception(e)
-                    
             else:
                 st.info("No predictions found for the selected date range.")
         
