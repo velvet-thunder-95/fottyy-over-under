@@ -60,6 +60,24 @@ class PredictionHistory:
             logging.error(f"Error adding prediction: {str(e)}")
             return False
 
+    def update_prediction(self, prediction_id, update_data):
+        """Update prediction with new data"""
+        try:
+            result = self.db.supabase.table('predictions').update(update_data).eq('id', prediction_id).execute()
+            return bool(result.data)
+        except Exception as e:
+            st.error(f"Error updating prediction: {str(e)}")
+            return False
+            
+    def delete_prediction(self, prediction_id):
+        """Delete a prediction"""
+        try:
+            result = self.db.supabase.table('predictions').delete().eq('id', prediction_id).execute()
+            return bool(result.data)
+        except Exception as e:
+            st.error(f"Error deleting prediction: {str(e)}")
+            return False
+            
     def update_prediction_result(self, prediction_id, actual_outcome, profit_loss, home_score=None, away_score=None):
         """Update prediction with actual result and profit/loss"""
         try:
@@ -74,8 +92,7 @@ class PredictionHistory:
             if away_score is not None:
                 update_data['away_score'] = away_score
                 
-            result = self.db.supabase.table('predictions').update(update_data).eq('id', prediction_id).execute()
-            return True
+            return self.update_prediction(prediction_id, update_data)
             
         except Exception as e:
             logging.error(f"Error updating prediction result: {str(e)}")
@@ -340,6 +357,86 @@ class PredictionHistory:
             logging.error(f"Error calculating statistics: {str(e)}")
             return [0, 0, 0.0, 0.0, 0.0], 0
 
+def edit_prediction(history, pred_id, df):
+    """Display a form to edit a prediction"""
+    prediction = df[df['id'] == pred_id].iloc[0].to_dict()
+    
+    with st.form(key=f"edit_form_{pred_id}"):
+        st.subheader(f"Edit Prediction: {prediction['home_team']} vs {prediction['away_team']}")
+        
+        # Create form columns
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            date = st.date_input("Date", value=pd.to_datetime(prediction['date']))
+            home_team = st.text_input("Home Team", value=prediction['home_team'])
+            away_team = st.text_input("Away Team", value=prediction['away_team'])
+            league = st.text_input("League", value=prediction['league'])
+            
+        with col2:
+            status = st.selectbox(
+                "Status",
+                ["Pending", "Completed"],
+                index=0 if prediction.get('status') == "Pending" else 1
+            )
+            predicted_outcome = st.selectbox(
+                "Predicted Outcome",
+                ["HOME", "DRAW", "AWAY"],
+                index=["HOME", "DRAW", "AWAY"].index(prediction['predicted_outcome'])
+            )
+            actual_outcome = st.selectbox(
+                "Actual Outcome",
+                ["", "HOME", "DRAW", "AWAY"],
+                index=["", "HOME", "DRAW", "AWAY"].index(prediction.get('actual_outcome', ""))
+            )
+            confidence = st.slider("Confidence", 0, 100, int(prediction.get('confidence', 50)))
+        
+        # Odds
+        st.subheader("Odds")
+        odds_col1, odds_col2, odds_col3 = st.columns(3)
+        with odds_col1:
+            home_odds = st.number_input("Home Odds", value=float(prediction.get('home_odds', 2.0)), step=0.1)
+        with odds_col2:
+            draw_odds = st.number_input("Draw Odds", value=float(prediction.get('draw_odds', 3.0)), step=0.1)
+        with odds_col3:
+            away_odds = st.number_input("Away Odds", value=float(prediction.get('away_odds', 3.5)), step=0.1)
+        
+        # Form buttons
+        submit_button = st.form_submit_button("💾 Save Changes")
+        cancel_button = st.form_submit_button("❌ Cancel")
+        
+        if submit_button:
+            # Prepare update data
+            update_data = {
+                'date': date.strftime('%Y-%m-%d %H:%M:%S'),
+                'home_team': home_team,
+                'away_team': away_team,
+                'league': league,
+                'status': status,
+                'predicted_outcome': predicted_outcome,
+                'actual_outcome': actual_outcome if actual_outcome else None,
+                'home_odds': home_odds,
+                'draw_odds': draw_odds,
+                'away_odds': away_odds,
+                'confidence': confidence
+            }
+            
+            # Update in database
+            if history.update_prediction(pred_id, update_data):
+                st.success("✅ Prediction updated successfully!")
+                st.session_state.refresh_data = True
+                st.rerun()
+            else:
+                st.error("❌ Failed to update prediction.")
+
+def delete_prediction(history, pred_id):
+    """Delete a prediction from the database"""
+    if history.delete_prediction(pred_id):
+        st.success("✅ Prediction deleted successfully!")
+        st.session_state.refresh_data = True
+    else:
+        st.error("❌ Failed to delete prediction.")
+
 def style_dataframe(df):
     """Style the predictions dataframe with colors and formatting"""
     def style_row(row):
@@ -457,7 +554,7 @@ def get_confidence_level(confidence):
         return "Unknown"
 
 def show_history_page():
-    """Display prediction history page"""
+    """Display prediction history page with editing capabilities"""
     st.markdown("""
         <style>
         .stDataFrame {
@@ -475,6 +572,32 @@ def show_history_page():
             background-color: #f8f9fa;
             color: #333333;
             font-weight: 600;
+        }
+        
+        /* Style for action buttons */
+        .action-button {
+            padding: 4px 8px;
+            margin: 2px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+        
+        .edit-button {
+            background-color: #4CAF50;
+            color: white;
+        }
+        
+        .delete-button {
+            background-color: #f44336;
+            color: white;
+        }
+        
+        .action-button:hover {
+            opacity: 0.8;
+            transform: translateY(-1px);
         }
         </style>
     """, unsafe_allow_html=True)
@@ -568,15 +691,20 @@ def show_history_page():
         if 'history_data_loaded' not in st.session_state:
             st.session_state.history_data_loaded = False
             
-        if 'history_df' not in st.session_state:
-            # Initialize PredictionHistory
-            history = PredictionHistory()
+        # Initialize PredictionHistory
+        history = PredictionHistory()
+        
+        # Handle row editing
+        if 'editing_row' not in st.session_state:
+            st.session_state.editing_row = None
+            
+        # Initialize or update history_df in session state
+        if 'history_df' not in st.session_state or st.session_state.get('refresh_data', False):
             # Get initial data with default filters
             df = history.get_predictions()
             st.session_state.history_df = df
             st.session_state.history_data_loaded = True
-        else:
-            history = PredictionHistory()
+            st.session_state.refresh_data = False
         
         # Initialize filter state variables
         if 'history_filter_params' not in st.session_state:
@@ -893,25 +1021,62 @@ def show_history_page():
                         except (ValueError, TypeError):
                             return '-'
                     
-                    # Apply formatting
-                    final_df['profit_loss'] = final_df.apply(format_pl, axis=1)
-                    
-                    # Rename columns for display
-                    final_df = final_df.rename(columns=display_columns)
-                    
-                    # Apply styling
-                    styled_df = style_dataframe(final_df)
-                    
-                    # Display the styled dataframe
-                    st.dataframe(
-                        styled_df,
-                        use_container_width=True,
-                        hide_index=True
-                    )
+                    # Display the filtered data with action buttons
+                    if not final_df.empty:
+                        # Add action buttons to each row
+                        final_df['Actions'] = final_df.apply(lambda x: f'''
+                            <button class="action-button edit-button" onclick="editRow('{x['id']}')">Edit</button>
+                            <button class="action-button delete-button" onclick="deleteRow('{x['id']}')">Delete</button>
+                        ''', axis=1)
+                        
+                        # Display the dataframe with actions
+                        st.markdown("""
+                            <script>
+                            function editRow(id) {
+                                window.parent.postMessage({
+                                    type: 'streamlit:setComponentValue',
+                                    value: {action: 'edit', id: id}
+                                }, '*');
+                            }
+                            
+                            function deleteRow(id) {
+                                if (confirm('Are you sure you want to delete this prediction?')) {
+                                    window.parent.postMessage({
+                                        type: 'streamlit:setComponentValue',
+                                        value: {action: 'delete', id: id}
+                                    }, '*');
+                                }
+                            }
+                            </script>
+                        """, unsafe_allow_html=True)
+                        
+                        # Display the dataframe
+                        st.markdown(style_dataframe(final_df).to_html(escape=False), unsafe_allow_html=True)
+                        
+                        # Handle row actions
+                        if st.session_state.get('action'):
+                            action = st.session_state.action
+                            pred_id = st.session_state.get('prediction_id')
+                            
+                            if action == 'edit' and pred_id:
+                                edit_prediction(history, pred_id, final_df)
+                            elif action == 'delete' and pred_id:
+                                delete_prediction(history, pred_id)
+                                
+                            # Clear action state
+                            st.session_state.action = None
+                            st.session_state.prediction_id = None
+                            st.rerun()
+                    else:
+                        st.warning("No predictions found matching the selected filters.")
+                        
+                    # Add some space at the bottom of the page
+                    st.markdown("<br><br>", unsafe_allow_html=True)
                     
                 except Exception as e:
-                    st.error(f"Error displaying predictions table: {str(e)}")
+                    st.error(f"An error occurred: {str(e)}")
                     st.exception(e)
+                    
             else:
                 st.info("No predictions found for the selected date range.")
         
