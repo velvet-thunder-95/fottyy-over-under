@@ -1038,233 +1038,96 @@ def show_history_page():
                         except (ValueError, TypeError):
                             return '-'
                     
-                    # Display the filtered data with AG Grid for in-place editing
+                    # Display the filtered data with inline editing
                     if not final_df.empty:
                         # Make a copy of the dataframe for editing
                         editable_df = final_df.copy()
                         
-                        # Configure AG Grid
-                        gb = GridOptionsBuilder.from_dataframe(editable_df)
-                        
-                        # Configure default column properties
-                        gb.configure_default_column(
-                            resizable=True,
-                            filterable=True,
-                            sortable=True,
-                            editable=False  # We'll make specific columns editable
-                        )
-                        
-                        # Define editable columns
-                        editable_columns = [
-                            'date', 'home_team', 'away_team', 'league',
-                            'status', 'predicted_outcome', 'actual_outcome', 'confidence'
-                        ]
-                        
-                        # Configure status column as dropdown
-                        gb.configure_column(
-                            'status',
-                            editable=True,
-                            cellEditor='agSelectCellEditor',
-                            cellEditorParams={
-                                'values': ['Pending', 'Completed']
-                            }
-                        )
-                        
-                        # Configure predicted_outcome column as dropdown
-                        gb.configure_column(
-                            'predicted_outcome',
-                            editable=True,
-                            cellEditor='agSelectCellEditor',
-                            cellEditorParams={
-                                'values': ['HOME', 'DRAW', 'AWAY']
-                            }
-                        )
-                        
-                        # Configure actual_outcome column as dropdown
-                        gb.configure_column(
-                            'actual_outcome',
-                            editable=True,
-                            cellEditor='agSelectCellEditor',
-                            cellEditorParams={
-                                'values': ['', 'HOME', 'DRAW', 'AWAY']
+                        # Configure column types for editing
+                        column_config = {
+                            "id": None,  # Hide ID column
+                            "date": {
+                                "type": "datetime",
+                                "format": "YYYY-MM-DD HH:mm:ss",
+                                "step": 60 * 60 * 24  # 1 day
                             },
-                            valueFormatter="value === null ? '' : value"
-                        )
-                        
-                        # Configure numeric columns
-                        gb.configure_column('confidence', type=['numericColumn', 'numberColumnFilter', 'customNumericFormat'], valueFormatter="value + '%'")
-                        
-                        # Configure date column
-                        gb.configure_column('date', type=['dateColumnFilter', 'customDateTimeFormat'], 
-                                         custom_format_string='yyyy-MM-dd HH:mm:ss',
-                                         cellEditor='agDateStringCellEditor',
-                                         cellEditorParams={
-                                             'min': '2000-01-01',
-                                             'max': '2100-01-01',
-                                             'value': datetime.now().strftime('%Y-%m-%d')
-                                         })
-                        
-                        # Add action buttons
-                        gb.configure_column(
-                            'Actions',
-                            header_name='',
-                            cellRenderer=JsCode('''
-                                function(params) {
-                                    const eDiv = document.createElement('div');
-                                    eDiv.innerHTML = `
-                                        <button class="action-button delete-button" 
-                                                onclick="const action = 'delete_' + params.data.id; 
-                                                         const anchor = document.createElement('a'); 
-                                                         anchor.setAttribute('id', action); 
-                                                         document.body.appendChild(anchor); 
-                                                         anchor.click();">
-                                            🗑️
-                                        </button>
-                                    `;
-                                    return eDiv;
-                                }
-                            '''),
-                            width=80,
-                            sortable=False,
-                            filterable=False,
-                            pinned='right'
-                        )
-                        
-                        # Configure grid options
-                        gb.configure_selection('single', use_checkbox=False, rowMultiSelectWithClick=False)
-                        grid_options = gb.build()
-                        
-                        # Enable cell editing with debounce
-                        grid_options['onCellValueChanged'] = JsCode(
-                            """
-                            function(params) {
-                                const data = params.data;
-                                const colId = params.column.colId;
-                                
-                                // Skip if it's the Actions column
-                                if (colId === 'Actions') return;
-                                
-                                // Create an event to notify Streamlit of the change
-                                const event = new CustomEvent('cellValueChanged', { 
-                                    detail: { 
-                                        id: data.id,
-                                        field: colId,
-                                        newValue: data[colId]
-                                    } 
-                                });
-                                document.dispatchEvent(event);
+                            "status": {
+                                "type": "selectbox",
+                                "options": ["Pending", "Completed"]
+                            },
+                            "predicted_outcome": {
+                                "type": "selectbox",
+                                "options": ["HOME", "DRAW", "AWAY"]
+                            },
+                            "actual_outcome": {
+                                "type": "selectbox",
+                                "options": ["", "HOME", "DRAW", "AWAY"],
+                                "required": False
+                            },
+                            "confidence": {
+                                "type": "number",
+                                "min_value": 0,
+                                "max_value": 100,
+                                "step": 1,
+                                "format": "%d%%"
                             }
-                            """
-                        )
+                        }
                         
-                        # Display the grid
-                        grid_response = AgGrid(
+                        # Display the data editor
+                        st.caption("Double-click a cell to edit. Changes are saved automatically.")
+                        edited_df = st.data_editor(
                             editable_df,
-                            gridOptions=grid_options,
-                            height=min(600, 50 + len(editable_df) * 35),  # Dynamic height based on rows
-                            width='100%',
-                            theme='streamlit',
-                            columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS,
-                            allow_unsafe_jscode=True,
-                            enable_enterprise_modules=False,
-                            update_mode='VALUE_CHANGED',
-                            data_return_mode='AS_INPUT',
-                            fit_columns_on_grid_load=True,
-                            header_height=35,
-                            reload_data=False,
-                            custom_css={
-                                ".ag-header-cell": {
-                                    "font-weight": "600",
-                                    "background-color": "#f8f9fa"
-                                },
-                                ".ag-row-hover": {
-                                    "background-color": "#f5f5f5"
-                                },
-                                ".action-button": {
-                                    "background": "none",
-                                    "border": "none",
-                                    "color": "#ff4b4b",
-                                    "cursor": "pointer",
-                                    "font-size": "16px",
-                                    "padding": "4px 8px"
-                                },
-                                ".action-button:hover": {
-                                    "color": "#cc0000"
-                                }
-                            }
+                            column_config=column_config,
+                            use_container_width=True,
+                            hide_index=True,
+                            disabled=["id"],  # Make ID column read-only
+                            key=f"data_editor_{len(final_df)}"  # Force re-render on data change
                         )
                         
-                        # Handle cell value changes
-                        cell_changed = False
-                        if 'grid_data' in st.session_state and 'data' in grid_response:
-                            old_data = st.session_state.grid_data if isinstance(st.session_state.grid_data, list) else []
-                            new_data = grid_response['data'] if isinstance(grid_response['data'], list) else []
+                        # Check for changes
+                        if not edited_df.equals(editable_df):
+                            # Find changed rows
+                            changed_rows = edited_df[~edited_df.apply(tuple, 1).isin(editable_df.apply(tuple, 1))]
                             
-                            # Ensure both lists have the same length
-                            if len(old_data) != len(new_data):
-                                st.warning("Data length mismatch. Refreshing...")
+                            if not changed_rows.empty:
+                                with st.spinner("Saving changes..."):
+                                    for _, row in changed_rows.iterrows():
+                                        try:
+                                            # Get the original row to compare
+                                            original_row = editable_df[editable_df['id'] == row['id']].iloc[0]
+                                            
+                                            # Find changed fields
+                                            changed_fields = {}
+                                            for col in editable_df.columns:
+                                                if col != 'id' and row[col] != original_row[col]:
+                                                    changed_fields[col] = row[col]
+                                            
+                                            if changed_fields:
+                                                if history.update_prediction(row['id'], changed_fields):
+                                                    st.toast(f"✅ Updated prediction {row['id']}", icon="✅")
+                                                else:
+                                                    st.error(f"❌ Failed to update prediction {row['id']}")
+                                        except Exception as e:
+                                            st.error(f"❌ Error updating prediction {row['id']}: {str(e)}")
+                                
+                                # Refresh the data
                                 st.session_state.refresh_data = True
                                 st.rerun()
-                            
-                            # Find changed rows
-                            for idx, (old_row, new_row) in enumerate(zip(old_data, new_data)):
-                                if not isinstance(old_row, dict) or not isinstance(new_row, dict):
-                                    continue
-                                    
-                                if old_row != new_row:
-                                    # Find changed fields
-                                    changed_fields = {}
-                                    for key in old_row:
-                                        if key != 'id' and key in new_row and old_row.get(key) != new_row.get(key):
-                                            changed_fields[key] = new_row[key]
-                                    
-                                    if changed_fields and 'id' in old_row and old_row['id']:
-                                        try:
-                                            # Update in database
-                                            if history.update_prediction(old_row['id'], changed_fields):
-                                                st.toast(f"✅ Updated prediction {old_row['id']}", icon="✅")
-                                                cell_changed = True
-                                            else:
-                                                st.error(f"❌ Failed to update prediction {old_row['id']}")
-                                        except Exception as e:
-                                            st.error(f"❌ Error updating prediction {old_row['id']}: {str(e)}")
-                                            st.session_state.refresh_data = True
-                                            st.rerun()
                         
-                        # Store current data for next comparison
-                        st.session_state.grid_data = grid_response['data'].copy()
-                        
-                        # Handle delete actions
-                        for row in grid_response['data']:
-                            # Safely get row ID with type checking
-                            row_id = None
-                            if isinstance(row, dict):
-                                row_id = row.get('id')
-                            elif hasattr(row, 'get'):  # Handle other dict-like objects
-                                row_id = row.get('id')
-                            
-                            if not row_id:
-                                continue  # Skip if no valid ID found
-                                
-                            delete_key = f"delete_{row_id}"
-                            if st.session_state.get(delete_key):
-                                if st.button(f"Confirm delete prediction {row_id}?", key=f"confirm_delete_{row_id}"):
+                        # Add delete buttons for each row
+                        st.subheader("Delete Predictions")
+                        for _, row in editable_df.iterrows():
+                            with st.expander(f"Delete {row['home_team']} vs {row['away_team']} ({row['date'].split()[0]})"):
+                                if st.button("Delete Prediction", key=f"delete_{row['id']}"):
                                     try:
-                                        if history.delete_prediction(row_id):
-                                            st.success(f"✅ Prediction {row_id} deleted successfully!")
+                                        if history.delete_prediction(row['id']):
+                                            st.success(f"✅ Prediction {row['id']} deleted successfully!")
                                             st.session_state.refresh_data = True
                                             st.rerun()
                                         else:
-                                            st.error(f"❌ Failed to delete prediction {row_id}")
+                                            st.error(f"❌ Failed to delete prediction {row['id']}")
                                     except Exception as e:
-                                        st.error(f"❌ Error deleting prediction {row_id}: {str(e)}")
-                                st.stop()
-                        
-                        # Add a small delay to avoid rapid updates
-                        if cell_changed:
-                            time.sleep(0.5)
-                            st.session_state.refresh_data = True
-                            st.rerun()
+                                        st.error(f"❌ Error deleting prediction {row['id']}: {str(e)}")
                     else:
                         st.warning("No predictions found matching the selected filters.")
                     
