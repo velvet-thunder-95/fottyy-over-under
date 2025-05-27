@@ -1,7 +1,5 @@
 # history.py
 
-
-
 import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
@@ -15,6 +13,40 @@ sys.path.append('.')
 import importlib
 from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
 filter_storage = importlib.import_module('filter_storage')
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def ensure_date_format(date_value):
+    """Convert any date format to YYYY-MM-DD string"""
+    try:
+        # Handle different date formats
+        if pd.isna(date_value) or date_value is None:
+            return ""
+            
+        # Handle timestamp in milliseconds (as int or float)
+        if isinstance(date_value, (int, float)) and len(str(int(date_value))) > 10:
+            date_obj = pd.to_datetime(date_value, unit='ms')
+            return date_obj.strftime('%Y-%m-%d')
+            
+        # Handle timestamp in milliseconds (as string)
+        if isinstance(date_value, str) and date_value.isdigit() and len(date_value) > 10:
+            date_obj = pd.to_datetime(int(date_value), unit='ms')
+            return date_obj.strftime('%Y-%m-%d')
+            
+        # Handle already formatted YYYY-MM-DD strings
+        if isinstance(date_value, str) and len(date_value) == 10 and date_value[4] == '-' and date_value[7] == '-':
+            return date_value
+            
+        # Handle any other date format
+        date_obj = pd.to_datetime(date_value)
+        return date_obj.strftime('%Y-%m-%d')
+        
+    except Exception as e:
+        logger.error(f"Date conversion error for {date_value}: {e}")
+        # Return original value as fallback
+        return str(date_value)
 
 class PredictionHistory:
     def __init__(self):
@@ -85,6 +117,10 @@ class PredictionHistory:
     def update_prediction(self, prediction_id, update_data):
         """Update prediction with custom data"""
         try:
+            # Ensure date is properly formatted
+            if 'date' in update_data:
+                update_data['date'] = ensure_date_format(update_data['date'])
+                
             # Ensure numeric values are properly formatted
             if 'confidence' in update_data and update_data['confidence'] is not None:
                 update_data['confidence'] = float(update_data['confidence'])
@@ -120,6 +156,10 @@ class PredictionHistory:
             
             if predictions.empty:
                 return predictions
+                
+            # Ensure dates are properly formatted
+            if 'date' in predictions.columns:
+                predictions['date'] = predictions['date'].apply(ensure_date_format)
                 
             # Apply additional filters in memory
             if status:
@@ -915,24 +955,8 @@ def show_history_page():
                     editable_data = []
                     
                     for i, row in predictions.iterrows():
-                        # Format date properly
-                        try:
-                            # Handle different date formats including timestamps
-                            if isinstance(row['date'], (int, float)) and len(str(int(row['date']))) > 10:
-                                # This is likely a timestamp in milliseconds
-                                date_obj = pd.to_datetime(row['date'], unit='ms')
-                            elif isinstance(row['date'], str) and row['date'].isdigit() and len(row['date']) > 10:
-                                # String timestamp in milliseconds
-                                date_obj = pd.to_datetime(int(row['date']), unit='ms')
-                            else:
-                                # Regular date string or datetime object
-                                date_obj = pd.to_datetime(row['date'])
-                                
-                            date_str = date_obj.strftime('%Y-%m-%d')
-                        except Exception as e:
-                            # Fallback if date conversion fails
-                            st.error(f"Date conversion error for {row['date']}: {e}")
-                            date_str = str(row['date'])
+                        # Ensure date is in YYYY-MM-DD format
+                        date_str = ensure_date_format(row['date'])
                             
                         # Store original values for reference
                         row_id = str(row['id'])
@@ -1069,7 +1093,7 @@ def show_history_page():
                                         
                                         # Prepare update data
                                         update_data = {
-                                            'date': pd.to_datetime(row['date']).strftime("%Y-%m-%d") if isinstance(row['date'], str) else row['date'].strftime("%Y-%m-%d"),
+                                            'date': ensure_date_format(row['date']),  # Use our consistent date formatter
                                             'league': row['league'],
                                             'home_team': row['home_team'],
                                             'away_team': row['away_team'],
