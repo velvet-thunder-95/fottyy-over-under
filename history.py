@@ -7,28 +7,48 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 import logging
-from database import Database
 import json
 import os
-from typing import List, Dict, Any, Tuple, Optional, Union
-from st_aggrid import AgGrid, GridOptionsBuilder, JsCode, ColumnsAutoSizeMode
-from match_analyzer import MatchAnalyzer
-from supabase_db import SupabaseDB
-import logging
 import sys
+from typing import List, Dict, Any, Tuple, Optional, Union
+
+# Add current directory to path
 sys.path.append('.')
-import importlib
-filter_storage = importlib.import_module('filter_storage')
+
+# Import project modules
+try:
+    from football_api import get_match_by_teams, get_match_result
+    from session_state import init_session_state, check_login_state
+    from match_analyzer import MatchAnalyzer
+    from supabase_db import SupabaseDB
+    import filter_storage
+except ImportError as e:
+    st.error(f"Error importing required modules: {str(e)}")
+    raise
+
+# Import AG Grid components
+try:
+    from st_aggrid import AgGrid, GridOptionsBuilder, JsCode, ColumnsAutoSizeMode
+except ImportError:
+    st.error("AG Grid components not found. Please install with: pip install streamlit-aggrid")
+    raise
 
 class PredictionHistory:
     def __init__(self):
         """Initialize the Supabase database connection."""
-        self.db = SupabaseDB()
+        try:
+            self.db = SupabaseDB()
+        except Exception as e:
+            st.error(f"Failed to initialize database: {str(e)}")
+            raise
 
     def init_database(self):
         """Initialize the Supabase database"""
-        # No need to create tables as they are managed in Supabase dashboard
-        self.db.init_database()
+        try:
+            self.db.init_database()
+        except Exception as e:
+            st.error(f"Failed to initialize database: {str(e)}")
+            raise
 
     def add_prediction(self, prediction_data):
         """Add a new prediction to the database"""
