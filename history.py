@@ -1263,12 +1263,10 @@ def show_history_page():
                             logger.error(f"Error in handle_edit_click: {str(e)}")
                             # Don't re-raise the exception to prevent the app from crashing
                     
-                    # Use Streamlit's data editor without on_change callback to prevent auto-refresh
-                    # We'll use a form to control when the editor changes are processed
-                    with st.form(key="prediction_editor_form"):
-                        edited_df = st.data_editor(
-                            st.session_state.edit_state['current_df'],
-                            column_config={
+                    # Use Streamlit's data editor with on_change callback to detect Apply checkbox
+                    edited_df = st.data_editor(
+                        st.session_state.edit_state['current_df'],
+                        column_config={
                             "id": st.column_config.TextColumn("ID", disabled=True),
                             "date": st.column_config.TextColumn("Date", disabled=True, help="Format: YYYY-MM-DD"),
                             "league": st.column_config.TextColumn("League", disabled=True),
@@ -1337,22 +1335,9 @@ def show_history_page():
                         hide_index=True,
                         num_rows="fixed",
                         use_container_width=True,
-                        key="prediction_editor"
-                        )
-                        
-                        # Add a submit button that only processes changes when clicked
-                        submitted = st.form_submit_button("Apply Changes", type="primary")
-                        
-                        # Only process changes when the form is submitted
-                        if submitted:
-                            # Store the current dataframe in session state
-                            st.session_state.edit_state['current_df'] = edited_df.copy(deep=True)
-                            
-                            # Process the changes
-                            handle_edit_click(edited_df)
-                            
-                            # Refresh the page to show updated data
-                            st.rerun()
+                        key="prediction_editor",
+                        on_change=handle_edit_click
+                    )
                     
                     # Process edits and deletions
                     if edited_df is not None:
