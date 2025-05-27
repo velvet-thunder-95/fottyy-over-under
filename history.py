@@ -1063,34 +1063,57 @@ def show_history_page():
                     
                     # Define callbacks to handle edit/delete button clicks without refreshing
                     def handle_edit_click():
-                        # This function is called when the data editor changes
-                        # We'll check if any edit checkboxes were checked and handle them
-                        current_df = st.session_state.prediction_editor
-                        
-                        # Process edit checkboxes
-                        edit_rows = current_df[current_df['edit'] == True]
-                        if not edit_rows.empty:
-                            for idx, row in edit_rows.iterrows():
-                                # Store the row ID for editing
-                                st.session_state.edit_row_id = row['id']
-                                st.session_state.edit_row_data = row.to_dict()
+                        try:
+                            # This function is called when the data editor changes
+                            # Check if the prediction_editor exists in session state
+                            if 'prediction_editor' not in st.session_state:
+                                logger.warning("prediction_editor not found in session state")
+                                return
                                 
-                                # Clear the edit checkbox to prevent auto-refresh
-                                current_df.at[idx, 'edit'] = False
-                        
-                        # Process delete checkboxes
-                        delete_rows = current_df[current_df['delete'] == True]
-                        if not delete_rows.empty:
-                            for idx, row in delete_rows.iterrows():
-                                # Store the row ID for deletion
-                                st.session_state.delete_row_id = row['id']
-                                st.session_state.delete_row_data = row.to_dict()
+                            # Get the current dataframe from session state
+                            current_df = st.session_state.prediction_editor
+                            
+                            # Make sure it's a dataframe
+                            if not isinstance(current_df, pd.DataFrame):
+                                logger.warning(f"prediction_editor is not a DataFrame: {type(current_df)}")
+                                return
                                 
-                                # Clear the delete checkbox to prevent auto-refresh
-                                current_df.at[idx, 'delete'] = False
-                        
-                        # Update the dataframe in session state
-                        st.session_state.edit_state['current_df'] = current_df.copy(deep=True)
+                            # Check if required columns exist
+                            required_cols = ['edit', 'delete', 'id']
+                            for col in required_cols:
+                                if col not in current_df.columns:
+                                    logger.warning(f"Column '{col}' not found in dataframe")
+                                    return
+                            
+                            # Process edit checkboxes
+                            edit_rows = current_df[current_df['edit'] == True]
+                            if not edit_rows.empty:
+                                for idx, row in edit_rows.iterrows():
+                                    # Store the row ID for editing
+                                    st.session_state.edit_row_id = row['id']
+                                    st.session_state.edit_row_data = row.to_dict()
+                                    
+                                    # Clear the edit checkbox to prevent auto-refresh
+                                    current_df.at[idx, 'edit'] = False
+                            
+                            # Process delete checkboxes
+                            delete_rows = current_df[current_df['delete'] == True]
+                            if not delete_rows.empty:
+                                for idx, row in delete_rows.iterrows():
+                                    # Store the row ID for deletion
+                                    st.session_state.delete_row_id = row['id']
+                                    st.session_state.delete_row_data = row.to_dict()
+                                    
+                                    # Clear the delete checkbox to prevent auto-refresh
+                                    current_df.at[idx, 'delete'] = False
+                            
+                            # Update the dataframe in session state
+                            st.session_state.edit_state['current_df'] = current_df.copy(deep=True)
+                            
+                        except Exception as e:
+                            # Log the error but don't crash
+                            logger.error(f"Error in handle_edit_click: {str(e)}")
+                            # Don't re-raise the exception to prevent the app from crashing
                     
                     # Use Streamlit's data editor with our custom callback
                     edited_df = st.data_editor(
@@ -1185,52 +1208,72 @@ def show_history_page():
                             # Clear the delete_row_data after displaying the warning
                             del st.session_state.delete_row_data
                             
-                        # Check for rows marked for deletion AND apply is checked
-                        rows_to_delete = edited_df[(edited_df['delete'] == True) & (edited_df['apply'] == True)]
-                        if not rows_to_delete.empty:
-                            # Process each deletion
-                            for idx, row in rows_to_delete.iterrows():
-                                row_id = row['id']
-                                
-                                # This is a confirmed deletion request
-                                logger.info(f"Deleting prediction ID: {row_id}")
-                                if history.delete_prediction(row_id):
-                                    st.success(f"Deleted prediction for {row['home_team']} vs {row['away_team']}")
-                                    # Clear the session state to refresh data
-                                    st.session_state.pop('history_df', None)
-                                    st.session_state.pop('edit_state', None)
-                                    st.session_state.pop('original_edit_df', None)
-                                    # Use a javascript hack to refresh without using st.rerun()
-                                    st.markdown(
-                                        """<script>window.parent.document.querySelector('section.main').scrollTop = 0;</script>""", 
-                                        unsafe_allow_html=True
-                                    )
-                                    time.sleep(0.5)  # Small delay
-                                    st.experimental_rerun()
+                        # Process Apply button actions
+                        try:
+                            # Check for rows with Apply checked
+                            apply_rows = edited_df[edited_df['apply'] == True]
+                            if not apply_rows.empty:
+                                for idx, row in apply_rows.iterrows():
+                                    row_id = row['id']
+                                    
+                                    # Check if this is a delete request
+                                    if 'delete_row_id' in st.session_state and st.session_state.delete_row_id == row_id:
+                                        # This is a confirmed deletion request
+                                        logger.info(f"Deleting prediction ID: {row_id}")
+                                        if history.delete_prediction(row_id):
+                                            st.success(f"Deleted prediction for {row['home_team']} vs {row['away_team']}")
+                                            # Clear the session state to refresh data
+                                            st.session_state.pop('history_df', None)
+                                            st.session_state.pop('edit_state', None)
+                                            st.session_state.pop('original_edit_df', None)
+                                            if 'delete_row_id' in st.session_state:
+                                                del st.session_state.delete_row_id
+                                            # Use a javascript hack to refresh without using st.rerun()
+                                            st.markdown(
+                                                """<script>window.parent.document.querySelector('section.main').scrollTop = 0;</script>""", 
+                                                unsafe_allow_html=True
+                                            )
+                                            time.sleep(0.5)  # Small delay
+                                            st.experimental_rerun()
+                                    
+                                    # Clear the apply checkbox after processing
+                                    edited_df.at[idx, 'apply'] = False
+                                    st.session_state.edit_state['current_df'] = edited_df.copy(deep=True)
+                        except Exception as e:
+                            logger.error(f"Error processing Apply actions: {str(e)}")
+                            # Don't crash the app
                         
-                        # Check for rows marked for detailed editing AND apply is checked
-                        rows_to_edit = edited_df[(edited_df['edit'] == True) & (edited_df['apply'] == True)]
-                        if not rows_to_edit.empty:
-                            # Get the first row marked for editing
-                            edit_row = rows_to_edit.iloc[0]
-                            row_id = edit_row['id']
-                            
-                            logger.info(f"Editing prediction ID: {row_id}")
-                            # Store edit data in session state
-                            st.session_state.edit_prediction = True
-                            st.session_state.edit_prediction_id = row_id
-                            st.session_state.edit_prediction_data = edit_row.to_dict()
-                            
-                            # Reset edit state
-                            st.session_state.edit_state['edit_in_progress'] = False
-                            
-                            # Show success message
-                            st.success(f"Editing prediction for {edit_row['home_team']} vs {edit_row['away_team']}")
-                            
-                            # Clear the apply checkbox after processing
-                            edited_df.at[edit_row.name, 'apply'] = False
-                            edited_df.at[edit_row.name, 'edit'] = False
-                            st.session_state.edit_state['current_df'] = edited_df.copy(deep=True)
+                        # Check for edit requests with Apply checked
+                        try:
+                            # Check if we have an edit request pending
+                            if 'edit_row_id' in st.session_state and st.session_state.edit_row_id:
+                                # Find the row with the matching ID and Apply checked
+                                apply_rows = edited_df[edited_df['apply'] == True]
+                                if not apply_rows.empty:
+                                    for idx, row in apply_rows.iterrows():
+                                        if str(row['id']) == str(st.session_state.edit_row_id):
+                                            row_id = row['id']
+                                            logger.info(f"Processing edit for prediction ID: {row_id}")
+                                            
+                                            # Store edit data in session state for the form
+                                            st.session_state.edit_prediction = True
+                                            st.session_state.edit_prediction_id = row_id
+                                            st.session_state.edit_prediction_data = row.to_dict()
+                                            
+                                            # Show success message
+                                            st.success(f"Editing prediction for {row['home_team']} vs {row['away_team']}")
+                                            
+                                            # Clear the checkboxes after processing
+                                            edited_df.at[idx, 'apply'] = False
+                                            edited_df.at[idx, 'edit'] = False
+                                            st.session_state.edit_state['current_df'] = edited_df.copy(deep=True)
+                                            
+                                            # Clear the edit row ID
+                                            del st.session_state.edit_row_id
+                                            break
+                        except Exception as e:
+                            logger.error(f"Error processing edit request: {str(e)}")
+                            # Don't crash the app
                             
                         # Check for direct edits in the table with Apply checked
                         rows_with_apply = edited_df[edited_df['apply'] == True]
