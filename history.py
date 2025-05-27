@@ -1100,7 +1100,7 @@ def show_history_page():
                     # Define callbacks to handle edit/delete button clicks without refreshing
                     def handle_edit_click():
                         try:
-                            # This function is called when the data editor changes
+                            # This function is called when the form is submitted
                             # Check if the prediction_editor exists in session state
                             if 'prediction_editor' not in st.session_state:
                                 logger.warning("prediction_editor not found in session state")
@@ -1115,11 +1115,14 @@ def show_history_page():
                                 return
                                 
                             # Check if required columns exist
-                            required_cols = ['edit', 'delete', 'id']
+                            required_cols = ['edit', 'delete', 'apply', 'id']
                             for col in required_cols:
                                 if col not in current_df.columns:
                                     logger.warning(f"Column '{col}' not found in dataframe")
                                     return
+                                    
+                            # Store the current dataframe in session state for future reference
+                            st.session_state.edit_state['current_df'] = current_df.copy(deep=True)
                             
                             # Process edit checkboxes
                             edit_rows = current_df[current_df['edit'] == True]
@@ -1132,16 +1135,17 @@ def show_history_page():
                                     # Clear the edit checkbox to prevent auto-refresh
                                     current_df.at[idx, 'edit'] = False
                             
-                            # Process delete checkboxes
-                            delete_rows = current_df[current_df['delete'] == True]
+                            # Process delete checkboxes - only if Apply is also checked
+                            delete_rows = current_df[(current_df['delete'] == True) & (current_df['apply'] == True)]
                             if not delete_rows.empty:
                                 for idx, row in delete_rows.iterrows():
                                     # Store the row ID for deletion
                                     st.session_state.delete_row_id = row['id']
                                     st.session_state.delete_row_data = row.to_dict()
                                     
-                                    # Clear the delete checkbox to prevent auto-refresh
+                                    # Clear the checkboxes to prevent multiple deletions
                                     current_df.at[idx, 'delete'] = False
+                                    current_df.at[idx, 'apply'] = False
                             
                             # Update the dataframe in session state
                             st.session_state.edit_state['current_df'] = current_df.copy(deep=True)
@@ -1151,10 +1155,12 @@ def show_history_page():
                             logger.error(f"Error in handle_edit_click: {str(e)}")
                             # Don't re-raise the exception to prevent the app from crashing
                     
-                    # Use Streamlit's data editor with our custom callback
-                    edited_df = st.data_editor(
-                        st.session_state.edit_state['current_df'],
-                        column_config={
+                    # Create a form to prevent auto-refresh when checkboxes are clicked
+                    with st.form(key="prediction_editor_form"):
+                        # Use Streamlit's data editor without on_change callback
+                        edited_df = st.data_editor(
+                            st.session_state.edit_state['current_df'],
+                            column_config={
                             "id": st.column_config.TextColumn("ID", disabled=True),
                             "date": st.column_config.TextColumn("Date", disabled=True, help="Format: YYYY-MM-DD"),
                             "league": st.column_config.TextColumn("League", disabled=True),
@@ -1223,11 +1229,17 @@ def show_history_page():
                         hide_index=True,
                         num_rows="fixed",
                         use_container_width=True,
-                        key="prediction_editor",
-                        on_change=handle_edit_click
-                    )
+                        key="prediction_editor"
+                        )
+                        
+                        # Add a submit button to the form
+                        submitted = st.form_submit_button("Process Changes", type="primary")
+                        
+                        # Only process changes when the form is submitted
+                        if submitted:
+                            handle_edit_click()
                     
-                    # Process edits and deletions
+                    # Process edits and deletions outside the form
                     if edited_df is not None:
                         # Display edit UI if a row was selected for editing
                         if 'edit_row_data' in st.session_state:
@@ -1268,8 +1280,8 @@ def show_history_page():
                                             if 'original_edit_df' in st.session_state:
                                                 del st.session_state.original_edit_df
                                             
-                                            # Force page refresh
-                                            st.experimental_rerun()
+                                            # Force page refresh using the correct method
+                                            st.rerun()
                                         else:
                                             st.error(f"Failed to delete prediction ID: {row_id}")
                                     except Exception as delete_error:
