@@ -1146,10 +1146,15 @@ def show_history_page():
                                     
                             # Process all rows with Apply checked (including those with edit checked)
                             apply_rows = current_df[current_df['apply'] == True]
+                            updated_count = 0
                             
                             if not apply_rows.empty:
                                 # Log how many rows we're processing
                                 logger.info(f"Processing {len(apply_rows)} rows with Apply checked")
+                                
+                                # Create lists to store success and error messages
+                                success_messages = []
+                                error_messages = []
                                 
                                 # Compare each row with Apply checked for changes
                                 for idx, row in apply_rows.iterrows():
@@ -1180,10 +1185,8 @@ def show_history_page():
                                         
                                         # Update prediction in database
                                         if history.update_prediction(row_id, update_data):
-                                            st.success(f"Updated prediction for {row['home_team']} vs {row['away_team']}")
-                                            # Clear history dataframe to force reload
-                                            if 'history_df' in st.session_state:
-                                                del st.session_state.history_df
+                                            success_messages.append(f"Updated prediction for {row['home_team']} vs {row['away_team']}")
+                                            updated_count += 1
                                             # Clear the apply checkbox after processing
                                             current_df.at[idx, 'apply'] = False
                                             # Update the original dataframe to reflect the changes
@@ -1194,35 +1197,63 @@ def show_history_page():
                                                 if 'profit_loss' in update_data:
                                                     st.session_state.original_edit_df.loc[st.session_state.original_edit_df['id'] == row_id, 'profit_loss'] = update_data['profit_loss']
                                         else:
-                                            st.error(f"Failed to update prediction ID: {row_id}")
+                                            error_messages.append(f"Failed to update prediction ID: {row_id}")
                                     except Exception as row_error:
+                                        error_message = f"Error processing row {row_id}: {str(row_error)}"
+                                        error_messages.append(error_message)
                                         logger.error(f"Error processing row {row_id}: {str(row_error)}")
-                                        st.error(f"Error processing row: {str(row_error)}")
                                         continue
+                                
+                                # Display all success and error messages
+                                if updated_count > 0:
+                                    st.success(f"Successfully updated {updated_count} predictions")
+                                    # Clear history dataframe to force reload
+                                    if 'history_df' in st.session_state:
+                                        del st.session_state.history_df
+                                
+                                # Display any error messages
+                                for error in error_messages:
+                                    st.error(error)
                             
                             # Process delete checkboxes - only if Apply is also checked
                             delete_rows = current_df[(current_df['delete'] == True) & (current_df['apply'] == True)]
+                            deleted_count = 0
+                            
                             if not delete_rows.empty:
+                                # Create a list to store success messages to show after all operations
+                                success_messages = []
+                                error_messages = []
+                                
                                 for idx, row in delete_rows.iterrows():
                                     row_id = row['id']
                                     logger.info(f"Attempting to delete prediction ID: {row_id}")
                                     
-                                    # Attempt to delete from database immediately
+                                    # Attempt to delete from database
                                     try:
                                         success = history.delete_prediction(row_id)
                                         if success:
-                                            st.success(f"Deleted prediction for {row['home_team']} vs {row['away_team']}")
-                                            # Clear session state to force data reload
-                                            if 'history_df' in st.session_state:
-                                                del st.session_state.history_df
+                                            success_messages.append(f"Deleted prediction for {row['home_team']} vs {row['away_team']}")
+                                            deleted_count += 1
                                             # Clear the checkboxes to prevent multiple deletions
                                             current_df.at[idx, 'delete'] = False
                                             current_df.at[idx, 'apply'] = False
                                         else:
-                                            st.error(f"Failed to delete prediction ID: {row_id}")
+                                            error_messages.append(f"Failed to delete prediction ID: {row_id}")
                                     except Exception as delete_error:
-                                        st.error(f"Error deleting prediction: {str(delete_error)}")
+                                        error_message = f"Error deleting prediction: {str(delete_error)}"
+                                        error_messages.append(error_message)
                                         logger.error(f"Delete error: {str(delete_error)}")
+                                
+                                # Display all success and error messages
+                                if deleted_count > 0:
+                                    st.success(f"Successfully deleted {deleted_count} predictions")
+                                    # Clear session state to force data reload
+                                    if 'history_df' in st.session_state:
+                                        del st.session_state.history_df
+                                
+                                # Display any error messages
+                                for error in error_messages:
+                                    st.error(error)
                             
                             # Update the dataframe in session state
                             st.session_state.edit_state['current_df'] = current_df.copy(deep=True)
