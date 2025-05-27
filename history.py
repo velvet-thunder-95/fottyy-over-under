@@ -1046,6 +1046,9 @@ def show_history_page():
                         # Force string format to prevent Streamlit from converting to timestamps
                         edit_df['date'] = edit_df['date'].astype(str)
                         
+                    # Add instructions for using the editor
+                    st.info("📝 To edit a prediction: 1) Check the 'Edit' box, 2) Make your changes, 3) Check 'Apply' to save changes")
+                    
                     # Initialize session state for edit tracking
                     if 'edit_state' not in st.session_state:
                         st.session_state.edit_state = {
@@ -1054,7 +1057,42 @@ def show_history_page():
                             'edit_in_progress': False
                         }
                     
-                    # Use Streamlit's data editor for direct editing
+                    # Store the current dataframe in session state to avoid refreshes
+                    if 'original_edit_df' not in st.session_state:
+                        st.session_state.original_edit_df = edit_df.copy(deep=True)
+                    
+                    # Define callbacks to handle edit/delete button clicks without refreshing
+                    def handle_edit_click():
+                        # This function is called when the data editor changes
+                        # We'll check if any edit checkboxes were checked and handle them
+                        current_df = st.session_state.prediction_editor
+                        
+                        # Process edit checkboxes
+                        edit_rows = current_df[current_df['edit'] == True]
+                        if not edit_rows.empty:
+                            for idx, row in edit_rows.iterrows():
+                                # Store the row ID for editing
+                                st.session_state.edit_row_id = row['id']
+                                st.session_state.edit_row_data = row.to_dict()
+                                
+                                # Clear the edit checkbox to prevent auto-refresh
+                                current_df.at[idx, 'edit'] = False
+                        
+                        # Process delete checkboxes
+                        delete_rows = current_df[current_df['delete'] == True]
+                        if not delete_rows.empty:
+                            for idx, row in delete_rows.iterrows():
+                                # Store the row ID for deletion
+                                st.session_state.delete_row_id = row['id']
+                                st.session_state.delete_row_data = row.to_dict()
+                                
+                                # Clear the delete checkbox to prevent auto-refresh
+                                current_df.at[idx, 'delete'] = False
+                        
+                        # Update the dataframe in session state
+                        st.session_state.edit_state['current_df'] = current_df.copy(deep=True)
+                    
+                    # Use Streamlit's data editor with our custom callback
                     edited_df = st.data_editor(
                         st.session_state.edit_state['current_df'],
                         column_config={
@@ -1126,22 +1164,26 @@ def show_history_page():
                         hide_index=True,
                         num_rows="fixed",
                         use_container_width=True,
-                        key="prediction_editor"
+                        key="prediction_editor",
+                        on_change=handle_edit_click
                     )
                     
                     # Process edits and deletions
                     if edited_df is not None:
-                        # Update the current dataframe in edit state
-                        st.session_state.edit_state['current_df'] = edited_df.copy(deep=True)
+                        # Display edit UI if a row was selected for editing
+                        if 'edit_row_data' in st.session_state:
+                            row = st.session_state.edit_row_data
+                            st.info(f"Editing row for {row['home_team']} vs {row['away_team']}. Make changes to odds and click Apply when done.")
+                            # Clear the edit_row_data after displaying the info
+                            # This prevents the info from showing again on the next render
+                            del st.session_state.edit_row_data
                         
-                        # Check if any row has edit=True but we're not in edit mode yet
-                        if not st.session_state.edit_state['edit_in_progress']:
-                            edit_rows = edited_df[edited_df['edit'] == True]
-                            if not edit_rows.empty:
-                                # Just mark that edit is in progress, but don't refresh
-                                st.session_state.edit_state['edit_in_progress'] = True
-                                logger.info("Edit mode activated, waiting for Apply")
-                                # No rerun needed - just update the state
+                        # Display delete confirmation if a row was selected for deletion
+                        if 'delete_row_data' in st.session_state:
+                            row = st.session_state.delete_row_data
+                            st.warning(f"To delete prediction for {row['home_team']} vs {row['away_team']}, check the Apply box.")
+                            # Clear the delete_row_data after displaying the warning
+                            del st.session_state.delete_row_data
                             
                         # Check for rows marked for deletion AND apply is checked
                         rows_to_delete = edited_df[(edited_df['delete'] == True) & (edited_df['apply'] == True)]
@@ -1288,18 +1330,16 @@ def show_history_page():
                                     logger.error(f"Error processing row: {e}")
                                     continue
                     
-                    # Selection is handled through the selectbox above
-                        
 
-                    
-                    # Create edit dialog
+                    # Create edit expander instead of dialog
                     if st.session_state.get('edit_prediction', False):
-                        with st.dialog("Edit Prediction"):
-                            edit_data = st.session_state.edit_prediction_data
-                            
+                        edit_data = st.session_state.edit_prediction_data
+                        
+                        with st.expander(f"Edit: {edit_data.get('home_team')} vs {edit_data.get('away_team')}", expanded=True):
                             # Create form for editing
                             with st.form("edit_prediction_form"):
-                                st.subheader(f"Edit: {edit_data.get('home_team')} vs {edit_data.get('away_team')}")
+                                st.subheader(f"Edit Prediction Details")
+                                st.caption("Make your changes and click 'Save Changes' when done.")
                                 
                                 # Match details
                                 col1, col2 = st.columns(2)
