@@ -24,22 +24,37 @@ def ensure_date_format(date_value):
         # Handle different date formats
         if pd.isna(date_value) or date_value is None:
             return ""
+        
+        # If it's already a properly formatted string, return it
+        if isinstance(date_value, str) and len(date_value) == 10 and date_value[4] == '-' and date_value[7] == '-':
+            # Validate that it's a valid date
+            try:
+                pd.to_datetime(date_value)
+                return date_value
+            except:
+                pass  # If validation fails, continue with other methods
             
         # Handle timestamp in milliseconds (as int or float)
-        if isinstance(date_value, (int, float)) and len(str(int(date_value))) > 10:
-            date_obj = pd.to_datetime(date_value, unit='ms')
-            return date_obj.strftime('%Y-%m-%d')
+        if isinstance(date_value, (int, float)) or (
+           isinstance(date_value, str) and date_value.replace('.', '', 1).isdigit()):
+            # Convert to string first to check length
+            date_str = str(date_value).split('.')[0]  # Remove decimal part if present
             
-        # Handle timestamp in milliseconds (as string)
-        if isinstance(date_value, str) and date_value.isdigit() and len(date_value) > 10:
-            date_obj = pd.to_datetime(int(date_value), unit='ms')
-            return date_obj.strftime('%Y-%m-%d')
-            
-        # Handle already formatted YYYY-MM-DD strings
-        if isinstance(date_value, str) and len(date_value) == 10 and date_value[4] == '-' and date_value[7] == '-':
-            return date_value
-            
-        # Handle any other date format
+            # If it looks like a Unix timestamp in milliseconds
+            if len(date_str) > 10:
+                try:
+                    # Try milliseconds first
+                    date_obj = pd.to_datetime(float(date_value), unit='ms')
+                    return date_obj.strftime('%Y-%m-%d')
+                except:
+                    # If that fails, try seconds
+                    try:
+                        date_obj = pd.to_datetime(float(date_value) / 1000, unit='s')
+                        return date_obj.strftime('%Y-%m-%d')
+                    except:
+                        pass  # Continue to general handling
+        
+        # General handling for any other date format
         date_obj = pd.to_datetime(date_value)
         return date_obj.strftime('%Y-%m-%d')
         
@@ -1002,20 +1017,20 @@ def show_history_page():
                     st.write("### Edit Predictions")
                     st.write("Click on any cell to edit it directly. Check the 'edit' box to open the edit dialog for more options.")
                     
-                    # Convert date strings to datetime objects for proper editing
-                    try:
-                        edit_df['date'] = pd.to_datetime(edit_df['date'])
-                    except Exception as e:
-                        st.error(f"Error converting dates: {e}")
-                        # Keep as string if conversion fails
-                        pass
+                    # Ensure all dates are properly formatted as YYYY-MM-DD strings
+                    if 'date' in edit_df.columns:
+                        # First convert any timestamps to proper date strings
+                        edit_df['date'] = edit_df['date'].apply(ensure_date_format)
+                        
+                        # Force string format to prevent Streamlit from converting to timestamps
+                        edit_df['date'] = edit_df['date'].astype(str)
                         
                     # Use Streamlit's data editor for direct editing
                     edited_df = st.data_editor(
                         edit_df,
                         column_config={
                             "id": st.column_config.TextColumn("ID", disabled=True),
-                            "date": st.column_config.TextColumn("Date", disabled=True),
+                            "date": st.column_config.TextColumn("Date", disabled=True, help="Format: YYYY-MM-DD"),
                             "league": st.column_config.TextColumn("League", disabled=True),
                             "home_team": st.column_config.TextColumn("Home Team", disabled=True),
                             "away_team": st.column_config.TextColumn("Away Team", disabled=True),
