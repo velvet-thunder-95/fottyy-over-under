@@ -9,6 +9,7 @@ from match_analyzer import MatchAnalyzer
 from supabase_db import SupabaseDB
 import logging
 import sys
+import time
 sys.path.append('.')
 import importlib
 from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
@@ -1086,17 +1087,36 @@ def show_history_page():
                     
                     # Process edits and deletions
                     if edited_df is not None:
+                        # Store current state to detect changes
+                        if 'previous_edit_df' not in st.session_state:
+                            st.session_state.previous_edit_df = edited_df.copy(deep=True)
+                            
                         # Check for rows marked for deletion
                         rows_to_delete = edited_df[edited_df['delete'] == True]
                         if not rows_to_delete.empty:
+                            # Process each deletion
                             for idx, row in rows_to_delete.iterrows():
                                 row_id = row['id']
-                                if history.delete_prediction(row_id):
-                                    st.success(f"Deleted prediction for {row['home_team']} vs {row['away_team']}")
-                                    # Clear the session state to refresh data
-                                    st.session_state.pop('history_df', None)
-                                    st.session_state.pop('original_edit_df', None)
-                                    st.rerun()
+                                
+                                # Check if this is a new deletion (not already processed)
+                                if 'previous_edit_df' in st.session_state:
+                                    prev_df = st.session_state.previous_edit_df
+                                    if idx < len(prev_df) and not prev_df.iloc[idx]['delete']:
+                                        # This is a new deletion request
+                                        logger.info(f"Deleting prediction ID: {row_id}")
+                                        if history.delete_prediction(row_id):
+                                            st.success(f"Deleted prediction for {row['home_team']} vs {row['away_team']}")
+                                            # Clear the session state to refresh data
+                                            st.session_state.pop('history_df', None)
+                                            st.session_state.pop('original_edit_df', None)
+                                            st.session_state.pop('previous_edit_df', None)
+                                            # Use a javascript hack to refresh without using st.rerun()
+                                            st.markdown(
+                                                """<script>window.parent.document.querySelector('section.main').scrollTop = 0;</script>""", 
+                                                unsafe_allow_html=True
+                                            )
+                                            time.sleep(0.5)  # Small delay
+                                            st.experimental_rerun()
                         
                         # Check for rows marked for detailed editing
                         rows_to_edit = edited_df[edited_df['edit'] == True]
@@ -1105,10 +1125,24 @@ def show_history_page():
                             edit_row = rows_to_edit.iloc[0]
                             row_id = edit_row['id']
                             
-                            # Store edit data in session state
-                            st.session_state.edit_prediction = True
-                            st.session_state.edit_prediction_id = row_id
-                            st.session_state.edit_prediction_data = edit_row.to_dict()
+                            # Check if this is a new edit request
+                            is_new_edit = True
+                            if 'previous_edit_df' in st.session_state:
+                                prev_df = st.session_state.previous_edit_df
+                                for i, r in prev_df.iterrows():
+                                    if r['id'] == row_id and r['edit'] == True:
+                                        is_new_edit = False
+                                        break
+                            
+                            if is_new_edit:
+                                logger.info(f"Editing prediction ID: {row_id}")
+                                # Store edit data in session state
+                                st.session_state.edit_prediction = True
+                                st.session_state.edit_prediction_id = row_id
+                                st.session_state.edit_prediction_data = edit_row.to_dict()
+                                
+                                # Update previous state
+                                st.session_state.previous_edit_df = edited_df.copy(deep=True)
                             
                         # Check for direct edits in the table
                         if 'original_edit_df' in st.session_state:
@@ -1196,10 +1230,13 @@ def show_history_page():
                                                 'profit_loss': profit_loss
                                             })
                                         
-                                        # Update prediction in database silently (no success messages)
+                                        # Update prediction in database with confirmation
+                                        logger.info(f"Updating prediction ID: {row_id} with data: {update_data}")
                                         if history.update_prediction(row_id, update_data):
+                                            st.toast(f"Updated prediction for {row['home_team']} vs {row['away_team']}")
                                             # Update session state
-                                            st.session_state.original_edit_df = edited_df.copy()
+                                            st.session_state.original_edit_df = edited_df.copy(deep=True)
+                                            st.session_state.previous_edit_df = edited_df.copy(deep=True)
                                             # Clear history dataframe to force reload
                                             st.session_state.pop('history_df', None)
                     
