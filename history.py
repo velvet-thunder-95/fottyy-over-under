@@ -187,8 +187,10 @@ class PredictionHistory:
             # Verify the prediction exists before deleting
             check = self.db.supabase.table('predictions').select('id').eq('id', prediction_id).execute()
             if not check.data:
-                logging.error(f"Prediction ID {prediction_id} not found in database")
-                return False
+                # If the prediction doesn't exist, it might have already been deleted
+                # We'll consider this a success since the end result is what we want
+                logging.info(f"Prediction ID {prediction_id} not found in database - may have already been deleted")
+                return True
                 
             # Delete the prediction
             result = self.db.supabase.table('predictions').delete().eq('id', prediction_id).execute()
@@ -1218,10 +1220,22 @@ def show_history_page():
                                 
                                 for idx, row in delete_rows.iterrows():
                                     row_id = row['id']
-                                    logger.info(f"Attempting to delete prediction ID: {row_id}")
+                                    # We'll handle the logging in the delete_prediction method
                                     
                                     # Attempt to delete from database
                                     try:
+                                        # First check if the row still exists in the database
+                                        check = history.db.supabase.table('predictions').select('id').eq('id', row_id).execute()
+                                        if not check.data:
+                                            # Row already deleted, just update UI
+                                            success_messages.append(f"Prediction for {row['home_team']} vs {row['away_team']} already deleted")
+                                            deleted_count += 1
+                                            # Clear the checkboxes
+                                            current_df.at[idx, 'delete'] = False
+                                            current_df.at[idx, 'apply'] = False
+                                            continue
+                                            
+                                        # Try to delete the prediction
                                         success = history.delete_prediction(row_id)
                                         if success:
                                             success_messages.append(f"Deleted prediction for {row['home_team']} vs {row['away_team']}")
