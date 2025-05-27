@@ -1046,9 +1046,17 @@ def show_history_page():
                         # Force string format to prevent Streamlit from converting to timestamps
                         edit_df['date'] = edit_df['date'].astype(str)
                         
+                    # Initialize session state for edit tracking
+                    if 'edit_state' not in st.session_state:
+                        st.session_state.edit_state = {
+                            'current_df': edit_df.copy(deep=True),
+                            'last_edit_time': time.time(),
+                            'edit_in_progress': False
+                        }
+                    
                     # Use Streamlit's data editor for direct editing
                     edited_df = st.data_editor(
-                        edit_df,
+                        st.session_state.edit_state['current_df'],
                         column_config={
                             "id": st.column_config.TextColumn("ID", disabled=True),
                             "date": st.column_config.TextColumn("Date", disabled=True, help="Format: YYYY-MM-DD"),
@@ -1123,9 +1131,17 @@ def show_history_page():
                     
                     # Process edits and deletions
                     if edited_df is not None:
-                        # Store current state to detect changes
-                        if 'previous_edit_df' not in st.session_state:
-                            st.session_state.previous_edit_df = edited_df.copy(deep=True)
+                        # Update the current dataframe in edit state
+                        st.session_state.edit_state['current_df'] = edited_df.copy(deep=True)
+                        
+                        # Check if any row has edit=True but we're not in edit mode yet
+                        if not st.session_state.edit_state['edit_in_progress']:
+                            edit_rows = edited_df[edited_df['edit'] == True]
+                            if not edit_rows.empty:
+                                # Just mark that edit is in progress, but don't refresh
+                                st.session_state.edit_state['edit_in_progress'] = True
+                                logger.info("Edit mode activated, waiting for Apply")
+                                # No rerun needed - just update the state
                             
                         # Check for rows marked for deletion AND apply is checked
                         rows_to_delete = edited_df[(edited_df['delete'] == True) & (edited_df['apply'] == True)]
@@ -1140,8 +1156,8 @@ def show_history_page():
                                     st.success(f"Deleted prediction for {row['home_team']} vs {row['away_team']}")
                                     # Clear the session state to refresh data
                                     st.session_state.pop('history_df', None)
+                                    st.session_state.pop('edit_state', None)
                                     st.session_state.pop('original_edit_df', None)
-                                    st.session_state.pop('previous_edit_df', None)
                                     # Use a javascript hack to refresh without using st.rerun()
                                     st.markdown(
                                         """<script>window.parent.document.querySelector('section.main').scrollTop = 0;</script>""", 
@@ -1163,41 +1179,38 @@ def show_history_page():
                             st.session_state.edit_prediction_id = row_id
                             st.session_state.edit_prediction_data = edit_row.to_dict()
                             
-                            # Update previous state
-                            st.session_state.previous_edit_df = edited_df.copy(deep=True)
+                            # Reset edit state
+                            st.session_state.edit_state['edit_in_progress'] = False
                             
                             # Show success message
                             st.success(f"Editing prediction for {edit_row['home_team']} vs {edit_row['away_team']}")
                             
                             # Clear the apply checkbox after processing
                             edited_df.at[edit_row.name, 'apply'] = False
-                            st.session_state.original_edit_df = edited_df.copy(deep=True)
+                            edited_df.at[edit_row.name, 'edit'] = False
+                            st.session_state.edit_state['current_df'] = edited_df.copy(deep=True)
                             
-                        # Check for direct edits in the table
-                        if 'original_edit_df' in st.session_state:
+                        # Check for direct edits in the table with Apply checked
+                        rows_with_apply = edited_df[edited_df['apply'] == True]
+                        if not rows_with_apply.empty and 'original_edit_df' in st.session_state:
                             original_df = st.session_state.original_edit_df
                             
-                            # Find changed rows (excluding edit/delete columns)
-                            for idx, row in edited_df.iterrows():
-                                if idx < len(original_df):
-                                    original_row = original_df.iloc[idx]
-                                    row_id = row['id']
+                            # Compare each row with Apply checked for changes
+                            for i, row in rows_with_apply.iterrows():
+                                row_id = row['id']
+                                
+                                try:
+                                    original_row = original_df.loc[original_df['id'] == row_id].iloc[0]
                                     
-                                    # Check if any fields have changed (safely)
-                                    changed = False
-                                    for col in edited_df.columns:
-                                        # Skip special columns and check if column exists in both dataframes
-                                        if col not in ['id', 'edit', 'delete', 'profit_loss'] and col in original_row.index and col in row.index:
-                                            # Compare values safely
-                                            try:
-                                                if row[col] != original_row[col]:
-                                                    changed = True
-                                                    break
-                                            except Exception as e:
-                                                logger.error(f"Error comparing column {col}: {e}")
-                                                continue
+                                    # Compare with original to detect changes
+                                    # Ensure we're comparing the same types
+                                    home_odds_changed = float(row['home_odds']) != float(original_row['home_odds'])
+                                    draw_odds_changed = float(row['draw_odds']) != float(original_row['draw_odds'])
+                                    away_odds_changed = float(row['away_odds']) != float(original_row['away_odds'])
+                                    profit_loss_changed = float(row['profit_loss']) != float(original_row['profit_loss'])
                                     
-                                    if changed:
+                                    # Only process changes if Apply is checked and changes detected
+                                    if (home_odds_changed or draw_odds_changed or away_odds_changed or profit_loss_changed):
                                         # Get original data for odds values
                                         original_data = predictions.loc[predictions['id'] == int(row_id)].iloc[0] if not predictions.empty else None
                                         
@@ -1223,8 +1236,6 @@ def show_history_page():
                                         # Add completed match details if status is Completed
                                         if row['status'] == 'Completed':
                                             # Get scores from original data
-                                            original_data = predictions.loc[predictions['id'] == int(row_id)].iloc[0] if not predictions.empty else None
-                                            
                                             if original_data is not None:
                                                 home_score = int(original_data['home_score']) if pd.notna(original_data['home_score']) else 0
                                                 away_score = int(original_data['away_score']) if pd.notna(original_data['away_score']) else 0
@@ -1233,26 +1244,28 @@ def show_history_page():
                                                 home_score = 0
                                                 away_score = 0
                                             
-                                            # Determine actual outcome
+                                            # Determine actual outcome based on scores
                                             if home_score > away_score:
                                                 actual_outcome = "HOME"
                                             elif away_score > home_score:
                                                 actual_outcome = "AWAY"
                                             else:
                                                 actual_outcome = "DRAW"
-                                            
-                                            # Calculate profit/loss using edited odds values
-                                            bet_amount = 1.0  # Fixed $1 bet
-                                            if row['predicted_outcome'] == actual_outcome:
-                                                if row['predicted_outcome'] == "HOME":
-                                                    profit_loss = float(round((row['home_odds'] * bet_amount) - bet_amount, 2))
-                                                elif row['predicted_outcome'] == "AWAY":
-                                                    profit_loss = float(round((row['away_odds'] * bet_amount) - bet_amount, 2))
+                                                
+                                            # Calculate profit/loss
+                                            if actual_outcome == row['predicted_outcome']:
+                                                # Win: (odds * bet_amount) - bet_amount
+                                                if actual_outcome == "HOME":
+                                                    profit_loss = (float(row['home_odds']) - 1.0) * 1.0  # $1 bet
+                                                elif actual_outcome == "AWAY":
+                                                    profit_loss = (float(row['away_odds']) - 1.0) * 1.0
                                                 else:  # DRAW
-                                                    profit_loss = float(round((row['draw_odds'] * bet_amount) - bet_amount, 2))
+                                                    profit_loss = (float(row['draw_odds']) - 1.0) * 1.0
                                             else:
-                                                profit_loss = float(-bet_amount)
-                                            
+                                                # Loss: -bet_amount
+                                                profit_loss = -1.0  # $1 bet
+                                                
+                                            # Add match details to update data
                                             update_data.update({
                                                 'home_score': home_score,
                                                 'away_score': away_score,
@@ -1260,29 +1273,20 @@ def show_history_page():
                                                 'profit_loss': profit_loss
                                             })
                                         
-                                        # Compare with original to detect changes
-                                        original_row = original_df.loc[original_df['id'] == row_id].iloc[0]
-                                        
-                                        # Check if odds or profit/loss have changed
-                                        # Ensure we're comparing the same types
-                                        home_odds_changed = float(row['home_odds']) != float(original_row['home_odds'])
-                                        draw_odds_changed = float(row['draw_odds']) != float(original_row['draw_odds'])
-                                        away_odds_changed = float(row['away_odds']) != float(original_row['away_odds'])
-                                        profit_loss_changed = float(row['profit_loss']) != float(original_row['profit_loss'])
-                                        
-                                        # Only process changes if Apply is checked
-                                        if row['apply'] and (home_odds_changed or draw_odds_changed or away_odds_changed or profit_loss_changed):
-                                            # Update prediction in database with confirmation
-                                            logger.info(f"Updating prediction ID: {row_id} with data: {update_data}")
-                                            if history.update_prediction(row_id, update_data):
-                                                st.toast(f"Updated prediction for {row['home_team']} vs {row['away_team']}")
-                                                # Update session state
-                                                st.session_state.original_edit_df = edited_df.copy(deep=True)
-                                                st.session_state.previous_edit_df = edited_df.copy(deep=True)
-                                                # Clear history dataframe to force reload
-                                                st.session_state.pop('history_df', None)
-                                                # Clear the apply checkbox after processing
-                                                edited_df.at[i, 'apply'] = False
+                                        # Update prediction in database with confirmation
+                                        logger.info(f"Updating prediction ID: {row_id} with data: {update_data}")
+                                        if history.update_prediction(row_id, update_data):
+                                            st.toast(f"Updated prediction for {row['home_team']} vs {row['away_team']}")
+                                            # Update session state
+                                            st.session_state.edit_state['current_df'] = edited_df.copy(deep=True)
+                                            st.session_state.original_edit_df = edited_df.copy(deep=True)
+                                            # Clear history dataframe to force reload
+                                            st.session_state.pop('history_df', None)
+                                            # Clear the apply checkbox after processing
+                                            edited_df.at[i, 'apply'] = False
+                                except (IndexError, KeyError) as e:
+                                    logger.error(f"Error processing row: {e}")
+                                    continue
                     
                     # Selection is handled through the selectbox above
                         
