@@ -4,9 +4,14 @@
 
 import streamlit as st
 import pandas as pd
+import numpy as np
 from datetime import datetime, timedelta
-from football_api import get_match_by_teams, get_match_result
-from session_state import init_session_state, check_login_state
+import logging
+from database import Database
+import json
+import os
+from typing import List, Dict, Any, Tuple, Optional, Union
+from st_aggrid import AgGrid, GridOptionsBuilder, JsCode, ColumnsAutoSizeMode
 from match_analyzer import MatchAnalyzer
 from supabase_db import SupabaseDB
 import logging
@@ -554,27 +559,21 @@ def get_confidence_level(confidence):
         return "Unknown"
 
 def show_history_page():
-    """Display prediction history page with editing capabilities"""
+    """Display prediction history page with AG Grid editing capabilities"""
     st.markdown("""
         <style>
-        .stDataFrame {
-            font-size: 14px;
-            width: 100%;
+        .ag-header-cell-label {
+            justify-content: center;
         }
-        .stDataFrame [data-testid="StyledDataFrameDataCell"] {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            padding: 12px 15px;
-            color: #333333;
+        .ag-cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        .stDataFrame [data-testid="StyledDataFrameHeaderCell"] {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            padding: 12px 15px;
-            background-color: #f8f9fa;
-            color: #333333;
-            font-weight: 600;
+        .ag-theme-streamlit {
+            --ag-font-size: 14px;
+            --ag-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         }
-        
-        /* Style for action buttons */
         .action-button {
             padding: 4px 8px;
             margin: 2px;
@@ -584,17 +583,14 @@ def show_history_page():
             font-size: 12px;
             transition: all 0.3s;
         }
-        
         .edit-button {
             background-color: #4CAF50;
             color: white;
         }
-        
         .delete-button {
             background-color: #f44336;
             color: white;
         }
-        
         .action-button:hover {
             opacity: 0.8;
             transform: translateY(-1px);
@@ -1021,55 +1017,158 @@ def show_history_page():
                         except (ValueError, TypeError):
                             return '-'
                     
-                    # Display the filtered data with action buttons
+                    # Display the filtered data with AG Grid
                     if not final_df.empty:
-                        # Add action buttons to each row
-                        final_df['Actions'] = final_df.apply(lambda x: f'''
-                            <button class="action-button edit-button" onclick="editRow('{x['id']}')">Edit</button>
-                            <button class="action-button delete-button" onclick="deleteRow('{x['id']}')">Delete</button>
-                        ''', axis=1)
+                        # Configure AG Grid
+                        gb = GridOptionsBuilder.from_dataframe(final_df)
                         
-                        # Display the dataframe with actions
-                        st.markdown("""
-                            <script>
-                            function editRow(id) {
-                                window.parent.postMessage({
-                                    type: 'streamlit:setComponentValue',
-                                    value: {action: 'edit', id: id}
-                                }, '*');
-                            }
-                            
-                            function deleteRow(id) {
-                                if (confirm('Are you sure you want to delete this prediction?')) {
-                                    window.parent.postMessage({
-                                        type: 'streamlit:setComponentValue',
-                                        value: {action: 'delete', id: id}
-                                    }, '*');
+                        # Define column definitions
+                        gb.configure_default_column(
+                            filterable=True,
+                            sortable=True,
+                            resizable=True,
+                            editable=False,
+                            groupable=True
+                        )
+                        
+                        # Add action buttons
+                        gb.configure_column(
+                            'Actions',
+                            header_name='Actions',
+                            cellRenderer=JsCode('''
+                                function(params) {
+                                    const eDiv = document.createElement('div');
+                                    eDiv.innerHTML = `
+                                        <button class="action-button edit-button" onclick="alert('Edit: ' + params.data.id)">
+                                            Edit
+                                        </button>
+                                        <button class="action-button delete-button" onclick="if(confirm('Are you sure you want to delete this prediction?')) {alert('Delete: ' + params.data.id)}">
+                                            Delete
+                                        </button>
+                                    `;
+                                    return eDiv;
                                 }
+                            '''),
+                            width=150,
+                            sortable=False,
+                            filterable=False,
+                            pinned='right'
+                        )
+                        
+                        # Configure grid options
+                        gb.configure_selection('single', use_checkbox=False, rowMultiSelectWithClick=False)
+                        gb.configure_grid_options(domLayout='autoHeight')
+                        
+                        # Add CSS for the grid
+                        st.markdown("""
+                            <style>
+                            .ag-theme-streamlit {
+                                --ag-grid-size: 4px;
+                                --ag-list-item-height: 24px;
+                                --ag-font-size: 12px;
+                                --ag-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
                             }
-                            </script>
+                            .ag-header-cell-label {
+                                justify-content: center;
+                            }
+                            .ag-cell {
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                padding: 0 8px;
+                            }
+                            </style>
                         """, unsafe_allow_html=True)
                         
-                        # Display the dataframe
-                        st.markdown(style_dataframe(final_df).to_html(escape=False), unsafe_allow_html=True)
+                        # Display the grid
+                        grid_response = AgGrid(
+                            final_df,
+                            gridOptions=gb.build(),
+                            height=min(600, 50 + len(final_df) * 35),  # Dynamic height based on rows
+                            width='100%',
+                            theme='streamlit',
+                            columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS,
+                            allow_unsafe_jscode=True,
+                            enable_enterprise_modules=False,
+                            update_mode='VALUE_CHANGED',
+                            data_return_mode='AS_INPUT',
+                            fit_columns_on_grid_load=True,
+                            header_height=35,
+                            reload_data=False,
+                            custom_css={
+                                ".ag-header-cell": {
+                                    "font-weight": "600",
+                                    "background-color": "#f8f9fa"
+                                },
+                                ".ag-row-hover": {
+                                    "background-color": "#f5f5f5"
+                                }
+                            }
+                        )
                         
-                        # Handle row actions
-                        if st.session_state.get('action'):
-                            action = st.session_state.action
-                            pred_id = st.session_state.get('prediction_id')
+                        # Handle row selection and actions
+                        selected_rows = grid_response['selected_rows']
+                        if selected_rows:
+                            selected_row = selected_rows[0]
                             
-                            if action == 'edit' and pred_id:
-                                edit_prediction(history, pred_id, final_df)
-                            elif action == 'delete' and pred_id:
-                                delete_prediction(history, pred_id)
-                                
-                            # Clear action state
-                            st.session_state.action = None
-                            st.session_state.prediction_id = None
-                            st.rerun()
+                            # Create a form for editing the selected row
+                            with st.expander(f"Edit Prediction: {selected_row.get('home_team', '')} vs {selected_row.get('away_team', '')}"):
+                                with st.form(key=f"edit_form_{selected_row.get('id')}"):
+                                    col1, col2 = st.columns(2)
+                                    
+                                    with col1:
+                                        date = st.date_input("Date", value=pd.to_datetime(selected_row.get('date', datetime.now())))
+                                        home_team = st.text_input("Home Team", value=selected_row.get('home_team', ''))
+                                        away_team = st.text_input("Away Team", value=selected_row.get('away_team', ''))
+                                        league = st.text_input("League", value=selected_row.get('league', ''))
+                                        
+                                    with col2:
+                                        status = st.selectbox(
+                                            "Status",
+                                            ["Pending", "Completed"],
+                                            index=0 if selected_row.get('status') == "Pending" else 1
+                                        )
+                                        predicted_outcome = st.selectbox(
+                                            "Predicted Outcome",
+                                            ["HOME", "DRAW", "AWAY"],
+                                            index=["HOME", "DRAW", "AWAY"].index(selected_row.get('predicted_outcome', 'HOME'))
+                                        )
+                                        actual_outcome = st.selectbox(
+                                            "Actual Outcome",
+                                            ["", "HOME", "DRAW", "AWAY"],
+                                            index=["", "HOME", "DRAW", "AWAY"].index(selected_row.get('actual_outcome', ""))
+                                        )
+                                        confidence = st.slider("Confidence", 0, 100, int(selected_row.get('confidence', 50)))
+                                    
+                                    # Form buttons
+                                    submit_button = st.form_submit_button("💾 Save Changes")
+                                    
+                                    if submit_button:
+                                        # Prepare update data
+                                        update_data = {
+                                            'date': date.strftime('%Y-%m-%d %H:%M:%S'),
+                                            'home_team': home_team,
+                                            'away_team': away_team,
+                                            'league': league,
+                                            'status': status,
+                                            'predicted_outcome': predicted_outcome,
+                                            'actual_outcome': actual_outcome if actual_outcome else None,
+                                            'confidence': confidence
+                                        }
+                                        
+                                        try:
+                                            # Update in database
+                                            if history.update_prediction(selected_row['id'], update_data):
+                                                st.success("✅ Prediction updated successfully!")
+                                                st.session_state.refresh_data = True
+                                                st.rerun()
+                                            else:
+                                                st.error("❌ Failed to update prediction.")
+                                        except Exception as e:
+                                            st.error(f"❌ Error updating prediction: {str(e)}")
                     else:
                         st.warning("No predictions found matching the selected filters.")
-                        
+                    
                     # Add some space at the bottom of the page
                     st.markdown("<br><br>", unsafe_allow_html=True)
                     
