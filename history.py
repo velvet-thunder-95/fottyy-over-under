@@ -961,7 +961,7 @@ def show_history_page():
                         # Store original values for reference
                         row_id = str(row['id'])
                         
-                        # Create row data with original values (excluding odds and scores)
+                        # Create row data with original values including odds
                         row_data = {
                             'id': row_id,
                             'date': date_str,
@@ -970,6 +970,9 @@ def show_history_page():
                             'away_team': str(row['away_team']),
                             'predicted_outcome': str(row['predicted_outcome']),
                             'confidence': float(row['confidence']) if pd.notna(row['confidence']) else 0.0,
+                            'home_odds': float(row['home_odds']) if pd.notna(row['home_odds']) else 0.0,
+                            'draw_odds': float(row['draw_odds']) if pd.notna(row['draw_odds']) else 0.0,
+                            'away_odds': float(row['away_odds']) if pd.notna(row['away_odds']) else 0.0,
                             'actual_outcome': str(row['actual_outcome']) if pd.notna(row['actual_outcome']) else '',
                             'status': str(row['status']),
                             'profit_loss': float(row['profit_loss']) if pd.notna(row['profit_loss']) else 0.0,
@@ -1008,28 +1011,50 @@ def show_history_page():
                         column_config={
                             "id": st.column_config.TextColumn("ID", disabled=True),
                             "date": st.column_config.TextColumn("Date", disabled=True),
-                            "league": st.column_config.TextColumn("League"),
-                            "home_team": st.column_config.TextColumn("Home Team"),
-                            "away_team": st.column_config.TextColumn("Away Team"),
+                            "league": st.column_config.TextColumn("League", disabled=True),
+                            "home_team": st.column_config.TextColumn("Home Team", disabled=True),
+                            "away_team": st.column_config.TextColumn("Away Team", disabled=True),
                             "predicted_outcome": st.column_config.SelectboxColumn(
                                 "Prediction",
-                                options=["HOME", "DRAW", "AWAY"]
+                                options=["HOME", "DRAW", "AWAY"],
+                                disabled=True
                             ),
                             "confidence": st.column_config.NumberColumn(
                                 "Confidence",
                                 min_value=0.0,
                                 max_value=100.0,
-                                format="%.1f%%"
+                                format="%.1f%%",
+                                disabled=True
+                            ),
+                            "home_odds": st.column_config.NumberColumn(
+                                "Home Odds", 
+                                format="%.2f",
+                                min_value=1.01,
+                                max_value=100.0
+                            ),
+                            "draw_odds": st.column_config.NumberColumn(
+                                "Draw Odds", 
+                                format="%.2f",
+                                min_value=1.01,
+                                max_value=100.0
+                            ),
+                            "away_odds": st.column_config.NumberColumn(
+                                "Away Odds", 
+                                format="%.2f",
+                                min_value=1.01,
+                                max_value=100.0
                             ),
                             "actual_outcome": st.column_config.SelectboxColumn(
                                 "Actual Outcome",
-                                options=["", "HOME", "DRAW", "AWAY"]
+                                options=["", "HOME", "DRAW", "AWAY"],
+                                disabled=True
                             ),
                             "status": st.column_config.SelectboxColumn(
                                 "Status",
-                                options=["Pending", "Completed"]
+                                options=["Pending", "Completed"],
+                                disabled=True
                             ),
-                            "profit_loss": st.column_config.NumberColumn("Profit/Loss", format="%.2fU", disabled=True),
+                            "profit_loss": st.column_config.NumberColumn("Profit/Loss", format="%.2fU"),
                             "edit": st.column_config.CheckboxColumn("Edit"),
                             "delete": st.column_config.CheckboxColumn("Delete")
                         },
@@ -1091,7 +1116,7 @@ def show_history_page():
                                             st.error(f"Could not find original data for prediction ID {row_id}")
                                             continue
                                         
-                                        # Prepare update data
+                                        # Prepare update data - use edited odds values directly
                                         update_data = {
                                             'date': ensure_date_format(row['date']),  # Use our consistent date formatter
                                             'league': row['league'],
@@ -1099,9 +1124,9 @@ def show_history_page():
                                             'away_team': row['away_team'],
                                             'predicted_outcome': row['predicted_outcome'],
                                             'confidence': float(row['confidence']),
-                                            'home_odds': float(original_data['home_odds']) if pd.notna(original_data['home_odds']) else 0.0,
-                                            'draw_odds': float(original_data['draw_odds']) if pd.notna(original_data['draw_odds']) else 0.0,
-                                            'away_odds': float(original_data['away_odds']) if pd.notna(original_data['away_odds']) else 0.0,
+                                            'home_odds': float(row['home_odds']) if pd.notna(row['home_odds']) else 0.0,
+                                            'draw_odds': float(row['draw_odds']) if pd.notna(row['draw_odds']) else 0.0,
+                                            'away_odds': float(row['away_odds']) if pd.notna(row['away_odds']) else 0.0,
                                             'status': row['status']
                                         }
                                         
@@ -1126,15 +1151,15 @@ def show_history_page():
                                             else:
                                                 actual_outcome = "DRAW"
                                             
-                                            # Calculate profit/loss using original data for odds
+                                            # Calculate profit/loss using edited odds values
                                             bet_amount = 1.0  # Fixed $1 bet
                                             if row['predicted_outcome'] == actual_outcome:
                                                 if row['predicted_outcome'] == "HOME":
-                                                    profit_loss = float(round((original_data['home_odds'] * bet_amount) - bet_amount, 2))
+                                                    profit_loss = float(round((row['home_odds'] * bet_amount) - bet_amount, 2))
                                                 elif row['predicted_outcome'] == "AWAY":
-                                                    profit_loss = float(round((original_data['away_odds'] * bet_amount) - bet_amount, 2))
+                                                    profit_loss = float(round((row['away_odds'] * bet_amount) - bet_amount, 2))
                                                 else:  # DRAW
-                                                    profit_loss = float(round((original_data['draw_odds'] * bet_amount) - bet_amount, 2))
+                                                    profit_loss = float(round((row['draw_odds'] * bet_amount) - bet_amount, 2))
                                             else:
                                                 profit_loss = float(-bet_amount)
                                             
