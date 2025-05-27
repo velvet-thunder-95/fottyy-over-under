@@ -1037,133 +1037,77 @@ def show_history_page():
                         except (ValueError, TypeError):
                             return '-'
                     
-                    # Display the filtered data with AG Grid
+                    # Display the filtered data with a simple table
                     if not final_df.empty:
-                        # Configure AG Grid
-                        gb = GridOptionsBuilder.from_dataframe(final_df)
-                        
-                        # Define column definitions
-                        gb.configure_default_column(
-                            filterable=True,
-                            sortable=True,
-                            resizable=True,
-                            editable=False,
-                            groupable=True
-                        )
-                        
-                        # Add action buttons
-                        gb.configure_column(
-                            'Actions',
-                            header_name='Actions',
-                            cellRenderer=JsCode('''
-                                function(params) {
-                                    const eDiv = document.createElement('div');
-                                    eDiv.innerHTML = `
-                                        <button class="action-button edit-button" onclick="alert('Edit: ' + params.data.id)">
-                                            Edit
-                                        </button>
-                                        <button class="action-button delete-button" onclick="if(confirm('Are you sure you want to delete this prediction?')) {alert('Delete: ' + params.data.id)}">
-                                            Delete
-                                        </button>
-                                    `;
-                                    return eDiv;
-                                }
-                            '''),
-                            width=150,
-                            sortable=False,
-                            filterable=False,
-                            pinned='right'
-                        )
-                        
-                        # Configure grid options
-                        gb.configure_selection('single', use_checkbox=False, rowMultiSelectWithClick=False)
-                        gb.configure_grid_options(domLayout='autoHeight')
-                        
-                        # Add CSS for the grid
-                        st.markdown("""
-                            <style>
-                            .ag-theme-streamlit {
-                                --ag-grid-size: 4px;
-                                --ag-list-item-height: 24px;
-                                --ag-font-size: 12px;
-                                --ag-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-                            }
-                            .ag-header-cell-label {
-                                justify-content: center;
-                            }
-                            .ag-cell {
-                                display: flex;
-                                align-items: center;
-                                justify-content: center;
-                                padding: 0 8px;
-                            }
-                            </style>
-                        """, unsafe_allow_html=True)
-                        
-                        # Display the grid
-                        grid_response = AgGrid(
+                        # Display the dataframe with Streamlit's native table
+                        st.dataframe(
                             final_df,
-                            gridOptions=gb.build(),
-                            height=min(600, 50 + len(final_df) * 35),  # Dynamic height based on rows
-                            width='100%',
-                            theme='streamlit',
-                            columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS,
-                            allow_unsafe_jscode=True,
-                            enable_enterprise_modules=False,
-                            update_mode='VALUE_CHANGED',
-                            data_return_mode='AS_INPUT',
-                            fit_columns_on_grid_load=True,
-                            header_height=35,
-                            reload_data=False,
-                            custom_css={
-                                ".ag-header-cell": {
-                                    "font-weight": "600",
-                                    "background-color": "#f8f9fa"
-                                },
-                                ".ag-row-hover": {
-                                    "background-color": "#f5f5f5"
-                                }
+                            use_container_width=True,
+                            hide_index=True,
+                            column_config={
+                                "id": None,  # Hide ID column
+                                "date": "Date",
+                                "league": "League",
+                                "home_team": "Home Team",
+                                "away_team": "Away Team",
+                                "predicted_outcome": "Prediction",
+                                "confidence": st.column_config.NumberColumn(
+                                    "Confidence",
+                                    format="%.0f%%"
+                                ),
+                                "status": "Status"
                             }
                         )
                         
-                        # Handle row selection and actions
-                        selected_rows = grid_response['selected_rows']
-                        if selected_rows:
-                            selected_row = selected_rows[0]
+                        # Add edit/delete buttons for each row
+                        st.subheader("Edit Prediction")
+                        with st.form(key="edit_prediction_form"):
+                            row_id = st.selectbox(
+                                "Select prediction to edit",
+                                options=final_df.apply(
+                                    lambda x: f"{x['home_team']} vs {x['away_team']} ({x['date'].split()[0]})", 
+                                    axis=1
+                                )
+                            )
                             
-                            # Create a form for editing the selected row
-                            with st.expander(f"Edit Prediction: {selected_row.get('home_team', '')} vs {selected_row.get('away_team', '')}"):
-                                with st.form(key=f"edit_form_{selected_row.get('id')}"):
-                                    col1, col2 = st.columns(2)
+                            if row_id:
+                                selected_idx = final_df.apply(
+                                    lambda x: f"{x['home_team']} vs {x['away_team']} ({x['date'].split()[0]})", 
+                                    axis=1
+                                ).tolist().index(row_id)
+                                selected_row = final_df.iloc[selected_idx].to_dict()
+                                
+                                col1, col2 = st.columns(2)
+                                
+                                with col1:
+                                    date = st.date_input("Date", value=pd.to_datetime(selected_row.get('date', datetime.now())))
+                                    home_team = st.text_input("Home Team", value=selected_row.get('home_team', ''))
+                                    away_team = st.text_input("Away Team", value=selected_row.get('away_team', ''))
+                                    league = st.text_input("League", value=selected_row.get('league', ''))
                                     
-                                    with col1:
-                                        date = st.date_input("Date", value=pd.to_datetime(selected_row.get('date', datetime.now())))
-                                        home_team = st.text_input("Home Team", value=selected_row.get('home_team', ''))
-                                        away_team = st.text_input("Away Team", value=selected_row.get('away_team', ''))
-                                        league = st.text_input("League", value=selected_row.get('league', ''))
-                                        
-                                    with col2:
-                                        status = st.selectbox(
-                                            "Status",
-                                            ["Pending", "Completed"],
-                                            index=0 if selected_row.get('status') == "Pending" else 1
-                                        )
-                                        predicted_outcome = st.selectbox(
-                                            "Predicted Outcome",
-                                            ["HOME", "DRAW", "AWAY"],
-                                            index=["HOME", "DRAW", "AWAY"].index(selected_row.get('predicted_outcome', 'HOME'))
-                                        )
-                                        actual_outcome = st.selectbox(
-                                            "Actual Outcome",
-                                            ["", "HOME", "DRAW", "AWAY"],
-                                            index=["", "HOME", "DRAW", "AWAY"].index(selected_row.get('actual_outcome', ""))
-                                        )
-                                        confidence = st.slider("Confidence", 0, 100, int(selected_row.get('confidence', 50)))
-                                    
-                                    # Form buttons
-                                    submit_button = st.form_submit_button("💾 Save Changes")
-                                    
-                                    if submit_button:
+                                with col2:
+                                    status = st.selectbox(
+                                        "Status",
+                                        ["Pending", "Completed"],
+                                        index=0 if selected_row.get('status') == "Pending" else 1
+                                    )
+                                    predicted_outcome = st.selectbox(
+                                        "Predicted Outcome",
+                                        ["HOME", "DRAW", "AWAY"],
+                                        index=["HOME", "DRAW", "AWAY"].index(selected_row.get('predicted_outcome', 'HOME'))
+                                    )
+                                    actual_outcome = st.selectbox(
+                                        "Actual Outcome",
+                                        ["", "HOME", "DRAW", "AWAY"],
+                                        index=["", "HOME", "DRAW", "AWAY"].index(selected_row.get('actual_outcome', ""))
+                                    )
+                                    confidence = st.slider("Confidence", 0, 100, int(selected_row.get('confidence', 50)))
+                                
+                                # Form buttons
+                                col1, col2 = st.columns([1, 1])
+                                
+                                with col1:
+                                    if st.form_submit_button("💾 Save Changes"):
                                         # Prepare update data
                                         update_data = {
                                             'date': date.strftime('%Y-%m-%d %H:%M:%S'),
@@ -1186,6 +1130,18 @@ def show_history_page():
                                                 st.error("❌ Failed to update prediction.")
                                         except Exception as e:
                                             st.error(f"❌ Error updating prediction: {str(e)}")
+                                
+                                with col2:
+                                    if st.form_submit_button("🗑️ Delete Prediction"):
+                                        try:
+                                            if history.delete_prediction(selected_row['id']):
+                                                st.success("✅ Prediction deleted successfully!")
+                                                st.session_state.refresh_data = True
+                                                st.rerun()
+                                            else:
+                                                st.error("❌ Failed to delete prediction.")
+                                        except Exception as e:
+                                            st.error(f"❌ Error deleting prediction: {str(e)}")
                     else:
                         st.warning("No predictions found matching the selected filters.")
                     
