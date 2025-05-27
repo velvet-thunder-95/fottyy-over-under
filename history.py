@@ -133,21 +133,40 @@ class PredictionHistory:
     def update_prediction(self, prediction_id, update_data):
         """Update prediction with custom data"""
         try:
+            # Convert prediction_id to int if it's a string
+            if isinstance(prediction_id, str):
+                try:
+                    prediction_id = int(prediction_id)
+                except ValueError:
+                    logging.error(f"Invalid prediction ID format: {prediction_id}")
+                    return False
+            
+            # Verify the prediction exists before updating
+            check = self.db.supabase.table('predictions').select('id').eq('id', prediction_id).execute()
+            if not check.data:
+                logging.error(f"Prediction ID {prediction_id} not found in database")
+                return False
+                
             # Ensure date is properly formatted
             if 'date' in update_data:
                 update_data['date'] = ensure_date_format(update_data['date'])
                 
             # Ensure numeric values are properly formatted
-            if 'confidence' in update_data and update_data['confidence'] is not None:
-                update_data['confidence'] = float(update_data['confidence'])
-            if 'home_odds' in update_data and update_data['home_odds'] is not None:
-                update_data['home_odds'] = float(update_data['home_odds'])
-            if 'draw_odds' in update_data and update_data['draw_odds'] is not None:
-                update_data['draw_odds'] = float(update_data['draw_odds'])
-            if 'away_odds' in update_data and update_data['away_odds'] is not None:
-                update_data['away_odds'] = float(update_data['away_odds'])
+            numeric_fields = ['confidence', 'home_odds', 'draw_odds', 'away_odds', 'profit_loss', 'home_score', 'away_score']
+            for field in numeric_fields:
+                if field in update_data and update_data[field] is not None:
+                    try:
+                        update_data[field] = float(update_data[field])
+                    except (ValueError, TypeError):
+                        logging.error(f"Invalid numeric value for {field}: {update_data[field]}")
+                        return False
+            
+            # Log the update data for debugging
+            logging.info(f"Updating prediction ID {prediction_id} with data: {update_data}")
                 
+            # Perform the update
             result = self.db.supabase.table('predictions').update(update_data).eq('id', prediction_id).execute()
+            logging.info(f"Successfully updated prediction ID: {prediction_id}")
             return True
             
         except Exception as e:
@@ -157,7 +176,23 @@ class PredictionHistory:
     def delete_prediction(self, prediction_id):
         """Delete a prediction from the database"""
         try:
+            # Convert prediction_id to int if it's a string
+            if isinstance(prediction_id, str):
+                try:
+                    prediction_id = int(prediction_id)
+                except ValueError:
+                    logging.error(f"Invalid prediction ID format: {prediction_id}")
+                    return False
+            
+            # Verify the prediction exists before deleting
+            check = self.db.supabase.table('predictions').select('id').eq('id', prediction_id).execute()
+            if not check.data:
+                logging.error(f"Prediction ID {prediction_id} not found in database")
+                return False
+                
+            # Delete the prediction
             result = self.db.supabase.table('predictions').delete().eq('id', prediction_id).execute()
+            logging.info(f"Successfully deleted prediction ID: {prediction_id}")
             return True
             
         except Exception as e:
@@ -1048,6 +1083,7 @@ def show_history_page():
                         
                     # Add instructions for using the editor
                     st.info("📝 To edit a prediction: 1) Check the 'Edit' box, 2) Make your changes, 3) Check 'Apply' to save changes")
+                    st.warning("⚠️ To delete a prediction: 1) Check the 'Delete' box for the row, 2) Check 'Apply' to confirm deletion")
                     
                     # Initialize session state for edit tracking
                     if 'edit_state' not in st.session_state:
@@ -1208,39 +1244,47 @@ def show_history_page():
                             # Clear the delete_row_data after displaying the warning
                             del st.session_state.delete_row_data
                             
-                        # Process Apply button actions
+                        # Process Apply button actions - SIMPLIFIED APPROACH
                         try:
-                            # Check for rows with Apply checked
-                            apply_rows = edited_df[edited_df['apply'] == True]
-                            if not apply_rows.empty:
-                                for idx, row in apply_rows.iterrows():
+                            # Find rows with both Delete and Apply checked
+                            delete_rows = edited_df[(edited_df['delete'] == True) & (edited_df['apply'] == True)]
+                            if not delete_rows.empty:
+                                for idx, row in delete_rows.iterrows():
                                     row_id = row['id']
                                     
-                                    # Check if this is a delete request
-                                    if 'delete_row_id' in st.session_state and st.session_state.delete_row_id == row_id:
-                                        # This is a confirmed deletion request
-                                        logger.info(f"Deleting prediction ID: {row_id}")
-                                        if history.delete_prediction(row_id):
-                                            st.success(f"Deleted prediction for {row['home_team']} vs {row['away_team']}")
-                                            # Clear the session state to refresh data
-                                            st.session_state.pop('history_df', None)
-                                            st.session_state.pop('edit_state', None)
-                                            st.session_state.pop('original_edit_df', None)
-                                            if 'delete_row_id' in st.session_state:
-                                                del st.session_state.delete_row_id
-                                            # Use a javascript hack to refresh without using st.rerun()
-                                            st.markdown(
-                                                """<script>window.parent.document.querySelector('section.main').scrollTop = 0;</script>""", 
-                                                unsafe_allow_html=True
-                                            )
-                                            time.sleep(0.5)  # Small delay
-                                            st.experimental_rerun()
+                                    # This is a confirmed deletion request
+                                    logger.info(f"Deleting prediction ID: {row_id}")
                                     
+                                    # Attempt to delete from database
+                                    try:
+                                        success = history.delete_prediction(row_id)
+                                        if success:
+                                            st.success(f"Deleted prediction for {row['home_team']} vs {row['away_team']}")
+                                            # Clear session state to force data reload
+                                            if 'history_df' in st.session_state:
+                                                del st.session_state.history_df
+                                            if 'edit_state' in st.session_state:
+                                                del st.session_state.edit_state
+                                            if 'original_edit_df' in st.session_state:
+                                                del st.session_state.original_edit_df
+                                            
+                                            # Force page refresh
+                                            st.experimental_rerun()
+                                        else:
+                                            st.error(f"Failed to delete prediction ID: {row_id}")
+                                    except Exception as delete_error:
+                                        st.error(f"Error deleting prediction: {str(delete_error)}")
+                                        logger.error(f"Delete error: {str(delete_error)}")
+                            
+                            # For rows with just Apply checked (but not Delete)
+                            apply_only_rows = edited_df[(edited_df['apply'] == True) & (edited_df['delete'] == False)]
+                            if not apply_only_rows.empty:
+                                for idx, row in apply_only_rows.iterrows():
                                     # Clear the apply checkbox after processing
                                     edited_df.at[idx, 'apply'] = False
-                                    st.session_state.edit_state['current_df'] = edited_df.copy(deep=True)
                         except Exception as e:
                             logger.error(f"Error processing Apply actions: {str(e)}")
+                            st.error(f"An error occurred while processing your request. Please try again.")
                             # Don't crash the app
                         
                         # Check for edit requests with Apply checked
@@ -1275,17 +1319,27 @@ def show_history_page():
                             logger.error(f"Error processing edit request: {str(e)}")
                             # Don't crash the app
                             
-                        # Check for direct edits in the table with Apply checked
-                        rows_with_apply = edited_df[edited_df['apply'] == True]
-                        if not rows_with_apply.empty and 'original_edit_df' in st.session_state:
+                        # Process direct edits (changes to odds or profit/loss) with Apply checked
+                        # Only process rows that have Apply checked but not marked for delete or edit
+                        direct_edit_rows = edited_df[(edited_df['apply'] == True) & 
+                                                    (edited_df['delete'] == False) & 
+                                                    (edited_df['edit'] == False)]
+                        
+                        if not direct_edit_rows.empty and 'original_edit_df' in st.session_state:
                             original_df = st.session_state.original_edit_df
                             
                             # Compare each row with Apply checked for changes
-                            for i, row in rows_with_apply.iterrows():
+                            for i, row in direct_edit_rows.iterrows():
                                 row_id = row['id']
                                 
                                 try:
-                                    original_row = original_df.loc[original_df['id'] == row_id].iloc[0]
+                                    # Find the original row data
+                                    original_rows = original_df[original_df['id'] == row_id]
+                                    if len(original_rows) == 0:
+                                        logger.warning(f"Original row not found for ID: {row_id}")
+                                        continue
+                                        
+                                    original_row = original_rows.iloc[0]
                                     
                                     # Compare with original to detect changes
                                     # Ensure we're comparing the same types
