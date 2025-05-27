@@ -1283,8 +1283,19 @@ def show_history_page():
                     if 'previous_df' not in st.session_state:
                         st.session_state.previous_df = st.session_state.edit_state['current_df'].copy(deep=True)
                     
-                    # Use Streamlit's data editor without on_change callback to prevent auto-refresh
-                    # We'll detect changes manually by comparing with the previous state
+                    # Define a callback function for when the data editor changes
+                    def on_data_editor_change():
+                        # Get the current dataframe from session state
+                        if 'prediction_editor' in st.session_state:
+                            current_df = st.session_state.prediction_editor
+                            
+                            # Check if any apply checkboxes are checked
+                            apply_rows = current_df[current_df['apply'] == True]
+                            if not apply_rows.empty:
+                                # Process the changes for rows with Apply checked
+                                handle_edit_click(current_df)
+                    
+                    # Use Streamlit's data editor with on_change callback
                     edited_df = st.data_editor(
                         st.session_state.edit_state['current_df'],
                         column_config={
@@ -1355,18 +1366,13 @@ def show_history_page():
                         hide_index=True,
                         num_rows="fixed",
                         use_container_width=True,
-                        key="prediction_editor"
+                        key="prediction_editor",
+                        on_change=on_data_editor_change
                     )
                     
-                    # Manually detect changes by comparing with previous state
-                    if edited_df is not None:
-                        # Check if any apply checkboxes are checked
-                        apply_rows = edited_df[edited_df['apply'] == True]
-                        if not apply_rows.empty:
-                            # Process the changes for rows with Apply checked
-                            handle_edit_click(edited_df)
-                            # Update the previous state
-                            st.session_state.previous_df = edited_df.copy(deep=True)
+                    # Add instructions about using the Apply checkbox
+                    st.info("📝 To edit a prediction: 1) Click directly on the cell you want to edit, 2) Make your changes, 3) Check 'Apply' to save changes")
+                    st.warning("⚠️ To delete a prediction: 1) Check the 'Delete' box for the row, 2) Check 'Apply' to confirm deletion")
                     
                     # Process edits and deletions
                     if edited_df is not None:
