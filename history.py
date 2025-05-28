@@ -1398,9 +1398,43 @@ def show_history_page():
                     
                     # Create a form to wrap the data editor and prevent auto-refresh
                     with st.form("prediction_editor_form", clear_on_submit=False):
+                        # Add styling to the dataframe before displaying it
+                        styled_df = st.session_state.edit_state['current_df'].copy()
+                        
+                        # Apply custom styling using CSS
+                        st.markdown("""
+                        <style>
+                        /* Confidence column styling */
+                        [data-testid="stDataFrameCell"][data-column="confidence"][data-value="High"] div {background-color: #d4f7d4 !important;}
+                        [data-testid="stDataFrameCell"][data-column="confidence"][data-value="Medium"] div {background-color: #fff2cc !important;}
+                        [data-testid="stDataFrameCell"][data-column="confidence"][data-value="Low"] div {background-color: #ffcccc !important;}
+                        
+                        /* Predicted outcome styling */
+                        [data-testid="stDataFrameCell"][data-column="predicted_outcome"][data-value="HOME"] div {background-color: #e6f3ff !important;}
+                        [data-testid="stDataFrameCell"][data-column="predicted_outcome"][data-value="DRAW"] div {background-color: #f2e6ff !important;}
+                        [data-testid="stDataFrameCell"][data-column="predicted_outcome"][data-value="AWAY"] div {background-color: #ffe6e6 !important;}
+                        
+                        /* Actual outcome styling */
+                        [data-testid="stDataFrameCell"][data-column="actual_outcome"][data-value="HOME"] div {background-color: #d1e7dd !important;}
+                        [data-testid="stDataFrameCell"][data-column="actual_outcome"][data-value="DRAW"] div {background-color: #cfe2ff !important;}
+                        [data-testid="stDataFrameCell"][data-column="actual_outcome"][data-value="AWAY"] div {background-color: #f8d7da !important;}
+                        
+                        /* Status styling */
+                        [data-testid="stDataFrameCell"][data-column="status"][data-value="Pending"] div {background-color: #fff2cc !important;}
+                        [data-testid="stDataFrameCell"][data-column="status"][data-value="Won"] div {background-color: #d4f7d4 !important;}
+                        [data-testid="stDataFrameCell"][data-column="status"][data-value="Lost"] div {background-color: #ffcccc !important;}
+                        [data-testid="stDataFrameCell"][data-column="status"][data-value="Void"] div {background-color: #e6e6e6 !important;}
+                        [data-testid="stDataFrameCell"][data-column="status"][data-value="Completed"] div {background-color: #e6e6e6 !important;}
+                        
+                        /* Profit/Loss column styling */
+                        [data-testid="stDataFrameCell"][data-column="profit_loss"] div:has(> div[data-testid="stMarkdownContainer"]:contains("+")) {background-color: #d4f7d4 !important; font-weight: bold;}
+                        [data-testid="stDataFrameCell"][data-column="profit_loss"] div:has(> div[data-testid="stMarkdownContainer"]:contains("-")) {background-color: #ffcccc !important; font-weight: bold;}
+                        </style>
+                        """, unsafe_allow_html=True)
+                        
                         # Create a data editor for the predictions
                         edited_df = st.data_editor(
-                            st.session_state.edit_state['current_df'],
+                            styled_df,
                             column_config={
                                 "id": st.column_config.TextColumn(
                                     "ID",
