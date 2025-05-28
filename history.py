@@ -581,10 +581,7 @@ def get_confidence_level(confidence):
         return "Unknown"
 
 def show_history_page():
-    # Reset form processing flag at the beginning of the page load
-    if 'form_processed' in st.session_state:
-        st.session_state.form_processed = False
-        
+    """Display prediction history page"""
     st.markdown("""
         <style>
         .stDataFrame {
@@ -1123,14 +1120,6 @@ def show_history_page():
                     # Define callbacks to handle edit/delete button clicks without refreshing
                     def handle_edit_click(current_df=None):
                         try:
-                            # Check if we've already processed this form submission
-                            if 'form_processed' in st.session_state and st.session_state.form_processed:
-                                logger.info("Form already processed, skipping duplicate processing")
-                                return
-                                
-                            # Set flag to prevent duplicate processing
-                            st.session_state.form_processed = True
-                            
                             # This function processes the changes in the data editor
                             # If current_df is not provided, try to get it from session state
                             if current_df is None:
@@ -1138,8 +1127,6 @@ def show_history_page():
                                     logger.warning("prediction_editor not found in session state")
                                     return
                                 current_df = st.session_state.prediction_editor
-                            
-                            logger.info("Processing form submission with data editor changes")
                             
                             # Make sure it's a dataframe
                             if not isinstance(current_df, pd.DataFrame):
@@ -1409,45 +1396,11 @@ def show_history_page():
                     if 'previous_df' not in st.session_state:
                         st.session_state.previous_df = None
                     
-                    # Create a form with a clear submit button
-                    with st.form(key="prediction_editor_form"):
-                        # Add styling to the dataframe before displaying it
-                        styled_df = st.session_state.edit_state['current_df'].copy()
-                        
-                        # Apply custom styling using CSS
-                        st.markdown("""
-                        <style>
-                        /* Confidence column styling */
-                        [data-testid="stDataFrameCell"][data-column="confidence"][data-value="High"] div {background-color: #d4f7d4 !important;}
-                        [data-testid="stDataFrameCell"][data-column="confidence"][data-value="Medium"] div {background-color: #fff2cc !important;}
-                        [data-testid="stDataFrameCell"][data-column="confidence"][data-value="Low"] div {background-color: #ffcccc !important;}
-                        
-                        /* Predicted outcome styling */
-                        [data-testid="stDataFrameCell"][data-column="predicted_outcome"][data-value="HOME"] div {background-color: #e6f3ff !important;}
-                        [data-testid="stDataFrameCell"][data-column="predicted_outcome"][data-value="DRAW"] div {background-color: #f2e6ff !important;}
-                        [data-testid="stDataFrameCell"][data-column="predicted_outcome"][data-value="AWAY"] div {background-color: #ffe6e6 !important;}
-                        
-                        /* Actual outcome styling */
-                        [data-testid="stDataFrameCell"][data-column="actual_outcome"][data-value="HOME"] div {background-color: #d1e7dd !important;}
-                        [data-testid="stDataFrameCell"][data-column="actual_outcome"][data-value="DRAW"] div {background-color: #cfe2ff !important;}
-                        [data-testid="stDataFrameCell"][data-column="actual_outcome"][data-value="AWAY"] div {background-color: #f8d7da !important;}
-                        
-                        /* Status styling */
-                        [data-testid="stDataFrameCell"][data-column="status"][data-value="Pending"] div {background-color: #fff2cc !important;}
-                        [data-testid="stDataFrameCell"][data-column="status"][data-value="Won"] div {background-color: #d4f7d4 !important;}
-                        [data-testid="stDataFrameCell"][data-column="status"][data-value="Lost"] div {background-color: #ffcccc !important;}
-                        [data-testid="stDataFrameCell"][data-column="status"][data-value="Void"] div {background-color: #e6e6e6 !important;}
-                        [data-testid="stDataFrameCell"][data-column="status"][data-value="Completed"] div {background-color: #e6e6e6 !important;}
-                        
-                        /* Profit/Loss column styling */
-                        [data-testid="stDataFrameCell"][data-column="profit_loss"] div:has(> div[data-testid="stMarkdownContainer"]:contains("+")) {background-color: #d4f7d4 !important; font-weight: bold;}
-                        [data-testid="stDataFrameCell"][data-column="profit_loss"] div:has(> div[data-testid="stMarkdownContainer"]:contains("-")) {background-color: #ffcccc !important; font-weight: bold;}
-                        </style>
-                        """, unsafe_allow_html=True)
-                        
+                    # Create a form to wrap the data editor and prevent auto-refresh
+                    with st.form("prediction_editor_form", clear_on_submit=False):
                         # Create a data editor for the predictions
                         edited_df = st.data_editor(
-                            styled_df,
+                            st.session_state.edit_state['current_df'],
                             column_config={
                                 "id": st.column_config.TextColumn(
                                     "ID",
@@ -1534,7 +1487,7 @@ def show_history_page():
                                 ),
                                 "status": st.column_config.SelectboxColumn(
                                     "Status",
-                                    options=["Pending", "Won", "Lost", "Void"],
+                                    options=["Pending", "Completed"],
                                     disabled=True
                                 ),
                                 "delete": st.column_config.CheckboxColumn(
@@ -1553,9 +1506,8 @@ def show_history_page():
                             key="prediction_editor"
                         )
                         
-                        # Create a simple submit button
-                        if st.form_submit_button("Apply Changes"):
-                            handle_edit_click()
+                        # Add a visible submit button to apply changes
+                        submit_button = st.form_submit_button("Apply Changes", use_container_width=True)
                     
                     # Initialize edit state if it doesn't exist
                     if 'edit_state' not in st.session_state:
@@ -1700,10 +1652,9 @@ def show_history_page():
                                                 logger.error(f"Error deleting prediction: {str(e)}")
                                     
                                     # Always refresh the page after processing changes
+                                    # This ensures the latest data is displayed
+                                    logger.info("Changes processed, refreshing page to show updated data")
                                     st.session_state['refresh_needed'] = True
-                                    # Reset the form_processed flag for next time
-                                    st.session_state.form_processed = False
-                                    logger.info("Changes processed, refreshing page")
                                     st.rerun()
                                     
                                     # We've handled the processing directly, so return
