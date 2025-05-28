@@ -1475,25 +1475,40 @@ def show_history_page():
                         """, unsafe_allow_html=True)
                         submit_button = st.form_submit_button("Apply Changes")
                     
+                    # Initialize edit state if it doesn't exist
+                    if 'edit_state' not in st.session_state:
+                        st.session_state.edit_state = {}
+                    
+                    # Initialize current_df in edit_state if it doesn't exist
+                    if 'current_df' not in st.session_state.edit_state:
+                        st.session_state.edit_state['current_df'] = predictions.copy(deep=True)
+                        st.session_state.previous_df = st.session_state.edit_state['current_df'].copy(deep=True)
+                    
+                    # Initialize original_edit_df if it doesn't exist
+                    if 'original_edit_df' not in st.session_state:
+                        st.session_state.original_edit_df = predictions.copy(deep=True)
+                    
                     # Store the form submission state in session state
                     if 'form_submitted' not in st.session_state:
                         st.session_state.form_submitted = False
                     
-                    # Check if the current dataframe has any apply checkboxes checked
-                    if edited_df is not None and 'apply' in edited_df.columns:
-                        # Check if any apply checkboxes are checked
-                        apply_rows = edited_df[edited_df['apply'] == True]
+                    # Store the current dataframe in session state
+                    if edited_df is not None:
+                        # Store the current state
+                        st.session_state.edit_state['current_df'] = edited_df.copy(deep=True)
                         
-                        # If any apply checkboxes are checked, submit the form
-                        if not apply_rows.empty:
-                            # Store the edited dataframe for processing
-                            st.session_state.form_edited_df = edited_df.copy(deep=True)
-                            st.session_state.form_submitted = True
-                            # Force the form to submit
-                            submit_button = True
-                        else:
-                            # Store the current state without submitting
-                            st.session_state.edit_state['current_df'] = edited_df.copy(deep=True)
+                        # Check if any apply checkboxes are checked
+                        if 'apply' in edited_df.columns:
+                            apply_rows = edited_df[edited_df['apply'] == True]
+                            
+                            # If any apply checkboxes are checked, process changes immediately
+                            if not apply_rows.empty:
+                                # Store the edited dataframe for processing
+                                st.session_state.form_edited_df = edited_df.copy(deep=True)
+                                st.session_state.form_submitted = True
+                                
+                                # Force a rerun to process the changes
+                                st.rerun()
                     
                     # Process the form submission
                     if st.session_state.form_submitted and 'form_edited_df' in st.session_state:
@@ -1537,14 +1552,22 @@ def show_history_page():
                                 if 'delete' in edited_df.columns:
                                     edit_rows = apply_rows[apply_rows['delete'] != True]
                                 
-                                if not edit_rows.empty and 'original_edit_df' in st.session_state:
+                                if not edit_rows.empty:
                                     # Process direct edits for rows with apply checked
                                     for idx, row in edit_rows.iterrows():
                                         # Get the row ID
                                         row_id = row['id']
                                         
-                                        # Find the original row data
-                                        original_df = st.session_state.original_edit_df
+                                        # Get the original data for comparison
+                                        # If original_edit_df exists, use it; otherwise, use the current dataframe
+                                        if 'original_edit_df' in st.session_state:
+                                            original_df = st.session_state.original_edit_df
+                                        else:
+                                            # Initialize it with the current dataframe if it doesn't exist
+                                            st.session_state.original_edit_df = st.session_state.edit_state['current_df'].copy(deep=True)
+                                            original_df = st.session_state.original_edit_df
+                                        
+                                        # Find the row with matching ID
                                         original_rows = original_df[original_df['id'] == row_id]
                                         
                                         if len(original_rows) > 0:
