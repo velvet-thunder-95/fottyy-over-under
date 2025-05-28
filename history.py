@@ -1426,13 +1426,7 @@ def show_history_page():
                                 "predicted_outcome": st.column_config.SelectboxColumn(
                                     "Prediction",
                                     options=["HOME", "DRAW", "AWAY"],
-                                    disabled=True,
-                                    # Add color based on prediction
-                                    cell_style=lambda val: {
-                                        "background-color": "#e6f3ff" if val == "HOME" else
-                                                          "#f2e6ff" if val == "DRAW" else
-                                                          "#ffe6e6" if val == "AWAY" else "white"
-                                    }
+                                    disabled=True
                                 ),
                                 "confidence": st.column_config.TextColumn(
                                     "Confidence",
@@ -1488,13 +1482,7 @@ def show_history_page():
                                 "actual_outcome": st.column_config.SelectboxColumn(
                                     "Actual",
                                     options=["HOME", "DRAW", "AWAY"],
-                                    disabled=True,
-                                    # Add color based on actual outcome
-                                    cell_style=lambda val: {
-                                        "background-color": "#d1e7dd" if val == "HOME" else
-                                                          "#cfe2ff" if val == "DRAW" else
-                                                          "#f8d7da" if val == "AWAY" else "white"
-                                    }
+                                    disabled=True
                                 ),
                                 "profit_loss": st.column_config.NumberColumn(
                                     "Profit/Loss",
@@ -1512,14 +1500,7 @@ def show_history_page():
                                 "status": st.column_config.SelectboxColumn(
                                     "Status",
                                     options=["Pending", "Won", "Lost", "Void"],
-                                    disabled=True,
-                                    # Add color based on status
-                                    cell_style=lambda val: {
-                                        "background-color": "#fff2cc" if val == "Pending" else
-                                                          "#d4f7d4" if val == "Won" else
-                                                          "#ffcccc" if val == "Lost" else
-                                                          "#e6e6e6" if val == "Void" else "white"
-                                    }
+                                    disabled=True
                                 ),
                                 "delete": st.column_config.CheckboxColumn(
                                     "Delete",
