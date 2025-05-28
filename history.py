@@ -827,7 +827,16 @@ def show_history_page():
             # Set a flag to indicate filters were applied
             st.session_state['filter_applied'] = True
             
+            # Reset any editing state to ensure filters are applied properly
+            if 'edit_state' in st.session_state:
+                del st.session_state.edit_state
+            if 'original_edit_df' in st.session_state:
+                del st.session_state.original_edit_df
+            if 'prediction_editor' in st.session_state:
+                del st.session_state.prediction_editor
+            
             # Force a rerun to refresh the page with the new filter
+            logger.info("Filters applied, refreshing page")
             st.rerun()
         
         # Use values from session state for the rest of the code
@@ -1105,16 +1114,17 @@ def show_history_page():
                         
 
                     # Initialize session state for edit tracking
-                    if 'edit_state' not in st.session_state:
-                        st.session_state.edit_state = {
-                            'current_df': edit_df.copy(deep=True),
-                            'last_edit_time': time.time(),
-                            'edit_in_progress': False
-                        }
+                    # Always update the edit_state with the latest filtered data
+                    # This ensures filters are applied to the data editor
+                    st.session_state.edit_state = {
+                        'current_df': edit_df.copy(deep=True),
+                        'last_edit_time': time.time(),
+                        'edit_in_progress': False
+                    }
                     
-                    # Store the current dataframe in session state to avoid refreshes
-                    if 'original_edit_df' not in st.session_state:
-                        st.session_state.original_edit_df = edit_df.copy(deep=True)
+                    # Always update the original_edit_df with the latest filtered data
+                    # This ensures filters are consistently applied
+                    st.session_state.original_edit_df = edit_df.copy(deep=True)
                     
                     # Define callbacks to handle edit/delete button clicks without refreshing
                     def handle_edit_click(current_df=None):
