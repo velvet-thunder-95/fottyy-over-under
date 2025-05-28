@@ -1151,7 +1151,7 @@ def show_history_page():
                             # Store the current dataframe in session state for future reference
                             st.session_state.edit_state['current_df'] = current_df.copy(deep=True)
                             
-                            # We no longer need to process edit checkboxes as we can edit cells directly
+                            # Process cell edits directly when apply is checked
                                     
                             # Process all rows with Apply checked
                             apply_rows = current_df[current_df['apply'] == True]
@@ -1312,7 +1312,23 @@ def show_history_page():
                                     logger.warning(f"prediction_editor is not a DataFrame: {type(current_df)}")
                                     return
                                 
-                                # Just store the current state without processing changes
+                                logger.info("Data editor changed, checking for apply checkbox")
+                                
+                                # Check if any apply checkboxes are checked
+                                if 'apply' in current_df.columns:
+                                    apply_rows = current_df[current_df['apply'] == True]
+                                    logger.info(f"Found {len(apply_rows)} rows with apply=True")
+                                    
+                                    # If any apply checkboxes are checked, process changes immediately
+                                    if not apply_rows.empty:
+                                        logger.info("Apply checkbox is checked, processing changes")
+                                        # Store the current dataframe for processing
+                                        st.session_state.form_edited_df = current_df.copy(deep=True)
+                                        st.session_state.form_submitted = True
+                                        # Force a rerun to process the changes
+                                        st.rerun()
+                                
+                                # Store the current state without processing changes
                                 # This prevents automatic refreshes when checkboxes are clicked
                                 st.session_state.edit_state['current_df'] = current_df.copy(deep=True)
                         except Exception as e:
@@ -1373,16 +1389,32 @@ def show_history_page():
                         st.session_state.previous_df = None
                     
                     # Create a form to wrap the data editor and prevent auto-refresh
-                    with st.form(key="prediction_form"):
-                        # Use Streamlit's data editor WITHOUT on_change callback to prevent auto-refresh
+                    with st.form("prediction_editor_form", clear_on_submit=False):
+                        # Create a data editor for the predictions
                         edited_df = st.data_editor(
                             st.session_state.edit_state['current_df'],
                             column_config={
-                                "id": st.column_config.TextColumn("ID", disabled=True),
-                                "date": st.column_config.TextColumn("Date", disabled=True, help="Format: YYYY-MM-DD"),
-                                "league": st.column_config.TextColumn("League", disabled=True),
-                                "home_team": st.column_config.TextColumn("Home Team", disabled=True),
-                                "away_team": st.column_config.TextColumn("Away Team", disabled=True),
+                                "id": st.column_config.TextColumn(
+                                    "ID",
+                                    disabled=True
+                                ),
+                                "date": st.column_config.TextColumn(
+                                    "Date",
+                                    disabled=True,
+                                    help="Format: YYYY-MM-DD"
+                                ),
+                                "league": st.column_config.TextColumn(
+                                    "League",
+                                    disabled=True
+                                ),
+                                "home_team": st.column_config.TextColumn(
+                                    "Home Team",
+                                    disabled=True
+                                ),
+                                "away_team": st.column_config.TextColumn(
+                                    "Away Team",
+                                    disabled=True
+                                ),
                                 "predicted_outcome": st.column_config.SelectboxColumn(
                                     "Prediction",
                                     options=["HOME", "DRAW", "AWAY"],
@@ -1463,11 +1495,11 @@ def show_history_page():
                             },
                             hide_index=True,
                             use_container_width=True,
-                            key="prediction_editor"
+                            key="prediction_editor",
+                            on_change=on_data_editor_change
                         )
                         
-                        # Add a submit button to the form (required for the form to work)
-                        # We'll make this as small as possible
+                        # Add a hidden submit button (required for the form to work)
                         st.markdown("""
                         <style>
                         div[data-testid="stFormSubmitButton"] {display: none;}
@@ -1487,65 +1519,72 @@ def show_history_page():
                     # Initialize original_edit_df if it doesn't exist
                     if 'original_edit_df' not in st.session_state:
                         st.session_state.original_edit_df = predictions.copy(deep=True)
-                    
+                        
                     # Store the form submission state in session state
                     if 'form_submitted' not in st.session_state:
                         st.session_state.form_submitted = False
                     
-                    # Store the current dataframe in session state
-                    if edited_df is not None:
-                        # Store the current state
-                        st.session_state.edit_state['current_df'] = edited_df.copy(deep=True)
-                        
-                        # Check if any apply checkboxes are checked
-                        if 'apply' in edited_df.columns:
-                            apply_rows = edited_df[edited_df['apply'] == True]
-                            
-                            # If any apply checkboxes are checked, process changes immediately
-                            if not apply_rows.empty:
-                                # Store the edited dataframe for processing
-                                st.session_state.form_edited_df = edited_df.copy(deep=True)
-                                st.session_state.form_submitted = True
-                                
-                                # Force a rerun to process the changes
-                                st.rerun()
-                    
                     # Process the form submission
+                    logger.info(f"Form submitted: {st.session_state.get('form_submitted', False)}")
+                    logger.info(f"Form edited df exists: {'form_edited_df' in st.session_state}")
+                    
                     if st.session_state.form_submitted and 'form_edited_df' in st.session_state:
+                        logger.info("Processing form submission")
                         # Get the edited dataframe from session state
                         edited_df = st.session_state.form_edited_df
                         
                         # Process all rows with apply checked
                         if 'apply' in edited_df.columns:
                             apply_rows = edited_df[edited_df['apply'] == True]
+                            logger.info(f"Processing form: Found {len(apply_rows)} rows with apply=True")
                             
                             if not apply_rows.empty:
+                                logger.info("Processing changes for rows with apply=True")
+                                # Log the row IDs being processed
+                                logger.info(f"Processing row IDs: {apply_rows['id'].tolist()}")
+                                # Log delete checkbox values if they exist
+                                if 'delete' in apply_rows.columns:
+                                    logger.info(f"Delete checkbox values: {apply_rows['delete'].tolist()}")
                                 # First process deletions (rows with both delete and apply checked)
                                 if 'delete' in edited_df.columns:
+                                    logger.info("Checking for rows with delete=True")
                                     delete_rows = apply_rows[apply_rows['delete'] == True]
+                                    logger.info(f"Found {len(delete_rows)} rows with delete=True and apply=True")
                                     
                                     if not delete_rows.empty:
+                                        logger.info(f"Processing {len(delete_rows)} rows for deletion")
                                         for idx, row in delete_rows.iterrows():
                                             row_id = row['id']
                                             
                                             # This is a confirmed deletion request
-                                            logger.info(f"Deleting prediction ID: {row_id}")
+                                            logger.info(f"Attempting to delete prediction ID: {row_id}")
+                                            logger.info(f"Row data: home_team={row.get('home_team', 'N/A')}, away_team={row.get('away_team', 'N/A')}")
                                             
                                             # Attempt to delete from database
                                             try:
+                                                # Log the delete function call
+                                                logger.info(f"Calling history.delete_prediction({row_id})")
                                                 success = history.delete_prediction(row_id)
+                                                logger.info(f"Delete result: {success}")
+                                                
                                                 if success:
+                                                    logger.info(f"Successfully deleted prediction ID: {row_id}")
                                                     st.success(f"Deleted prediction for {row['home_team']} vs {row['away_team']}")
                                                     # Clear session state to force data reload
                                                     if 'history_df' in st.session_state:
                                                         del st.session_state.history_df
+                                                        logger.info("Cleared history_df from session state")
                                                     # Set flag to refresh the page after processing
                                                     st.session_state['refresh_needed'] = True
+                                                    logger.info("Set refresh_needed flag to True")
                                                 else:
+                                                    logger.error(f"Failed to delete prediction ID: {row_id}")
                                                     st.error(f"Failed to delete prediction ID: {row_id}")
                                             except Exception as delete_error:
+                                                logger.error(f"Error deleting prediction: {str(delete_error)}")
                                                 st.error(f"Error deleting prediction: {str(delete_error)}")
-                                                logger.error(f"Delete error: {str(delete_error)}")
+                                    else:
+                                        logger.info("No rows found with both delete=True and apply=True")
                                 
                                 # Then process direct edits (rows with apply checked but not delete)
                                 edit_rows = apply_rows
