@@ -1530,9 +1530,73 @@ def show_history_page():
                             if not isinstance(edited_df, pd.DataFrame):
                                 logger.warning(f"prediction_editor is not a DataFrame: {type(edited_df)}")
                                 if isinstance(edited_df, dict):
-                                    # Try to convert dict to DataFrame
-                                    logger.info("Converting dict to DataFrame")
-                                    edited_df = pd.DataFrame([edited_df])
+                                    # The new format from Streamlit data editor
+                                    logger.info(f"Data editor format: {list(edited_df.keys() if isinstance(edited_df, dict) else [])}")
+                                    
+                                    # Process rows marked for deletion
+                                    rows_to_delete = []
+                                    
+                                    # Check if we have edited_rows with delete=True
+                                    if 'edited_rows' in edited_df and edited_df['edited_rows']:
+                                        logger.info(f"Found edited rows: {edited_df['edited_rows']}")
+                                        
+                                        # Find rows marked for deletion in edited_rows
+                                        for row_idx, row_changes in edited_df['edited_rows'].items():
+                                            try:
+                                                row_idx = int(row_idx)  # Convert to integer
+                                                if 'delete' in row_changes and row_changes['delete'] and 'apply' in row_changes and row_changes['apply']:
+                                                    logger.info(f"Found row {row_idx} marked for deletion and apply")
+                                                    rows_to_delete.append(row_idx)
+                                            except Exception as e:
+                                                logger.error(f"Error processing row {row_idx}: {str(e)}")
+                                    
+                                    # If we have rows to delete, get their IDs from the original dataframe
+                                    if rows_to_delete and 'original_edit_df' in st.session_state:
+                                        original_df = st.session_state.original_edit_df
+                                        logger.info(f"Rows to delete: {rows_to_delete}")
+                                        
+                                        # Create a list to store row IDs to delete
+                                        row_ids_to_delete = []
+                                        
+                                        # Get the IDs of rows to delete
+                                        for idx in rows_to_delete:
+                                            try:
+                                                if idx < len(original_df):
+                                                    row = original_df.iloc[idx]
+                                                    if 'id' in row:
+                                                        row_ids_to_delete.append(row['id'])
+                                                        logger.info(f"Will delete row ID: {row['id']}")
+                                                    else:
+                                                        logger.error(f"Row at index {idx} does not have an 'id' field")
+                                                else:
+                                                    logger.error(f"Index {idx} is out of bounds for original_df with length {len(original_df)}")
+                                            except Exception as e:
+                                                logger.error(f"Error getting row ID for index {idx}: {str(e)}")
+                                        
+                                        # Process deletions
+                                        for row_id in row_ids_to_delete:
+                                            try:
+                                                logger.info(f"Deleting row ID: {row_id}")
+                                                success = history.delete_prediction(row_id)
+                                                if success:
+                                                    st.success(f"Deleted prediction ID: {row_id}")
+                                                    # Clear session state to force data reload
+                                                    if 'history_df' in st.session_state:
+                                                        del st.session_state.history_df
+                                                    # Set flag to refresh the page after processing
+                                                    st.session_state['refresh_needed'] = True
+                                                else:
+                                                    st.error(f"Failed to delete prediction ID: {row_id}")
+                                            except Exception as e:
+                                                st.error(f"Error deleting prediction: {str(e)}")
+                                                logger.error(f"Error deleting prediction: {str(e)}")
+                                    
+                                    # If changes were made, refresh the page
+                                    if 'refresh_needed' in st.session_state and st.session_state['refresh_needed']:
+                                        st.rerun()
+                                    
+                                    # We've handled the processing directly, so return
+                                    return
                                 else:
                                     logger.error("Cannot process changes: prediction_editor is not a DataFrame or dict")
                                     st.error("Error processing changes. Please try again.")
