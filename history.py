@@ -257,7 +257,7 @@ class PredictionHistory:
         """Update match results in the database"""
         try:
             # First get the match details from Supabase
-            match_result = self.db.supabase.table('predictions').select('predicted_outcome,home_odds,draw_odds,away_odds').eq('match_id', match_id).execute()
+            match_result = self.db.supabase.table('predictions').select('predicted_outcome,home_odds,draw_odds,away_odds,bet_amount').eq('match_id', match_id).execute()
             
             if not match_result.data:
                 print(f"No prediction found for match {match_id}")
@@ -268,6 +268,8 @@ class PredictionHistory:
             home_odds = match_data['home_odds']
             draw_odds = match_data['draw_odds']
             away_odds = match_data['away_odds']
+            # Get the actual bet amount from the database, default to 1.0 if not found
+            bet_amount = float(match_data.get('bet_amount', 1.0))
             
             # Parse the result
             if isinstance(result, dict):
@@ -282,7 +284,7 @@ class PredictionHistory:
             # Initialize variables
             actual_outcome = None
             profit_loss = 0.0  # Default to 0
-            bet_amount = 1.0  # Fixed $1 bet amount
+            # bet_amount is now retrieved from the database above
             
             # Only calculate outcome and profit/loss if the match is completed
             if status == 'Completed' and home_score is not None and away_score is not None:
@@ -444,8 +446,11 @@ class PredictionHistory:
             # Calculate total profit/loss and ROI
             total_profit = completed_predictions['profit_loss'].sum()
             
-            # Calculate ROI using completed bets only (each bet is £1)
-            roi = (total_profit / completed_count * 100) if completed_count > 0 else 0.0
+            # Calculate total bet amount for completed predictions
+            total_bet_amount = completed_predictions['bet_amount'].sum() if 'bet_amount' in completed_predictions.columns else completed_count
+            
+            # Calculate ROI using actual bet amounts
+            roi = (total_profit / total_bet_amount * 100) if total_bet_amount > 0 else 0.0
             
             # Debug info
             logging.info(f"Statistics calculation:")
