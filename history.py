@@ -1561,11 +1561,28 @@ def show_history_page():
                         
                         if not delete_rows.empty:
                             logger.info("Processing deletions")
+                            
+                            # Check if 'id' column exists in the DataFrame
+                            if 'id' not in delete_rows.columns:
+                                logger.error("'id' column not found in delete_rows DataFrame")
+                                logger.info(f"Available columns: {delete_rows.columns.tolist()}")
+                                st.error("Error processing deletions: 'id' column not found")
+                                return
+                                
                             # Log the row IDs being processed
-                            logger.info(f"Processing row IDs for deletion: {delete_rows['id'].tolist()}")
+                            try:
+                                logger.info(f"Processing row IDs for deletion: {delete_rows['id'].tolist()}")
+                            except Exception as e:
+                                logger.error(f"Error accessing 'id' column: {str(e)}")
+                                
                             # Process all rows marked for deletion
                             for idx, row in delete_rows.iterrows():
-                                row_id = row['id']
+                                try:
+                                    row_id = row['id']
+                                except KeyError:
+                                    logger.error(f"Row at index {idx} does not have an 'id' field")
+                                    logger.info(f"Row data: {row}")
+                                    continue
                                 
                                 # This is a confirmed deletion request
                                 logger.info(f"Attempting to delete prediction ID: {row_id}")
@@ -1616,11 +1633,24 @@ def show_history_page():
                                 if 'delete' in row and row['delete'] == True:
                                     continue
                                     
-                                # Get the row ID
-                                row_id = row['id']
+                                # Get the row ID with error handling
+                                try:
+                                    if 'id' not in row:
+                                        logger.error(f"Row does not have an 'id' field: {row}")
+                                        continue
+                                        
+                                    row_id = row['id']
+                                    logger.info(f"Processing edit for row ID: {row_id}")
+                                except Exception as e:
+                                    logger.error(f"Error accessing row ID: {str(e)}")
+                                    continue
                                 
                                 # Find the row with matching ID in original data
-                                original_rows = original_df[original_df['id'] == row_id]
+                                try:
+                                    original_rows = original_df[original_df['id'] == row_id]
+                                except Exception as e:
+                                    logger.error(f"Error finding original row: {str(e)}")
+                                    continue
                                 
                                 if len(original_rows) > 0:
                                     original_row = original_rows.iloc[0]
