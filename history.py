@@ -908,8 +908,17 @@ def show_history_page():
                         # Update the dataframe in session state
                         st.session_state.history_df = predictions
                         
-                        # Force a rerun to refresh the page with the new filter
+                        # Reset any editing state to avoid conflicts
+                        if 'edit_state' in st.session_state:
+                            del st.session_state.edit_state
+                        if 'original_edit_df' in st.session_state:
+                            del st.session_state.original_edit_df
+                        if 'prediction_editor' in st.session_state:
+                            del st.session_state.prediction_editor
+                        
+                        # Set a flag to indicate a filter has been applied
                         st.session_state['filter_applied'] = True
+                        logger.info("Filter applied, forcing page rerun")
                         st.rerun()
                     if cols[1].button("Delete", key=f"delete_hist_filter_{idx}"):
                         st.session_state.history_saved_filters = filter_storage.delete_history_filter(sf['id'])
@@ -1536,19 +1545,70 @@ def show_history_page():
                                     # Process rows marked for deletion
                                     rows_to_delete = []
                                     
-                                    # Check if we have edited_rows with delete=True
+                                    # Check if we have edited_rows
                                     if 'edited_rows' in edited_df and edited_df['edited_rows']:
                                         logger.info(f"Found edited rows: {edited_df['edited_rows']}")
                                         
-                                        # Find rows marked for deletion in edited_rows
-                                        for row_idx, row_changes in edited_df['edited_rows'].items():
+                                        # Process each edited row
+                                        for row_idx_str, row_changes in edited_df['edited_rows'].items():
                                             try:
-                                                row_idx = int(row_idx)  # Convert to integer
-                                                if 'delete' in row_changes and row_changes['delete'] and 'apply' in row_changes and row_changes['apply']:
+                                                row_idx = int(row_idx_str)  # Convert to integer
+                                                logger.info(f"Processing row {row_idx} with changes: {row_changes}")
+                                                
+                                                # Check if this row is marked for deletion
+                                                if 'delete' in row_changes and row_changes['delete'] == True:
                                                     logger.info(f"Found row {row_idx} marked for deletion and apply")
                                                     rows_to_delete.append(row_idx)
+                                                # Check if this row has edits (any changes to odds or profit_loss)
+                                                elif any(field in row_changes for field in ['home_odds', 'draw_odds', 'away_odds', 'profit_loss']):
+                                                    logger.info(f"Found row {row_idx} with edits and apply checked")
+                                                    # Process edits for this row
+                                                    if 'original_edit_df' in st.session_state and row_idx < len(st.session_state.original_edit_df):
+                                                        original_row = st.session_state.original_edit_df.iloc[row_idx]
+                                                        if 'id' in original_row:
+                                                            row_id = original_row['id']
+                                                            logger.info(f"Processing edits for row ID: {row_id}")
+                                                            
+                                                            # Prepare update data
+                                                            update_data = {}
+                                                            
+                                                            # Check for odds changes
+                                                            if 'home_odds' in row_changes:
+                                                                update_data['home_odds'] = float(row_changes['home_odds'])
+                                                                logger.info(f"Updated home_odds to {update_data['home_odds']}")
+                                                            
+                                                            if 'draw_odds' in row_changes:
+                                                                update_data['draw_odds'] = float(row_changes['draw_odds'])
+                                                                logger.info(f"Updated draw_odds to {update_data['draw_odds']}")
+                                                            
+                                                            if 'away_odds' in row_changes:
+                                                                update_data['away_odds'] = float(row_changes['away_odds'])
+                                                                logger.info(f"Updated away_odds to {update_data['away_odds']}")
+                                                            
+                                                            if 'profit_loss' in row_changes:
+                                                                update_data['profit_loss'] = float(row_changes['profit_loss'])
+                                                                logger.info(f"Updated profit_loss to {update_data['profit_loss']}")
+                                                            
+                                                            # Update prediction in database if we have changes
+                                                            if update_data:
+                                                                try:
+                                                                    logger.info(f"Updating prediction ID: {row_id} with data: {update_data}")
+                                                                    success = history.update_prediction(row_id, update_data)
+                                                                    if success:
+                                                                        st.success(f"Updated prediction ID: {row_id}")
+                                                                        # Set flag to refresh the page after processing
+                                                                        st.session_state['refresh_needed'] = True
+                                                                    else:
+                                                                        st.error(f"Failed to update prediction ID: {row_id}")
+                                                                except Exception as e:
+                                                                    logger.error(f"Error updating prediction: {str(e)}")
+                                                                    st.error(f"Error updating prediction: {str(e)}")
+                                                        else:
+                                                            logger.error(f"Row at index {row_idx} does not have an 'id' field")
+                                                    else:
+                                                        logger.error(f"Cannot find original row for index {row_idx}")
                                             except Exception as e:
-                                                logger.error(f"Error processing row {row_idx}: {str(e)}")
+                                                logger.error(f"Error processing row {row_idx_str}: {str(e)}")
                                     
                                     # If we have rows to delete, get their IDs from the original dataframe
                                     if rows_to_delete and 'original_edit_df' in st.session_state:
