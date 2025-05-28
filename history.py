@@ -1426,12 +1426,24 @@ def show_history_page():
                                 "predicted_outcome": st.column_config.SelectboxColumn(
                                     "Prediction",
                                     options=["HOME", "DRAW", "AWAY"],
-                                    disabled=True
+                                    disabled=True,
+                                    # Add color based on prediction
+                                    cell_style=lambda val: {
+                                        "background-color": "#e6f3ff" if val == "HOME" else
+                                                          "#f2e6ff" if val == "DRAW" else
+                                                          "#ffe6e6" if val == "AWAY" else "white"
+                                    }
                                 ),
                                 "confidence": st.column_config.TextColumn(
                                     "Confidence",
                                     disabled=True,
-                                    help="High: ≥70%, Medium: 50-70%, Low: <50%"
+                                    help="High: ≥70%, Medium: 50-70%, Low: <50%",
+                                    # Add color based on confidence level
+                                    cell_style=lambda val: {
+                                        "background-color": "#d4f7d4" if val == "High" else
+                                                          "#fff2cc" if val == "Medium" else
+                                                          "#ffcccc" if val == "Low" else "white"
+                                    }
                                 ),
                                 "confidence_value": st.column_config.NumberColumn(
                                     "Confidence Value",
@@ -1476,19 +1488,38 @@ def show_history_page():
                                 "actual_outcome": st.column_config.SelectboxColumn(
                                     "Actual",
                                     options=["HOME", "DRAW", "AWAY"],
-                                    disabled=True
+                                    disabled=True,
+                                    # Add color based on actual outcome
+                                    cell_style=lambda val: {
+                                        "background-color": "#d1e7dd" if val == "HOME" else
+                                                          "#cfe2ff" if val == "DRAW" else
+                                                          "#f8d7da" if val == "AWAY" else "white"
+                                    }
                                 ),
                                 "profit_loss": st.column_config.NumberColumn(
                                     "Profit/Loss",
                                     min_value=-100.0,
                                     max_value=100.0,
                                     format="%.2f",
-                                    disabled=False
+                                    disabled=False,
+                                    # Add color based on profit/loss value
+                                    cell_style=lambda val: {
+                                        "background-color": "#d4f7d4" if val > 0 else
+                                                          "#ffcccc" if val < 0 else "white",
+                                        "font-weight": "bold" if abs(val) > 5 else "normal"
+                                    }
                                 ),
                                 "status": st.column_config.SelectboxColumn(
                                     "Status",
-                                    options=["Pending", "Completed"],
-                                    disabled=True
+                                    options=["Pending", "Won", "Lost", "Void"],
+                                    disabled=True,
+                                    # Add color based on status
+                                    cell_style=lambda val: {
+                                        "background-color": "#fff2cc" if val == "Pending" else
+                                                          "#d4f7d4" if val == "Won" else
+                                                          "#ffcccc" if val == "Lost" else
+                                                          "#e6e6e6" if val == "Void" else "white"
+                                    }
                                 ),
                                 "delete": st.column_config.CheckboxColumn(
                                     "Delete",
@@ -1651,9 +1682,10 @@ def show_history_page():
                                                 st.error(f"Error deleting prediction: {str(e)}")
                                                 logger.error(f"Error deleting prediction: {str(e)}")
                                     
-                                    # If changes were made, refresh the page
-                                    if 'refresh_needed' in st.session_state and st.session_state['refresh_needed']:
-                                        st.rerun()
+                                    # Always refresh the page after processing changes
+                                    st.session_state['refresh_needed'] = True
+                                    logger.info("Changes processed, refreshing page")
+                                    st.rerun()
                                     
                                     # We've handled the processing directly, so return
                                     return
