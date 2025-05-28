@@ -1409,8 +1409,8 @@ def show_history_page():
                     if 'previous_df' not in st.session_state:
                         st.session_state.previous_df = None
                     
-                    # Create a form to wrap the data editor and prevent auto-refresh
-                    with st.form("prediction_editor_form", clear_on_submit=False, border=False):
+                    # Create a form with a clear submit button
+                    with st.form(key="prediction_editor_form"):
                         # Add styling to the dataframe before displaying it
                         styled_df = st.session_state.edit_state['current_df'].copy()
                         
@@ -1530,13 +1530,7 @@ def show_history_page():
                                     min_value=-100.0,
                                     max_value=100.0,
                                     format="%.2f",
-                                    disabled=False,
-                                    # Add color based on profit/loss value
-                                    cell_style=lambda val: {
-                                        "background-color": "#d4f7d4" if val > 0 else
-                                                          "#ffcccc" if val < 0 else "white",
-                                        "font-weight": "bold" if abs(val) > 5 else "normal"
-                                    }
+                                    disabled=False
                                 ),
                                 "status": st.column_config.SelectboxColumn(
                                     "Status",
@@ -1559,11 +1553,8 @@ def show_history_page():
                             key="prediction_editor"
                         )
                         
-                        # Create a visible button for applying changes
-                        submit_button = st.form_submit_button("Apply Changes", use_container_width=True, type="primary")
-                        
-                        # Process form submission
-                        if submit_button:
+                        # Create a simple submit button
+                        if st.form_submit_button("Apply Changes"):
                             handle_edit_click()
                     
                     # Initialize edit state if it doesn't exist
