@@ -1495,8 +1495,7 @@ def show_history_page():
                             },
                             hide_index=True,
                             use_container_width=True,
-                            key="prediction_editor",
-                            on_change=on_data_editor_change
+                            key="prediction_editor"
                         )
                         
                         # Add a visible submit button to apply changes
