@@ -1282,17 +1282,27 @@ def show_history_page():
                     
                     # Define a callback function for when the data editor changes
                     def on_data_editor_change():
-                        # Get the current dataframe from session state
-                        if 'prediction_editor' in st.session_state:
-                            current_df = st.session_state.prediction_editor
-                            
-                            # Check if the 'apply' column exists in the dataframe
-                            if 'apply' in current_df.columns:
-                                # Check if any apply checkboxes are checked
-                                apply_rows = current_df[current_df['apply'] == True]
-                                if not apply_rows.empty:
-                                    # Process the changes for rows with Apply checked
-                                    handle_edit_click(current_df)
+                        try:
+                            # Get the current dataframe from session state
+                            if 'prediction_editor' in st.session_state:
+                                current_df = st.session_state.prediction_editor
+                                
+                                # Make sure current_df is a DataFrame
+                                if not isinstance(current_df, pd.DataFrame):
+                                    logger.warning(f"prediction_editor is not a DataFrame: {type(current_df)}")
+                                    return
+                                
+                                # Check if the 'apply' column exists in the dataframe
+                                if 'apply' in current_df.columns:
+                                    # Check if any apply checkboxes are checked
+                                    apply_rows = current_df[current_df['apply'] == True]
+                                    if not apply_rows.empty:
+                                        # Process the changes for rows with Apply checked
+                                        handle_edit_click(current_df)
+                        except Exception as e:
+                            # Log the error but don't crash the app
+                            logger.error(f"Error in on_data_editor_change: {str(e)}")
+                            # Don't raise the exception to prevent app crash
                     
                     # Use Streamlit's data editor with on_change callback
                     edited_df = st.data_editor(
