@@ -1063,7 +1063,6 @@ def show_history_page():
                             'draw_odds': float(row['draw_odds']) if pd.notna(row['draw_odds']) else 0.0,
                             'away_odds': float(row['away_odds']) if pd.notna(row['away_odds']) else 0.0,
                             'profit_loss': float(row['profit_loss']) if pd.notna(row['profit_loss']) else 0.0,
-                            'edit': False,  # Add an edit column for row selection
                             'delete': False,  # Add a delete column for row deletion
                             'apply': False   # Add an apply column to confirm changes
                         }
@@ -1524,50 +1523,77 @@ def show_history_page():
                     if submit_button:
                         logger.info("Processing form submission")
                         # Get the edited dataframe from session state
-                        edited_df = st.session_state.prediction_editor
-                        logger.info(f"Processing changes from data editor with {len(edited_df)} rows")
+                        try:
+                            edited_df = st.session_state.prediction_editor
+                            
+                            # Check if edited_df is a DataFrame, if not convert it
+                            if not isinstance(edited_df, pd.DataFrame):
+                                logger.warning(f"prediction_editor is not a DataFrame: {type(edited_df)}")
+                                if isinstance(edited_df, dict):
+                                    # Try to convert dict to DataFrame
+                                    logger.info("Converting dict to DataFrame")
+                                    edited_df = pd.DataFrame([edited_df])
+                                else:
+                                    logger.error("Cannot process changes: prediction_editor is not a DataFrame or dict")
+                                    st.error("Error processing changes. Please try again.")
+                                    return
+                                    
+                            logger.info(f"Processing changes from data editor with {len(edited_df)} rows")
+                        except Exception as e:
+                            logger.error(f"Error accessing prediction_editor: {str(e)}")
+                            st.error(f"Error processing changes: {str(e)}")
+                            return
                         
                         # Process all rows with delete checked
-                        if 'delete' in edited_df.columns:
-                            # Find rows marked for deletion
-                            delete_rows = edited_df[edited_df['delete'] == True]
-                            logger.info(f"Found {len(delete_rows)} rows marked for deletion")
-                            
-                            if not delete_rows.empty:
-                                logger.info("Processing deletions")
-                                # Log the row IDs being processed
-                                logger.info(f"Processing row IDs for deletion: {delete_rows['id'].tolist()}")
-                                # Process all rows marked for deletion
-                                for idx, row in delete_rows.iterrows():
-                                    row_id = row['id']
+                        try:
+                            if 'delete' in edited_df.columns:
+                                # Find rows marked for deletion
+                                delete_rows = edited_df[edited_df['delete'] == True]
+                                logger.info(f"Found {len(delete_rows)} rows marked for deletion")
+                            else:
+                                logger.warning("'delete' column not found in edited_df")
+                                logger.info(f"Available columns: {edited_df.columns.tolist()}")
+                                delete_rows = pd.DataFrame()  # Empty DataFrame
+                        except Exception as e:
+                            logger.error(f"Error checking for delete column: {str(e)}")
+                            st.error(f"Error processing deletions: {str(e)}")
+                            delete_rows = pd.DataFrame()  # Empty DataFrame
+                        
+                        if not delete_rows.empty:
+                            logger.info("Processing deletions")
+                            # Log the row IDs being processed
+                            logger.info(f"Processing row IDs for deletion: {delete_rows['id'].tolist()}")
+                            # Process all rows marked for deletion
+                            for idx, row in delete_rows.iterrows():
+                                row_id = row['id']
+                                
+                                # This is a confirmed deletion request
+                                logger.info(f"Attempting to delete prediction ID: {row_id}")
+                                logger.info(f"Row data: home_team={row.get('home_team', 'N/A')}, away_team={row.get('away_team', 'N/A')}")
+                                
+                                # Attempt to delete from database
+                                try:
+                                    # Log the delete function call
+                                    logger.info(f"Calling history.delete_prediction({row_id})")
+                                    success = history.delete_prediction(row_id)
+                                    logger.info(f"Delete result: {success}")
                                     
-                                    # This is a confirmed deletion request
-                                    logger.info(f"Attempting to delete prediction ID: {row_id}")
-                                    logger.info(f"Row data: home_team={row.get('home_team', 'N/A')}, away_team={row.get('away_team', 'N/A')}")
-                                    
-                                    # Attempt to delete from database
-                                    try:
-                                        # Log the delete function call
-                                        logger.info(f"Calling history.delete_prediction({row_id})")
-                                        success = history.delete_prediction(row_id)
-                                        logger.info(f"Delete result: {success}")
-                                        
-                                        if success:
-                                            logger.info(f"Successfully deleted prediction ID: {row_id}")
-                                            st.success(f"Deleted prediction for {row['home_team']} vs {row['away_team']}")
-                                            # Clear session state to force data reload
-                                            if 'history_df' in st.session_state:
-                                                del st.session_state.history_df
-                                                logger.info("Cleared history_df from session state")
-                                            # Set flag to refresh the page after processing
-                                            st.session_state['refresh_needed'] = True
-                                            logger.info("Set refresh_needed flag to True")
-                                        else:
-                                            logger.error(f"Failed to delete prediction ID: {row_id}")
-                                            st.error(f"Failed to delete prediction ID: {row_id}")
-                                    except Exception as delete_error:
-                                        logger.error(f"Error deleting prediction: {str(delete_error)}")
-                                        st.error(f"Error deleting prediction: {str(delete_error)}")
+                                    if success:
+                                        logger.info(f"Successfully deleted prediction ID: {row_id}")
+                                        st.success(f"Deleted prediction for {row['home_team']} vs {row['away_team']}")
+                                        # Clear session state to force data reload
+                                        if 'history_df' in st.session_state:
+                                            del st.session_state.history_df
+                                            logger.info("Cleared history_df from session state")
+                                        # Set flag to refresh the page after processing
+                                        st.session_state['refresh_needed'] = True
+                                        logger.info("Set refresh_needed flag to True")
+                                    else:
+                                        logger.error(f"Failed to delete prediction ID: {row_id}")
+                                        st.error(f"Failed to delete prediction ID: {row_id}")
+                                except Exception as delete_error:
+                                    logger.error(f"Error deleting prediction: {str(delete_error)}")
+                                    st.error(f"Error deleting prediction: {str(delete_error)}")
                             else:
                                 logger.info("No rows marked for deletion")
                                 
