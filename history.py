@@ -269,14 +269,9 @@ class PredictionHistory:
             draw_odds = match_data['draw_odds']
             away_odds = match_data['away_odds']
             
-            # Get the actual bet amount from the database, ensuring it's properly converted to float
-            # This is critical for correct profit/loss calculation
-            if 'bet_amount' in match_data and match_data['bet_amount'] is not None:
-                bet_amount = float(match_data['bet_amount'])
-                logging.info(f"Using bet amount from database: {bet_amount}")
-            else:
-                bet_amount = 10.0  # Default to 10.0 to match app.py's default
-                logging.info(f"No bet amount found, using default: {bet_amount}")
+            # Always use a fixed £1 bet amount for consistency regardless of what's in the database
+            bet_amount = 1.0
+            logging.info(f"Using fixed £1 bet amount for profit/loss calculation")
             
             # Parse the result
             if isinstance(result, dict):
@@ -457,11 +452,8 @@ class PredictionHistory:
             # Calculate total profit/loss and ROI
             total_profit = completed_predictions['profit_loss'].sum()
             
-            # Calculate total bet amount for completed predictions
-            total_bet_amount = completed_predictions['bet_amount'].sum() if 'bet_amount' in completed_predictions.columns else completed_count
-            
-            # Calculate ROI using actual bet amounts
-            roi = (total_profit / total_bet_amount * 100) if total_bet_amount > 0 else 0.0
+            # Calculate ROI using fixed £1 bet amount (each bet is £1)
+            roi = (total_profit / completed_count * 100) if completed_count > 0 else 0.0
             
             # Debug info
             logging.info(f"Statistics calculation:")
