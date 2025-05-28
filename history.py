@@ -688,6 +688,13 @@ def show_history_page():
     """, unsafe_allow_html=True)
     
     try:
+        # Check if a filter was just applied and needs to be processed
+        filter_just_applied = False
+        if 'filter_applied' in st.session_state and st.session_state['filter_applied']:
+            filter_just_applied = True
+            # Reset the flag
+            st.session_state['filter_applied'] = False
+            
         # Initialize session state variables if they don't exist
         if 'history_data_loaded' not in st.session_state:
             st.session_state.history_data_loaded = False
@@ -866,6 +873,10 @@ def show_history_page():
                         confidence_to_apply = sf['confidence'] if sf['confidence'] else ["All"]
                         status_to_apply = sf['status'] if sf['status'] else "All"
                         
+                        # Log the filter being applied for debugging
+                        logger.info(f"Applying saved filter: {sf['name']}")
+                        logger.info(f"Filter parameters: Start={sf['start_date']}, End={sf['end_date']}, Leagues={leagues_to_apply}, Confidence={confidence_to_apply}, Status={status_to_apply}")
+                        
                         # Update filter parameters
                         st.session_state.history_filter_params.update({
                             'start_date': pd.to_datetime(sf['start_date']).date(),
@@ -890,6 +901,9 @@ def show_history_page():
                         
                         # Update the dataframe in session state
                         st.session_state.history_df = predictions
+                        
+                        # Force a rerun to refresh the page with the new filter
+                        st.session_state['filter_applied'] = True
                         st.rerun()
                     if cols[1].button("Delete", key=f"delete_hist_filter_{idx}"):
                         st.session_state.history_saved_filters = filter_storage.delete_history_filter(sf['id'])
@@ -1282,27 +1296,17 @@ def show_history_page():
                     
                     # Define a callback function for when the data editor changes
                     def on_data_editor_change():
-                        try:
-                            # Get the current dataframe from session state
-                            if 'prediction_editor' in st.session_state:
-                                current_df = st.session_state.prediction_editor
-                                
-                                # Make sure current_df is a DataFrame
-                                if not isinstance(current_df, pd.DataFrame):
-                                    logger.warning(f"prediction_editor is not a DataFrame: {type(current_df)}")
-                                    return
-                                
-                                # Check if the 'apply' column exists in the dataframe
-                                if 'apply' in current_df.columns:
-                                    # Check if any apply checkboxes are checked
-                                    apply_rows = current_df[current_df['apply'] == True]
-                                    if not apply_rows.empty:
-                                        # Process the changes for rows with Apply checked
-                                        handle_edit_click(current_df)
-                        except Exception as e:
-                            # Log the error but don't crash the app
-                            logger.error(f"Error in on_data_editor_change: {str(e)}")
-                            # Don't raise the exception to prevent app crash
+                        # Get the current dataframe from session state
+                        if 'prediction_editor' in st.session_state:
+                            current_df = st.session_state.prediction_editor
+                            
+                            # Check if the 'apply' column exists in the dataframe
+                            if 'apply' in current_df.columns:
+                                # Check if any apply checkboxes are checked
+                                apply_rows = current_df[current_df['apply'] == True]
+                                if not apply_rows.empty:
+                                    # Process the changes for rows with Apply checked
+                                    handle_edit_click(current_df)
                     
                     # Use Streamlit's data editor with on_change callback
                     edited_df = st.data_editor(
