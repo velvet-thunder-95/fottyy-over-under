@@ -309,19 +309,19 @@ class PredictionHistory:
                         if predicted_outcome == actual_outcome:
                             # Won: Calculate profit based on the predicted outcome's odds
                             if predicted_outcome == 'HOME':
-                                profit_loss = float(round(home_odds - 1.0, 2))  # (odds * $1) - $1
-                                logging.info(f"Won HOME bet with odds {home_odds}, profit {profit_loss}U")
+                                profit_loss = float(round((home_odds * bet_amount) - bet_amount, 2))  # (odds * bet_amount) - bet_amount
+                                logging.info(f"Won HOME bet with odds {home_odds}, bet amount {bet_amount}, profit {profit_loss}U")
                             elif predicted_outcome == 'AWAY':
-                                profit_loss = float(round(away_odds - 1.0, 2))  # (odds * $1) - $1
-                                logging.info(f"Won AWAY bet with odds {away_odds}, profit {profit_loss}U")
+                                profit_loss = float(round((away_odds * bet_amount) - bet_amount, 2))  # (odds * bet_amount) - bet_amount
+                                logging.info(f"Won AWAY bet with odds {away_odds}, bet amount {bet_amount}, profit {profit_loss}U")
                             else:  # DRAW
-                                profit_loss = float(round(draw_odds - 1.0, 2))  # (odds * $1) - $1
-                                logging.info(f"Won DRAW bet with odds {draw_odds}, profit {profit_loss}U")
-                            print(f'Won bet! Odds: {home_odds}/{draw_odds}/{away_odds}, Profit: {profit_loss}U')
+                                profit_loss = float(round((draw_odds * bet_amount) - bet_amount, 2))  # (odds * bet_amount) - bet_amount
+                                logging.info(f"Won DRAW bet with odds {draw_odds}, bet amount {bet_amount}, profit {profit_loss}U")
+                                print(f'Won bet! Odds: {home_odds}/{draw_odds}/{away_odds}, Profit: {profit_loss}U')
                         else:
-                            # Lost: Lose the $1 bet
-                            profit_loss = float(-1.0)
-                            logging.info(f"Lost bet, loss -1.0U")
+                            # Lost: Lose the bet amount
+                            profit_loss = float(-bet_amount)
+                            logging.info(f"Lost bet, loss -{bet_amount}U")
                             print(f'Lost bet! Predicted: {predicted_outcome}, Actual: {actual_outcome}, Loss: {profit_loss}U')
                     else:
                         print(f'Missing odds: {home_odds}/{draw_odds}/{away_odds}')
@@ -1942,8 +1942,17 @@ def show_history_page():
                                     else:
                                         actual_outcome = "DRAW"
                                     
-                                    # Use profit_loss value from database
-                                    profit_loss = float(prediction.get('profit_loss', 0.0))
+                                    # Get bet amount from prediction
+                                    bet_amount = float(prediction.get('bet_amount', 10.0))  # Default to 10 if not found
+                                    if predicted_outcome == actual_outcome:
+                                        if predicted_outcome == "HOME":
+                                            profit_loss = float(round((home_odds * bet_amount) - bet_amount, 2))
+                                        elif predicted_outcome == "AWAY":
+                                            profit_loss = float(round((away_odds * bet_amount) - bet_amount, 2))
+                                        else:  # DRAW
+                                            profit_loss = float(round((draw_odds * bet_amount) - bet_amount, 2))
+                                    else:
+                                        profit_loss = float(-bet_amount)  # Lost the bet amount
                                 else:
                                     home_score = None
                                     away_score = None
