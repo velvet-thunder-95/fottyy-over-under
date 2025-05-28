@@ -1942,17 +1942,8 @@ def show_history_page():
                                     else:
                                         actual_outcome = "DRAW"
                                     
-                                    # Calculate profit/loss using fixed $1 bet amount
-                                    bet_amount = 1.0  # Fixed $1 bet
-                                    if predicted_outcome == actual_outcome:
-                                        if predicted_outcome == "HOME":
-                                            profit_loss = float(round(home_odds - 1.0, 2))  # (odds * $1) - $1
-                                        elif predicted_outcome == "AWAY":
-                                            profit_loss = float(round(away_odds - 1.0, 2))  # (odds * $1) - $1
-                                        else:  # DRAW
-                                            profit_loss = float(round(draw_odds - 1.0, 2))  # (odds * $1) - $1
-                                    else:
-                                        profit_loss = float(-1.0)  # Lost the $1 bet
+                                    # Use profit_loss value from database
+                                    profit_loss = float(prediction.get('profit_loss', 0.0))
                                 else:
                                     home_score = None
                                     away_score = None
