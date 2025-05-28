@@ -1466,8 +1466,14 @@ def show_history_page():
                             key="prediction_editor"
                         )
                         
-                        # Add a hidden submit button to the form
-                        submit_button = st.form_submit_button("Apply Changes", type="primary", help="Click to apply changes", key="hidden_submit", label_visibility="collapsed")
+                        # Add a submit button to the form (required for the form to work)
+                        # We'll make this as small as possible
+                        st.markdown("""
+                        <style>
+                        div[data-testid="stFormSubmitButton"] {display: none;}
+                        </style>
+                        """, unsafe_allow_html=True)
+                        submit_button = st.form_submit_button("Apply Changes")
                     
                     # Store the form submission state in session state
                     if 'form_submitted' not in st.session_state:
