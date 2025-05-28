@@ -1499,13 +1499,8 @@ def show_history_page():
                             on_change=on_data_editor_change
                         )
                         
-                        # Add a hidden submit button (required for the form to work)
-                        st.markdown("""
-                        <style>
-                        div[data-testid="stFormSubmitButton"] {display: none;}
-                        </style>
-                        """, unsafe_allow_html=True)
-                        submit_button = st.form_submit_button("Apply Changes")
+                        # Add a visible submit button to apply changes
+                        submit_button = st.form_submit_button("Apply Changes", use_container_width=True)
                     
                     # Initialize edit state if it doesn't exist
                     if 'edit_state' not in st.session_state:
@@ -1524,129 +1519,125 @@ def show_history_page():
                     if 'form_submitted' not in st.session_state:
                         st.session_state.form_submitted = False
                     
-                    # Process the form submission
-                    logger.info(f"Form submitted: {st.session_state.get('form_submitted', False)}")
-                    logger.info(f"Form edited df exists: {'form_edited_df' in st.session_state}")
+                    # Process the form submission when the Apply Changes button is clicked
+                    logger.info(f"Submit button clicked: {submit_button}")
                     
-                    if st.session_state.form_submitted and 'form_edited_df' in st.session_state:
+                    if submit_button:
                         logger.info("Processing form submission")
                         # Get the edited dataframe from session state
-                        edited_df = st.session_state.form_edited_df
+                        edited_df = st.session_state.prediction_editor
+                        logger.info(f"Processing changes from data editor with {len(edited_df)} rows")
                         
-                        # Process all rows with apply checked
-                        if 'apply' in edited_df.columns:
-                            apply_rows = edited_df[edited_df['apply'] == True]
-                            logger.info(f"Processing form: Found {len(apply_rows)} rows with apply=True")
+                        # Process all rows with delete checked
+                        if 'delete' in edited_df.columns:
+                            # Find rows marked for deletion
+                            delete_rows = edited_df[edited_df['delete'] == True]
+                            logger.info(f"Found {len(delete_rows)} rows marked for deletion")
                             
-                            if not apply_rows.empty:
-                                logger.info("Processing changes for rows with apply=True")
+                            if not delete_rows.empty:
+                                logger.info("Processing deletions")
                                 # Log the row IDs being processed
-                                logger.info(f"Processing row IDs: {apply_rows['id'].tolist()}")
-                                # Log delete checkbox values if they exist
-                                if 'delete' in apply_rows.columns:
-                                    logger.info(f"Delete checkbox values: {apply_rows['delete'].tolist()}")
-                                # First process deletions (rows with both delete and apply checked)
-                                if 'delete' in edited_df.columns:
-                                    logger.info("Checking for rows with delete=True")
-                                    delete_rows = apply_rows[apply_rows['delete'] == True]
-                                    logger.info(f"Found {len(delete_rows)} rows with delete=True and apply=True")
+                                logger.info(f"Processing row IDs for deletion: {delete_rows['id'].tolist()}")
+                                # Process all rows marked for deletion
+                                for idx, row in delete_rows.iterrows():
+                                    row_id = row['id']
                                     
-                                    if not delete_rows.empty:
-                                        logger.info(f"Processing {len(delete_rows)} rows for deletion")
-                                        for idx, row in delete_rows.iterrows():
-                                            row_id = row['id']
-                                            
-                                            # This is a confirmed deletion request
-                                            logger.info(f"Attempting to delete prediction ID: {row_id}")
-                                            logger.info(f"Row data: home_team={row.get('home_team', 'N/A')}, away_team={row.get('away_team', 'N/A')}")
-                                            
-                                            # Attempt to delete from database
-                                            try:
-                                                # Log the delete function call
-                                                logger.info(f"Calling history.delete_prediction({row_id})")
-                                                success = history.delete_prediction(row_id)
-                                                logger.info(f"Delete result: {success}")
-                                                
-                                                if success:
-                                                    logger.info(f"Successfully deleted prediction ID: {row_id}")
-                                                    st.success(f"Deleted prediction for {row['home_team']} vs {row['away_team']}")
-                                                    # Clear session state to force data reload
-                                                    if 'history_df' in st.session_state:
-                                                        del st.session_state.history_df
-                                                        logger.info("Cleared history_df from session state")
-                                                    # Set flag to refresh the page after processing
-                                                    st.session_state['refresh_needed'] = True
-                                                    logger.info("Set refresh_needed flag to True")
-                                                else:
-                                                    logger.error(f"Failed to delete prediction ID: {row_id}")
-                                                    st.error(f"Failed to delete prediction ID: {row_id}")
-                                            except Exception as delete_error:
-                                                logger.error(f"Error deleting prediction: {str(delete_error)}")
-                                                st.error(f"Error deleting prediction: {str(delete_error)}")
-                                    else:
-                                        logger.info("No rows found with both delete=True and apply=True")
-                                
-                                # Then process direct edits (rows with apply checked but not delete)
-                                edit_rows = apply_rows
-                                if 'delete' in edited_df.columns:
-                                    edit_rows = apply_rows[apply_rows['delete'] != True]
-                                
-                                if not edit_rows.empty:
-                                    # Process direct edits for rows with apply checked
-                                    for idx, row in edit_rows.iterrows():
-                                        # Get the row ID
-                                        row_id = row['id']
+                                    # This is a confirmed deletion request
+                                    logger.info(f"Attempting to delete prediction ID: {row_id}")
+                                    logger.info(f"Row data: home_team={row.get('home_team', 'N/A')}, away_team={row.get('away_team', 'N/A')}")
+                                    
+                                    # Attempt to delete from database
+                                    try:
+                                        # Log the delete function call
+                                        logger.info(f"Calling history.delete_prediction({row_id})")
+                                        success = history.delete_prediction(row_id)
+                                        logger.info(f"Delete result: {success}")
                                         
-                                        # Get the original data for comparison
-                                        # If original_edit_df exists, use it; otherwise, use the current dataframe
-                                        if 'original_edit_df' in st.session_state:
-                                            original_df = st.session_state.original_edit_df
+                                        if success:
+                                            logger.info(f"Successfully deleted prediction ID: {row_id}")
+                                            st.success(f"Deleted prediction for {row['home_team']} vs {row['away_team']}")
+                                            # Clear session state to force data reload
+                                            if 'history_df' in st.session_state:
+                                                del st.session_state.history_df
+                                                logger.info("Cleared history_df from session state")
+                                            # Set flag to refresh the page after processing
+                                            st.session_state['refresh_needed'] = True
+                                            logger.info("Set refresh_needed flag to True")
                                         else:
-                                            # Initialize it with the current dataframe if it doesn't exist
-                                            st.session_state.original_edit_df = st.session_state.edit_state['current_df'].copy(deep=True)
-                                            original_df = st.session_state.original_edit_df
+                                            logger.error(f"Failed to delete prediction ID: {row_id}")
+                                            st.error(f"Failed to delete prediction ID: {row_id}")
+                                    except Exception as delete_error:
+                                        logger.error(f"Error deleting prediction: {str(delete_error)}")
+                                        st.error(f"Error deleting prediction: {str(delete_error)}")
+                            else:
+                                logger.info("No rows marked for deletion")
+                                
+                        # Process direct edits (any changes to editable fields)
+                        logger.info("Checking for direct edits")
+                        
+                        # Store the original data for comparison if not already stored
+                        if 'original_edit_df' not in st.session_state:
+                            st.session_state.original_edit_df = edited_df.copy(deep=True)
+                            logger.info("Initialized original_edit_df with current data")
+                        
+                        # Compare with original data to find changes
+                        if 'original_edit_df' in st.session_state:
+                            original_df = st.session_state.original_edit_df
+                            logger.info("Processing direct edits by comparing with original data")
+                            
+                            # Process all rows for edits
+                            for idx, row in edited_df.iterrows():
+                                # Skip rows marked for deletion
+                                if 'delete' in row and row['delete'] == True:
+                                    continue
+                                    
+                                # Get the row ID
+                                row_id = row['id']
+                                
+                                # Find the row with matching ID in original data
+                                original_rows = original_df[original_df['id'] == row_id]
+                                
+                                if len(original_rows) > 0:
+                                    original_row = original_rows.iloc[0]
+                                    
+                                    # Compare with original to detect changes
+                                    try:
+                                        home_odds_changed = float(row['home_odds']) != float(original_row['home_odds'])
+                                        draw_odds_changed = float(row['draw_odds']) != float(original_row['draw_odds'])
+                                        away_odds_changed = float(row['away_odds']) != float(original_row['away_odds'])
+                                        profit_loss_changed = 'profit_loss' in row and 'profit_loss' in original_row and float(row['profit_loss']) != float(original_row['profit_loss'])
                                         
-                                        # Find the row with matching ID
-                                        original_rows = original_df[original_df['id'] == row_id]
-                                        
-                                        if len(original_rows) > 0:
-                                            original_row = original_rows.iloc[0]
+                                        # Only process if changes detected
+                                        if (home_odds_changed or draw_odds_changed or away_odds_changed or profit_loss_changed):
+                                            # Prepare update data
+                                            update_data = {
+                                                'home_odds': float(row['home_odds']) if pd.notna(row['home_odds']) else 0.0,
+                                                'draw_odds': float(row['draw_odds']) if pd.notna(row['draw_odds']) else 0.0,
+                                                'away_odds': float(row['away_odds']) if pd.notna(row['away_odds']) else 0.0,
+                                            }
                                             
-                                            # Compare with original to detect changes
-                                            try:
-                                                home_odds_changed = float(row['home_odds']) != float(original_row['home_odds'])
-                                                draw_odds_changed = float(row['draw_odds']) != float(original_row['draw_odds'])
-                                                away_odds_changed = float(row['away_odds']) != float(original_row['away_odds'])
-                                                profit_loss_changed = 'profit_loss' in row and 'profit_loss' in original_row and float(row['profit_loss']) != float(original_row['profit_loss'])
-                                                
-                                                # Only process if changes detected
-                                                if (home_odds_changed or draw_odds_changed or away_odds_changed or profit_loss_changed):
-                                                    # Prepare update data
-                                                    update_data = {
-                                                        'home_odds': float(row['home_odds']) if pd.notna(row['home_odds']) else 0.0,
-                                                        'draw_odds': float(row['draw_odds']) if pd.notna(row['draw_odds']) else 0.0,
-                                                        'away_odds': float(row['away_odds']) if pd.notna(row['away_odds']) else 0.0,
-                                                    }
-                                                    
-                                                    if profit_loss_changed and 'profit_loss' in row:
-                                                        update_data['profit_loss'] = float(row['profit_loss']) if pd.notna(row['profit_loss']) else 0.0
-                                                    
-                                                    # Update prediction in database
-                                                    logger.info(f"Updating prediction ID: {row_id} with odds data")
-                                                    if history.update_prediction(row_id, update_data):
-                                                        st.toast(f"Updated odds for {row['home_team']} vs {row['away_team']}")
-                                                        # Set flag to refresh the page after processing
-                                                        st.session_state['refresh_needed'] = True
-                                            except (ValueError, TypeError) as e:
-                                                logger.error(f"Error comparing row values: {str(e)}")
-                                                continue
+                                            if profit_loss_changed and 'profit_loss' in row:
+                                                update_data['profit_loss'] = float(row['profit_loss']) if pd.notna(row['profit_loss']) else 0.0
+                                            
+                                            # Update prediction in database
+                                            logger.info(f"Updating prediction ID: {row_id} with odds data")
+                                            if history.update_prediction(row_id, update_data):
+                                                st.toast(f"Updated odds for {row['home_team']} vs {row['away_team']}")
+                                                # Set flag to refresh the page after processing
+                                                st.session_state['refresh_needed'] = True
+                                    except (ValueError, TypeError) as e:
+                                        logger.error(f"Error comparing row values: {str(e)}")
+                                        continue
                                 
-                                # Clear all apply checkboxes after processing
-                                for idx in apply_rows.index:
-                                    edited_df.at[idx, 'apply'] = False
-                                
-                                # Update session state with cleared checkboxes
-                                st.session_state.edit_state['current_df'] = edited_df.copy(deep=True)
+                        # Update the original_edit_df with the current data after processing
+                        # This ensures we don't detect the same changes again
+                        st.session_state.original_edit_df = edited_df.copy(deep=True)
+                        logger.info("Updated original_edit_df with current data")
+                        
+                        # If changes were made, set the refresh flag
+                        if 'refresh_needed' in st.session_state and st.session_state['refresh_needed']:
+                            logger.info("Changes detected, reloading page...")
+                            st.rerun()
                         
                         # Reset the form submission flag
                         st.session_state.form_submitted = False
