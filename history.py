@@ -1503,11 +1503,12 @@ def show_history_page():
                                     disabled=True
                                 ),
                                 "profit_loss": st.column_config.NumberColumn(
-                                    "Profit/Loss",
+                                    "Profit/Loss ($)",
                                     min_value=-100.0,
                                     max_value=100.0,
-                                    format="%.2f",
-                                    disabled=False
+                                    format="$%.2f",
+                                    disabled=False,
+                                    help="Profit/Loss based on fixed $1 bet amount"
                                 ),
                                 "status": st.column_config.SelectboxColumn(
                                     "Status",
