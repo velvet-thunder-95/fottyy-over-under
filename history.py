@@ -269,9 +269,9 @@ class PredictionHistory:
             draw_odds = match_data['draw_odds']
             away_odds = match_data['away_odds']
             
-            # Always use a fixed £1 bet amount for consistency regardless of what's in the database
-            bet_amount = 1.0
-            logging.info(f"Using fixed £1 bet amount for profit/loss calculation")
+            # Always use a fixed $1 bet amount for consistency
+            bet_amount = 1.0  # Fixed $1 bet amount
+            logging.info(f"Using fixed $1 bet amount for profit/loss calculation")
             
             # Parse the result
             if isinstance(result, dict):
@@ -452,7 +452,7 @@ class PredictionHistory:
             # Calculate total profit/loss and ROI
             total_profit = completed_predictions['profit_loss'].sum()
             
-            # Calculate ROI using fixed £1 bet amount (each bet is £1)
+            # Calculate ROI using completed bets only (each bet is $1)
             roi = (total_profit / completed_count * 100) if completed_count > 0 else 0.0
             
             # Debug info
@@ -1503,10 +1503,10 @@ def show_history_page():
                                     disabled=True
                                 ),
                                 "profit_loss": st.column_config.NumberColumn(
-                                    "Profit/Loss ($)",
+                                    "Profit/Loss",
                                     min_value=-100.0,
                                     max_value=100.0,
-                                    format="$%.2f",
+                                    format="%.2fU",
                                     disabled=False,
                                     help="Profit/Loss based on fixed $1 bet amount"
                                 ),
@@ -1942,8 +1942,8 @@ def show_history_page():
                                     else:
                                         actual_outcome = "DRAW"
                                     
-                                    # Calculate profit/loss using fixed £1 bet amount
-                                    bet_amount = 1.0  # Fixed £1 bet
+                                    # Calculate profit/loss using fixed $1 bet amount
+                                    bet_amount = 1.0  # Fixed $1 bet
                                     if predicted_outcome == actual_outcome:
                                         if predicted_outcome == "HOME":
                                             profit_loss = float(round((home_odds * bet_amount) - bet_amount, 2))
