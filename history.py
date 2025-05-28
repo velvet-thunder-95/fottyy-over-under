@@ -581,7 +581,10 @@ def get_confidence_level(confidence):
         return "Unknown"
 
 def show_history_page():
-    """Display prediction history page"""
+    # Reset form processing flag at the beginning of the page load
+    if 'form_processed' in st.session_state:
+        st.session_state.form_processed = False
+        
     st.markdown("""
         <style>
         .stDataFrame {
@@ -1120,6 +1123,14 @@ def show_history_page():
                     # Define callbacks to handle edit/delete button clicks without refreshing
                     def handle_edit_click(current_df=None):
                         try:
+                            # Check if we've already processed this form submission
+                            if 'form_processed' in st.session_state and st.session_state.form_processed:
+                                logger.info("Form already processed, skipping duplicate processing")
+                                return
+                                
+                            # Set flag to prevent duplicate processing
+                            st.session_state.form_processed = True
+                            
                             # This function processes the changes in the data editor
                             # If current_df is not provided, try to get it from session state
                             if current_df is None:
@@ -1127,6 +1138,8 @@ def show_history_page():
                                     logger.warning("prediction_editor not found in session state")
                                     return
                                 current_df = st.session_state.prediction_editor
+                            
+                            logger.info("Processing form submission with data editor changes")
                             
                             # Make sure it's a dataframe
                             if not isinstance(current_df, pd.DataFrame):
@@ -1397,7 +1410,7 @@ def show_history_page():
                         st.session_state.previous_df = None
                     
                     # Create a form to wrap the data editor and prevent auto-refresh
-                    with st.form("prediction_editor_form", clear_on_submit=False):
+                    with st.form("prediction_editor_form", clear_on_submit=False, border=False):
                         # Add styling to the dataframe before displaying it
                         styled_df = st.session_state.edit_state['current_df'].copy()
                         
@@ -1465,13 +1478,7 @@ def show_history_page():
                                 "confidence": st.column_config.TextColumn(
                                     "Confidence",
                                     disabled=True,
-                                    help="High: ≥70%, Medium: 50-70%, Low: <50%",
-                                    # Add color based on confidence level
-                                    cell_style=lambda val: {
-                                        "background-color": "#d4f7d4" if val == "High" else
-                                                          "#fff2cc" if val == "Medium" else
-                                                          "#ffcccc" if val == "Low" else "white"
-                                    }
+                                    help="High: ≥70%, Medium: 50-70%, Low: <50%"
                                 ),
                                 "confidence_value": st.column_config.NumberColumn(
                                     "Confidence Value",
@@ -1552,8 +1559,12 @@ def show_history_page():
                             key="prediction_editor"
                         )
                         
-                        # Add a visible submit button to apply changes
-                        submit_button = st.form_submit_button("Apply Changes", use_container_width=True)
+                        # Create a visible button for applying changes
+                        submit_button = st.form_submit_button("Apply Changes", use_container_width=True, type="primary")
+                        
+                        # Process form submission
+                        if submit_button:
+                            handle_edit_click()
                     
                     # Initialize edit state if it doesn't exist
                     if 'edit_state' not in st.session_state:
@@ -1699,6 +1710,8 @@ def show_history_page():
                                     
                                     # Always refresh the page after processing changes
                                     st.session_state['refresh_needed'] = True
+                                    # Reset the form_processed flag for next time
+                                    st.session_state.form_processed = False
                                     logger.info("Changes processed, refreshing page")
                                     st.rerun()
                                     
