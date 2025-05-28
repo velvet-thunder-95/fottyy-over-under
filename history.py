@@ -1457,7 +1457,7 @@ def show_history_page():
                                 ),
                                 "apply": st.column_config.CheckboxColumn(
                                     "Apply",
-                                    help="Check to apply changes",
+                                    help="Check to apply changes (required for both edits and deletions)",
                                     default=False
                                 )
                             },
@@ -1500,41 +1500,46 @@ def show_history_page():
                         # Get the edited dataframe from session state
                         edited_df = st.session_state.form_edited_df
                         
-                        # Process delete rows first (rows marked for deletion and apply checked)
-                        if 'delete' in edited_df.columns and 'apply' in edited_df.columns:
-                            delete_rows = edited_df[(edited_df['delete'] == True) & (edited_df['apply'] == True)]
+                        # Process all rows with apply checked
+                        if 'apply' in edited_df.columns:
+                            apply_rows = edited_df[edited_df['apply'] == True]
                             
-                            if not delete_rows.empty:
-                                for idx, row in delete_rows.iterrows():
-                                    row_id = row['id']
+                            if not apply_rows.empty:
+                                # First process deletions (rows with both delete and apply checked)
+                                if 'delete' in edited_df.columns:
+                                    delete_rows = apply_rows[apply_rows['delete'] == True]
                                     
-                                    # This is a confirmed deletion request
-                                    logger.info(f"Deleting prediction ID: {row_id}")
-                                    
-                                    # Attempt to delete from database
-                                    try:
-                                        success = history.delete_prediction(row_id)
-                                        if success:
-                                            st.success(f"Deleted prediction for {row['home_team']} vs {row['away_team']}")
-                                            # Clear session state to force data reload
-                                            if 'history_df' in st.session_state:
-                                                del st.session_state.history_df
-                                            # Set flag to refresh the page after processing
-                                            st.session_state['refresh_needed'] = True
-                                        else:
-                                            st.error(f"Failed to delete prediction ID: {row_id}")
-                                    except Exception as delete_error:
-                                        st.error(f"Error deleting prediction: {str(delete_error)}")
-                                        logger.error(f"Delete error: {str(delete_error)}")
-                        
-                        # Process direct edits (rows with apply checked but not delete)
-                        if 'apply' in edited_df.columns and 'delete' in edited_df.columns:
-                            apply_only_rows = edited_df[(edited_df['apply'] == True) & (edited_df['delete'] == False)]
-                            if not apply_only_rows.empty:
-                                # Process direct edits
-                                if 'original_edit_df' in st.session_state:
+                                    if not delete_rows.empty:
+                                        for idx, row in delete_rows.iterrows():
+                                            row_id = row['id']
+                                            
+                                            # This is a confirmed deletion request
+                                            logger.info(f"Deleting prediction ID: {row_id}")
+                                            
+                                            # Attempt to delete from database
+                                            try:
+                                                success = history.delete_prediction(row_id)
+                                                if success:
+                                                    st.success(f"Deleted prediction for {row['home_team']} vs {row['away_team']}")
+                                                    # Clear session state to force data reload
+                                                    if 'history_df' in st.session_state:
+                                                        del st.session_state.history_df
+                                                    # Set flag to refresh the page after processing
+                                                    st.session_state['refresh_needed'] = True
+                                                else:
+                                                    st.error(f"Failed to delete prediction ID: {row_id}")
+                                            except Exception as delete_error:
+                                                st.error(f"Error deleting prediction: {str(delete_error)}")
+                                                logger.error(f"Delete error: {str(delete_error)}")
+                                
+                                # Then process direct edits (rows with apply checked but not delete)
+                                edit_rows = apply_rows
+                                if 'delete' in edited_df.columns:
+                                    edit_rows = apply_rows[apply_rows['delete'] != True]
+                                
+                                if not edit_rows.empty and 'original_edit_df' in st.session_state:
                                     # Process direct edits for rows with apply checked
-                                    for idx, row in apply_only_rows.iterrows():
+                                    for idx, row in edit_rows.iterrows():
                                         # Get the row ID
                                         row_id = row['id']
                                         
@@ -1568,15 +1573,18 @@ def show_history_page():
                                                     logger.info(f"Updating prediction ID: {row_id} with odds data")
                                                     if history.update_prediction(row_id, update_data):
                                                         st.toast(f"Updated odds for {row['home_team']} vs {row['away_team']}")
-                                                        # Clear the apply checkbox after processing
-                                                        edited_df.at[idx, 'apply'] = False
-                                                        # Update session state
-                                                        st.session_state.edit_state['current_df'] = edited_df.copy(deep=True)
                                                         # Set flag to refresh the page after processing
                                                         st.session_state['refresh_needed'] = True
                                             except (ValueError, TypeError) as e:
                                                 logger.error(f"Error comparing row values: {str(e)}")
                                                 continue
+                                
+                                # Clear all apply checkboxes after processing
+                                for idx in apply_rows.index:
+                                    edited_df.at[idx, 'apply'] = False
+                                
+                                # Update session state with cleared checkboxes
+                                st.session_state.edit_state['current_df'] = edited_df.copy(deep=True)
                         
                         # Reset the form submission flag
                         st.session_state.form_submitted = False
