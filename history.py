@@ -1315,102 +1315,175 @@ def show_history_page():
                                 # Just store the current state without processing changes
                                 # This prevents automatic refreshes when checkboxes are clicked
                                 st.session_state.edit_state['current_df'] = current_df.copy(deep=True)
-                                
-                                # Only process changes if the Apply checkbox is checked
-                                # This is now handled in the edited_df section below to prevent automatic refreshes
                         except Exception as e:
                             # Log the error but don't crash the app
                             logger.error(f"Error in on_data_editor_change: {str(e)}")
-                            # Don't re-raise the exception to prevent the app from crashing
                     
-                    # Use Streamlit's data editor WITHOUT on_change callback to prevent auto-refresh
-                    # This is key to preventing the page from refreshing when checkboxes are clicked
-                    edited_df = st.data_editor(
-                        st.session_state.edit_state['current_df'],
-                        column_config={
-                            "id": st.column_config.TextColumn("ID", disabled=True),
-                            "date": st.column_config.TextColumn("Date", disabled=True, help="Format: YYYY-MM-DD"),
-                            "league": st.column_config.TextColumn("League", disabled=True),
-                            "home_team": st.column_config.TextColumn("Home Team", disabled=True),
-                            "away_team": st.column_config.TextColumn("Away Team", disabled=True),
-                            "predicted_outcome": st.column_config.SelectboxColumn(
-                                "Prediction",
-                                options=["HOME", "DRAW", "AWAY"],
-                                disabled=True
-                            ),
-                            "confidence": st.column_config.TextColumn(
-                                "Confidence",
-                                disabled=True,
-                                help="High: ≥70%, Medium: 50-70%, Low: <50%"
-                            ),
-                            "confidence_value": st.column_config.NumberColumn(
-                                "Confidence Value",
-                                min_value=0.0,
-                                max_value=100.0,
-                                format="%.1f%%",
-                                disabled=True,
-                                help="Numeric confidence value"
-                            ),
-                            "actual_outcome": st.column_config.SelectboxColumn(
-                                "Actual Outcome",
-                                options=["", "HOME", "DRAW", "AWAY"],
-                                disabled=True
-                            ),
-                            "status": st.column_config.SelectboxColumn(
-                                "Status",
-                                options=["Pending", "Completed"],
-                                disabled=True
-                            ),
-                            "result": st.column_config.TextColumn(
-                                "Result",
-                                disabled=True
-                            ),
-                            "home_odds": st.column_config.NumberColumn(
-                                "Home Odds", 
-                                format="%.2f",
-                                min_value=1.01,
-                                max_value=100.0
-                            ),
-                            "draw_odds": st.column_config.NumberColumn(
-                                "Draw Odds", 
-                                format="%.2f",
-                                min_value=1.01,
-                                max_value=100.0
-                            ),
-                            "away_odds": st.column_config.NumberColumn(
-                                "Away Odds", 
-                                format="%.2f",
-                                min_value=1.01,
-                                max_value=100.0
-                            ),
-                            "profit_loss": st.column_config.NumberColumn("Profit/Loss", format="%.2fU"),
-                            "delete": st.column_config.CheckboxColumn("Delete"),
-                            "apply": st.column_config.CheckboxColumn("Apply")
-                        },
-                        column_order=[
-                            "date", "league", "home_team", "away_team", "predicted_outcome", 
-                            "confidence", "actual_outcome", "status", "result", 
-                            "home_odds", "draw_odds", "away_odds", "profit_loss", "delete", "apply"
-                        ],
-                        hide_index=True,
-                        num_rows="fixed",
-                        use_container_width=True,
-                        key="prediction_editor"
-                        # Removed on_change callback to prevent auto-refresh when checkboxes are clicked
-                    )
-                    
-                    # Add instructions about using the Apply checkbox
-                    st.info("📝 To edit a prediction: 1) Click directly on the cell you want to edit, 2) Make your changes, 3) Check 'Apply' to save changes")
-                    st.warning("⚠️ To delete a prediction: 1) Check the 'Delete' box for the row, 2) Check 'Apply' to confirm deletion")
-                    
-                    # Process edits and deletions
-                    if edited_df is not None:
-                        # Check if any apply checkboxes are checked - this is the trigger for processing changes
-                        if 'apply' in edited_df.columns:
-                            apply_rows = edited_df[edited_df['apply'] == True]
+                    # Define a function to process direct edits (changes to odds or profit/loss)
+                    def process_direct_edits(edited_df):
+                        try:
+                            original_df = st.session_state.original_edit_df
                             
-                            # Process delete rows first (rows with both delete and apply checked)
-                            delete_rows = apply_rows[apply_rows['delete'] == True]
+                            # Find rows that have been modified but not marked for delete or edit
+                            for i, row in edited_df.iterrows():
+                                row_id = row['id']
+                                
+                                # Find the original row data
+                                original_rows = original_df[original_df['id'] == row_id]
+                                if len(original_rows) == 0:
+                                    continue
+                                    
+                                original_row = original_rows.iloc[0]
+                                
+                                # Compare with original to detect changes
+                                try:
+                                    home_odds_changed = float(row['home_odds']) != float(original_row['home_odds'])
+                                    draw_odds_changed = float(row['draw_odds']) != float(original_row['draw_odds'])
+                                    away_odds_changed = float(row['away_odds']) != float(original_row['away_odds'])
+                                    profit_loss_changed = 'profit_loss' in row and 'profit_loss' in original_row and float(row['profit_loss']) != float(original_row['profit_loss'])
+                                    
+                                    # Only process if changes detected
+                                    if (home_odds_changed or draw_odds_changed or away_odds_changed or profit_loss_changed):
+                                        # Prepare update data
+                                        update_data = {
+                                            'home_odds': float(row['home_odds']) if pd.notna(row['home_odds']) else 0.0,
+                                            'draw_odds': float(row['draw_odds']) if pd.notna(row['draw_odds']) else 0.0,
+                                            'away_odds': float(row['away_odds']) if pd.notna(row['away_odds']) else 0.0,
+                                        }
+                                        
+                                        if profit_loss_changed and 'profit_loss' in row:
+                                            update_data['profit_loss'] = float(row['profit_loss']) if pd.notna(row['profit_loss']) else 0.0
+                                        
+                                        # Update prediction in database
+                                        logger.info(f"Updating prediction ID: {row_id} with odds data")
+                                        if history.update_prediction(row_id, update_data):
+                                            st.toast(f"Updated odds for {row['home_team']} vs {row['away_team']}")
+                                except (ValueError, TypeError) as e:
+                                    logger.error(f"Error comparing row values: {str(e)}")
+                                    continue
+                        except Exception as e:
+                            logger.error(f"Error processing direct edits: {str(e)}")
+                    
+                    # Add instructions about using the form
+                    st.info("📝 To edit a prediction: 1) Click directly on the cell you want to edit, 2) Make your changes, 3) Click 'Apply Changes' button")
+                    st.warning("⚠️ To delete a prediction: 1) Check the 'Delete' box for the row, 2) Click 'Apply Changes' button to confirm deletion")
+                    
+                    # Create a form to wrap the data editor and prevent auto-refresh
+                    with st.form(key="prediction_form"):
+                        # Use Streamlit's data editor WITHOUT on_change callback to prevent auto-refresh
+                        edited_df = st.data_editor(
+                            st.session_state.edit_state['current_df'],
+                            column_config={
+                                "id": st.column_config.TextColumn("ID", disabled=True),
+                                "date": st.column_config.TextColumn("Date", disabled=True, help="Format: YYYY-MM-DD"),
+                                "league": st.column_config.TextColumn("League", disabled=True),
+                                "home_team": st.column_config.TextColumn("Home Team", disabled=True),
+                                "away_team": st.column_config.TextColumn("Away Team", disabled=True),
+                                "predicted_outcome": st.column_config.SelectboxColumn(
+                                    "Prediction",
+                                    options=["HOME", "DRAW", "AWAY"],
+                                    disabled=True
+                                ),
+                                "confidence": st.column_config.TextColumn(
+                                    "Confidence",
+                                    disabled=True,
+                                    help="High: ≥70%, Medium: 50-70%, Low: <50%"
+                                ),
+                                "confidence_value": st.column_config.NumberColumn(
+                                    "Confidence Value",
+                                    min_value=0.0,
+                                    max_value=100.0,
+                                    format="%.1f",
+                                    disabled=True
+                                ),
+                                "home_odds": st.column_config.NumberColumn(
+                                    "Home Odds",
+                                    min_value=1.01,
+                                    max_value=100.0,
+                                    format="%.2f",
+                                    disabled=False
+                                ),
+                                "draw_odds": st.column_config.NumberColumn(
+                                    "Draw Odds",
+                                    min_value=1.01,
+                                    max_value=100.0,
+                                    format="%.2f",
+                                    disabled=False
+                                ),
+                                "away_odds": st.column_config.NumberColumn(
+                                    "Away Odds",
+                                    min_value=1.01,
+                                    max_value=100.0,
+                                    format="%.2f",
+                                    disabled=False
+                                ),
+                                "home_score": st.column_config.NumberColumn(
+                                    "Home Score",
+                                    min_value=0,
+                                    max_value=20,
+                                    disabled=True
+                                ),
+                                "away_score": st.column_config.NumberColumn(
+                                    "Away Score",
+                                    min_value=0,
+                                    max_value=20,
+                                    disabled=True
+                                ),
+                                "actual_outcome": st.column_config.SelectboxColumn(
+                                    "Actual",
+                                    options=["HOME", "DRAW", "AWAY"],
+                                    disabled=True
+                                ),
+                                "profit_loss": st.column_config.NumberColumn(
+                                    "Profit/Loss",
+                                    min_value=-100.0,
+                                    max_value=100.0,
+                                    format="%.2f",
+                                    disabled=False
+                                ),
+                                "status": st.column_config.SelectboxColumn(
+                                    "Status",
+                                    options=["Pending", "Completed"],
+                                    disabled=True
+                                ),
+                                "delete": st.column_config.CheckboxColumn(
+                                    "Delete",
+                                    help="Check to mark for deletion",
+                                    default=False
+                                ),
+                                "edit": st.column_config.CheckboxColumn(
+                                    "Edit",
+                                    help="Check to edit prediction",
+                                    default=False
+                                )
+                            },
+                            hide_index=True,
+                            use_container_width=True,
+                            key="prediction_editor"
+                        )
+                        
+                        # Add a submit button to the form
+                        submit_button = st.form_submit_button("Apply Changes")
+                    
+                    # Store the form submission state in session state
+                    if 'form_submitted' not in st.session_state:
+                        st.session_state.form_submitted = False
+                    
+                    # Check if the form was just submitted
+                    if submit_button:
+                        # Store the edited dataframe for processing
+                        if edited_df is not None:
+                            st.session_state.form_edited_df = edited_df.copy(deep=True)
+                            st.session_state.form_submitted = True
+                    
+                    # Process the form submission
+                    if st.session_state.form_submitted and 'form_edited_df' in st.session_state:
+                        # Get the edited dataframe from session state
+                        edited_df = st.session_state.form_edited_df
+                        
+                        # Process delete rows first (rows marked for deletion)
+                        if 'delete' in edited_df.columns:
+                            delete_rows = edited_df[edited_df['delete'] == True]
                             
                             if not delete_rows.empty:
                                 for idx, row in delete_rows.iterrows():
@@ -1434,178 +1507,29 @@ def show_history_page():
                                     except Exception as delete_error:
                                         st.error(f"Error deleting prediction: {str(delete_error)}")
                                         logger.error(f"Delete error: {str(delete_error)}")
-                            
-                            # Then process edit rows (rows with apply checked but not delete)
-                            edit_rows = apply_rows[apply_rows['delete'] != True]
+                        
+                        # Then process edit rows (rows with edit checked)
+                        if 'edit' in edited_df.columns:
+                            edit_rows = edited_df[edited_df['edit'] == True]
                             if not edit_rows.empty:
-                                # Process the changes for rows with Apply checked but not Delete
+                                # Process the changes for rows with Edit checked
                                 handle_edit_click(edited_df)
-                            
-                        # Display delete confirmation if a row was selected for deletion
-                        if 'delete_row_data' in st.session_state:
-                            row = st.session_state.delete_row_data
-                            st.warning(f"To delete prediction for {row['home_team']} vs {row['away_team']}, check the Apply box.")
-                            # Clear the delete_row_data after displaying the warning
-                            del st.session_state.delete_row_data
-                            
-                        # Check if we need to refresh the page after processing deletions
+                        
+                        # Process direct edits (changes to odds or profit/loss)
+                        if 'original_edit_df' in st.session_state:
+                            # Process direct edits
+                            process_direct_edits(edited_df)
+                        
+                        # Reset the form submission flag
+                        st.session_state.form_submitted = False
+                        
+                        # Check if we need to refresh the page after processing changes
                         if 'refresh_needed' in st.session_state and st.session_state['refresh_needed']:
                             # Clear the flag
                             del st.session_state['refresh_needed']
                             # Refresh the page to show updated data
                             st.rerun()
-                            
-                        # For rows with just Apply checked (but not Delete)
-                        try:
-                            apply_only_rows = edited_df[(edited_df['apply'] == True) & (edited_df['delete'] == False)] if 'apply' in edited_df.columns else pd.DataFrame()
-                            if not apply_only_rows.empty:
-                                for idx, row in apply_only_rows.iterrows():
-                                    # Clear the apply checkbox after processing
-                                    edited_df.at[idx, 'apply'] = False
-                        except Exception as e:
-                            logger.error(f"Error processing Apply actions: {str(e)}")
-                            st.error(f"An error occurred while processing your request. Please try again.")
-                            # Don't crash the app
-                        
-                        # Check for edit requests with Apply checked
-                        try:
-                            # Check if we have an edit request pending
-                            if 'edit_row_id' in st.session_state and st.session_state.edit_row_id:
-                                # Find the row with the matching ID and Apply checked
-                                apply_rows = edited_df[edited_df['apply'] == True]
-                                if not apply_rows.empty:
-                                    for idx, row in apply_rows.iterrows():
-                                        if str(row['id']) == str(st.session_state.edit_row_id):
-                                            row_id = row['id']
-                                            logger.info(f"Processing edit for prediction ID: {row_id}")
-                                            
-                                            # Store edit data in session state for the form
-                                            st.session_state.edit_prediction = True
-                                            st.session_state.edit_prediction_id = row_id
-                                            st.session_state.edit_prediction_data = row.to_dict()
-                                            
-                                            # Show success message
-                                            st.success(f"Editing prediction for {row['home_team']} vs {row['away_team']}")
-                                            
-                                            # Clear the checkboxes after processing
-                                            edited_df.at[idx, 'apply'] = False
-                                            edited_df.at[idx, 'edit'] = False
-                                            st.session_state.edit_state['current_df'] = edited_df.copy(deep=True)
-                                            
-                                            # Clear the edit row ID
-                                            del st.session_state.edit_row_id
-                                            break
-                        except Exception as e:
-                            logger.error(f"Error processing edit request: {str(e)}")
-                            # Don't crash the app
-                            
-                        # Process direct edits (changes to odds or profit/loss) with Apply checked
-                        # Only process rows that have Apply checked but not marked for delete or edit
-                        direct_edit_rows = edited_df[(edited_df['apply'] == True) & 
-                                                    (edited_df['delete'] == False) & 
-                                                    (edited_df['edit'] == False)]
-                        
-                        if not direct_edit_rows.empty and 'original_edit_df' in st.session_state:
-                            original_df = st.session_state.original_edit_df
-                            
-                            # Compare each row with Apply checked for changes
-                            for i, row in direct_edit_rows.iterrows():
-                                row_id = row['id']
-                                
-                                try:
-                                    # Find the original row data
-                                    original_rows = original_df[original_df['id'] == row_id]
-                                    if len(original_rows) == 0:
-                                        logger.warning(f"Original row not found for ID: {row_id}")
-                                        continue
-                                        
-                                    original_row = original_rows.iloc[0]
-                                    
-                                    # Compare with original to detect changes
-                                    # Ensure we're comparing the same types
-                                    home_odds_changed = float(row['home_odds']) != float(original_row['home_odds'])
-                                    draw_odds_changed = float(row['draw_odds']) != float(original_row['draw_odds'])
-                                    away_odds_changed = float(row['away_odds']) != float(original_row['away_odds'])
-                                    profit_loss_changed = float(row['profit_loss']) != float(original_row['profit_loss'])
-                                    
-                                    # Only process changes if Apply is checked and changes detected
-                                    if (home_odds_changed or draw_odds_changed or away_odds_changed or profit_loss_changed):
-                                        # Get original data for odds values
-                                        original_data = predictions.loc[predictions['id'] == int(row_id)].iloc[0] if not predictions.empty else None
-                                        
-                                        if original_data is None:
-                                            st.error(f"Could not find original data for prediction ID {row_id}")
-                                            continue
-                                        
-                                        # Prepare update data - use edited odds values directly
-                                        # Use confidence_value instead of confidence (which is now a text field)
-                                        update_data = {
-                                            'date': ensure_date_format(row['date']),  # Use our consistent date formatter
-                                            'league': row['league'],
-                                            'home_team': row['home_team'],
-                                            'away_team': row['away_team'],
-                                            'predicted_outcome': row['predicted_outcome'],
-                                            'confidence': float(row['confidence_value']) if 'confidence_value' in row else float(original_row['confidence']),
-                                            'home_odds': float(row['home_odds']) if pd.notna(row['home_odds']) else 0.0,
-                                            'draw_odds': float(row['draw_odds']) if pd.notna(row['draw_odds']) else 0.0,
-                                            'away_odds': float(row['away_odds']) if pd.notna(row['away_odds']) else 0.0,
-                                            'status': row['status']
-                                        }
-                                        
-                                        # Add completed match details if status is Completed
-                                        if row['status'] == 'Completed':
-                                            # Get scores from original data
-                                            if original_data is not None:
-                                                home_score = int(original_data['home_score']) if pd.notna(original_data['home_score']) else 0
-                                                away_score = int(original_data['away_score']) if pd.notna(original_data['away_score']) else 0
-                                            else:
-                                                # Fallback if we can't find original data
-                                                home_score = 0
-                                                away_score = 0
-                                            
-                                            # Determine actual outcome based on scores
-                                            if home_score > away_score:
-                                                actual_outcome = "HOME"
-                                            elif away_score > home_score:
-                                                actual_outcome = "AWAY"
-                                            else:
-                                                actual_outcome = "DRAW"
-                                                
-                                            # Calculate profit/loss
-                                            if actual_outcome == row['predicted_outcome']:
-                                                # Win: (odds * bet_amount) - bet_amount
-                                                if actual_outcome == "HOME":
-                                                    profit_loss = (float(row['home_odds']) - 1.0) * 1.0  # $1 bet
-                                                elif actual_outcome == "AWAY":
-                                                    profit_loss = (float(row['away_odds']) - 1.0) * 1.0
-                                                else:  # DRAW
-                                                    profit_loss = (float(row['draw_odds']) - 1.0) * 1.0
-                                            else:
-                                                # Loss: -bet_amount
-                                                profit_loss = -1.0  # $1 bet
-                                                
-                                            # Add match details to update data
-                                            update_data.update({
-                                                'home_score': home_score,
-                                                'away_score': away_score,
-                                                'actual_outcome': actual_outcome,
-                                                'profit_loss': profit_loss
-                                            })
-                                        
-                                        # Update prediction in database with confirmation
-                                        logger.info(f"Updating prediction ID: {row_id} with data: {update_data}")
-                                        if history.update_prediction(row_id, update_data):
-                                            st.toast(f"Updated prediction for {row['home_team']} vs {row['away_team']}")
-                                            # Update session state
-                                            st.session_state.edit_state['current_df'] = edited_df.copy(deep=True)
-                                            st.session_state.original_edit_df = edited_df.copy(deep=True)
-                                            # Clear history dataframe to force reload
-                                            st.session_state.pop('history_df', None)
-                                            # Clear the apply checkbox after processing
-                                            edited_df.at[i, 'apply'] = False
-                                except (IndexError, KeyError) as e:
-                                    logger.error(f"Error processing row: {e}")
-                                    continue
+
                     
 
                     # Create edit expander instead of dialog
