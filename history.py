@@ -1941,8 +1941,8 @@ def show_history_page():
                                     else:
                                         actual_outcome = "DRAW"
                                     
-                                    # Calculate profit/loss
-                                    bet_amount = 1.0  # Fixed $1 bet
+                                    # Calculate profit/loss using fixed £1 bet amount
+                                    bet_amount = 1.0  # Fixed £1 bet
                                     if predicted_outcome == actual_outcome:
                                         if predicted_outcome == "HOME":
                                             profit_loss = float(round((home_odds * bet_amount) - bet_amount, 2))
