@@ -1306,13 +1306,12 @@ def show_history_page():
                                     logger.warning(f"prediction_editor is not a DataFrame: {type(current_df)}")
                                     return
                                 
-                                # Check if the 'apply' column exists in the dataframe
-                                if 'apply' in current_df.columns:
-                                    # Check if any apply checkboxes are checked
-                                    apply_rows = current_df[current_df['apply'] == True]
-                                    if not apply_rows.empty:
-                                        # Process the changes for rows with Apply checked
-                                        handle_edit_click(current_df)
+                                # Just store the current state without processing changes
+                                # This prevents automatic refreshes when checkboxes are clicked
+                                st.session_state.edit_state['current_df'] = current_df.copy(deep=True)
+                                
+                                # Only process changes if the Apply checkbox is checked
+                                # This is now handled in the edited_df section below to prevent automatic refreshes
                         except Exception as e:
                             # Log the error but don't crash the app
                             logger.error(f"Error in on_data_editor_change: {str(e)}")
@@ -1399,6 +1398,12 @@ def show_history_page():
                     
                     # Process edits and deletions
                     if edited_df is not None:
+                        # Check if any apply checkboxes are checked - this is the trigger for processing changes
+                        apply_rows = edited_df[edited_df['apply'] == True] if 'apply' in edited_df.columns else pd.DataFrame()
+                        if not apply_rows.empty:
+                            # Process the changes for rows with Apply checked
+                            handle_edit_click(edited_df)
+                            
                         # Display delete confirmation if a row was selected for deletion
                         if 'delete_row_data' in st.session_state:
                             row = st.session_state.delete_row_data
@@ -1430,8 +1435,8 @@ def show_history_page():
                                             if 'original_edit_df' in st.session_state:
                                                 del st.session_state.original_edit_df
                                             
-                                            # Force page refresh using the correct method
-                                            st.rerun()
+                                            # Don't refresh immediately - let the user decide when to refresh
+                                            # We'll refresh when they click Apply again
                                         else:
                                             st.error(f"Failed to delete prediction ID: {row_id}")
                                     except Exception as delete_error:
