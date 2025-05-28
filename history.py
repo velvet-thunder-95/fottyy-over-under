@@ -256,8 +256,8 @@ class PredictionHistory:
     def update_match_results(self, match_id, result):
         """Update match results in the database"""
         try:
-            # First get the match details from Supabase
-            match_result = self.db.supabase.table('predictions').select('predicted_outcome,home_odds,draw_odds,away_odds,bet_amount').eq('match_id', match_id).execute()
+            # First get the match details from Supabase with all needed fields
+            match_result = self.db.supabase.table('predictions').select('*').eq('match_id', match_id).execute()
             
             if not match_result.data:
                 print(f"No prediction found for match {match_id}")
@@ -268,8 +268,15 @@ class PredictionHistory:
             home_odds = match_data['home_odds']
             draw_odds = match_data['draw_odds']
             away_odds = match_data['away_odds']
-            # Get the actual bet amount from the database, default to 1.0 if not found
-            bet_amount = float(match_data.get('bet_amount', 1.0))
+            
+            # Get the actual bet amount from the database, ensuring it's properly converted to float
+            # This is critical for correct profit/loss calculation
+            if 'bet_amount' in match_data and match_data['bet_amount'] is not None:
+                bet_amount = float(match_data['bet_amount'])
+                logging.info(f"Using bet amount from database: {bet_amount}")
+            else:
+                bet_amount = 10.0  # Default to 10.0 to match app.py's default
+                logging.info(f"No bet amount found, using default: {bet_amount}")
             
             # Parse the result
             if isinstance(result, dict):
@@ -296,7 +303,7 @@ class PredictionHistory:
                 else:
                     actual_outcome = 'DRAW'
                     
-                # Calculate profit/loss using $1 bet amount
+                # Calculate profit/loss using the actual bet amount from the database
                 try:
                     if all([home_odds, draw_odds, away_odds]):  # Only if we have odds
                         # Convert odds to float and handle any string formatting
@@ -308,14 +315,18 @@ class PredictionHistory:
                             # Won: Calculate profit based on the predicted outcome's odds
                             if predicted_outcome == 'HOME':
                                 profit_loss = float(round((home_odds * bet_amount) - bet_amount, 2))
+                                logging.info(f"Won HOME bet with odds {home_odds}, bet amount {bet_amount}, profit {profit_loss}")
                             elif predicted_outcome == 'AWAY':
                                 profit_loss = float(round((away_odds * bet_amount) - bet_amount, 2))
+                                logging.info(f"Won AWAY bet with odds {away_odds}, bet amount {bet_amount}, profit {profit_loss}")
                             else:  # DRAW
                                 profit_loss = float(round((draw_odds * bet_amount) - bet_amount, 2))
+                                logging.info(f"Won DRAW bet with odds {draw_odds}, bet amount {bet_amount}, profit {profit_loss}")
                             print(f'Won bet! Odds: {home_odds}/{draw_odds}/{away_odds}, Profit: {profit_loss}')
                         else:
                             # Lost: Lose the bet amount
                             profit_loss = float(-bet_amount)
+                            logging.info(f"Lost bet with bet amount {bet_amount}, loss {profit_loss}")
                             print(f'Lost bet! Predicted: {predicted_outcome}, Actual: {actual_outcome}, Loss: {profit_loss}')
                     else:
                         print(f'Missing odds: {home_odds}/{draw_odds}/{away_odds}')
