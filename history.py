@@ -1064,7 +1064,6 @@ def show_history_page():
                             'away_team': str(row['away_team']),
                             'predicted_outcome': str(row['predicted_outcome']),
                             'confidence': confidence_str,  # Display as text (High/Medium/Low)
-                            'confidence_value': confidence_value,  # Keep numeric value for calculations
                             'actual_outcome': str(row['actual_outcome']) if pd.notna(row['actual_outcome']) else '',
                             'status': str(row['status']),
                             'result': result_str,  # Add result column
@@ -1399,26 +1398,15 @@ def show_history_page():
                     # Create a form to wrap the data editor and prevent auto-refresh
                     with st.form("prediction_editor_form", clear_on_submit=False):
                         # Create a data editor for the predictions
-                        # Function to format confidence with colors
-                        def format_confidence(confidence):
-                            if confidence == "High":
-                                return f":green[{confidence}]"
-                            elif confidence == "Medium":
-                                return f":orange[{confidence}]"
-                            elif confidence == "Low":
-                                return f":red[{confidence}]"
-                            return confidence
-                            
-                        # Apply colored confidence to the dataframe
+                        # Use the dataframe directly without color formatting
                         colored_df = st.session_state.edit_state['current_df'].copy()
-                        colored_df['confidence'] = colored_df['confidence'].apply(format_confidence)
                         
                         edited_df = st.data_editor(
                             colored_df,
                             column_order=[
                                 "id", "date", "league", "home_team", "away_team", 
                                 "predicted_outcome", "actual_outcome", "result",  # Group prediction, actual, result together
-                                "confidence", "confidence_value", 
+                                "confidence", 
                                 "home_odds", "draw_odds", "away_odds", 
                                 "profit_loss", "status", "delete", "apply"
                             ],
@@ -1453,13 +1441,6 @@ def show_history_page():
                                     "Confidence",
                                     disabled=True,
                                     help="High: ≥70%, Medium: 50-70%, Low: <50%"
-                                ),
-                                "confidence_value": st.column_config.NumberColumn(
-                                    "Confidence Value",
-                                    min_value=0.0,
-                                    max_value=100.0,
-                                    format="%.1f",
-                                    disabled=True
                                 ),
                                 "home_odds": st.column_config.NumberColumn(
                                     "Home Odds",
