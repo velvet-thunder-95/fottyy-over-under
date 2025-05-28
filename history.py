@@ -1076,10 +1076,7 @@ def show_history_page():
                         # Force string format to prevent Streamlit from converting to timestamps
                         edit_df['date'] = edit_df['date'].astype(str)
                         
-                    # Add instructions for using the editor
-                    st.info("📝 To edit a prediction: 1) Click directly on the cell you want to edit, 2) Make your changes, 3) Check 'Apply' to save changes")
-                    st.warning("⚠️ To delete a prediction: 1) Check the 'Delete' box for the row, 2) Check 'Apply' to confirm deletion")
-                    
+
                     # Initialize session state for edit tracking
                     if 'edit_state' not in st.session_state:
                         st.session_state.edit_state = {
@@ -1289,11 +1286,13 @@ def show_history_page():
                         if 'prediction_editor' in st.session_state:
                             current_df = st.session_state.prediction_editor
                             
-                            # Check if any apply checkboxes are checked
-                            apply_rows = current_df[current_df['apply'] == True]
-                            if not apply_rows.empty:
-                                # Process the changes for rows with Apply checked
-                                handle_edit_click(current_df)
+                            # Check if the 'apply' column exists in the dataframe
+                            if 'apply' in current_df.columns:
+                                # Check if any apply checkboxes are checked
+                                apply_rows = current_df[current_df['apply'] == True]
+                                if not apply_rows.empty:
+                                    # Process the changes for rows with Apply checked
+                                    handle_edit_click(current_df)
                     
                     # Use Streamlit's data editor with on_change callback
                     edited_df = st.data_editor(
