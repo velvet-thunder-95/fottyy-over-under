@@ -1389,7 +1389,7 @@ def show_history_page():
                             logger.error(f"Error processing direct edits: {str(e)}")
                     
                     # Add instructions about using the form
-                    st.info("📝 To edit a prediction: 1) Click directly on the cell you want to edit, 2) Make your changes, 3) Check the 'Apply' box to save changes")
+                    st.info("📝 To edit a prediction: 1) Click directly on the cell you want to edit, 2) Make your changes, 3) Click the 'Apply changes button'  to save changes")
                     st.warning("⚠️ To delete a prediction: 1) Check the 'Delete' box for the row, 2) Check 'Apply' to confirm deletion")
                     
                     # Track if we need to submit the form based on apply checkbox
@@ -1399,8 +1399,29 @@ def show_history_page():
                     # Create a form to wrap the data editor and prevent auto-refresh
                     with st.form("prediction_editor_form", clear_on_submit=False):
                         # Create a data editor for the predictions
+                        # Function to format confidence with colors
+                        def format_confidence(confidence):
+                            if confidence == "High":
+                                return f":green[{confidence}]"
+                            elif confidence == "Medium":
+                                return f":orange[{confidence}]"
+                            elif confidence == "Low":
+                                return f":red[{confidence}]"
+                            return confidence
+                            
+                        # Apply colored confidence to the dataframe
+                        colored_df = st.session_state.edit_state['current_df'].copy()
+                        colored_df['confidence'] = colored_df['confidence'].apply(format_confidence)
+                        
                         edited_df = st.data_editor(
-                            st.session_state.edit_state['current_df'],
+                            colored_df,
+                            column_order=[
+                                "id", "date", "league", "home_team", "away_team", 
+                                "predicted_outcome", "actual_outcome", "result",  # Group prediction, actual, result together
+                                "confidence", "confidence_value", 
+                                "home_odds", "draw_odds", "away_odds", 
+                                "profit_loss", "status", "delete", "apply"
+                            ],
                             column_config={
                                 "id": st.column_config.TextColumn(
                                     "ID",
@@ -1476,6 +1497,10 @@ def show_history_page():
                                 "actual_outcome": st.column_config.SelectboxColumn(
                                     "Actual",
                                     options=["HOME", "DRAW", "AWAY"],
+                                    disabled=True
+                                ),
+                                "result": st.column_config.TextColumn(
+                                    "Result",
                                     disabled=True
                                 ),
                                 "profit_loss": st.column_config.NumberColumn(
