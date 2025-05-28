@@ -823,6 +823,12 @@ def show_history_page():
             
             # Update the dataframe in session state
             st.session_state.history_df = predictions
+            
+            # Set a flag to indicate filters were applied
+            st.session_state['filter_applied'] = True
+            
+            # Force a rerun to refresh the page with the new filter
+            st.rerun()
         
         # Use values from session state for the rest of the code
         params = st.session_state.history_filter_params
@@ -1317,7 +1323,8 @@ def show_history_page():
                             logger.error(f"Error in on_data_editor_change: {str(e)}")
                             # Don't re-raise the exception to prevent the app from crashing
                     
-                    # Use Streamlit's data editor with on_change callback
+                    # Use Streamlit's data editor WITHOUT on_change callback to prevent auto-refresh
+                    # This is key to preventing the page from refreshing when checkboxes are clicked
                     edited_df = st.data_editor(
                         st.session_state.edit_state['current_df'],
                         column_config={
@@ -1388,8 +1395,8 @@ def show_history_page():
                         hide_index=True,
                         num_rows="fixed",
                         use_container_width=True,
-                        key="prediction_editor",
-                        on_change=on_data_editor_change
+                        key="prediction_editor"
+                        # Removed on_change callback to prevent auto-refresh when checkboxes are clicked
                     )
                     
                     # Add instructions about using the Apply checkbox
@@ -1399,22 +1406,12 @@ def show_history_page():
                     # Process edits and deletions
                     if edited_df is not None:
                         # Check if any apply checkboxes are checked - this is the trigger for processing changes
-                        apply_rows = edited_df[edited_df['apply'] == True] if 'apply' in edited_df.columns else pd.DataFrame()
-                        if not apply_rows.empty:
-                            # Process the changes for rows with Apply checked
-                            handle_edit_click(edited_df)
+                        if 'apply' in edited_df.columns:
+                            apply_rows = edited_df[edited_df['apply'] == True]
                             
-                        # Display delete confirmation if a row was selected for deletion
-                        if 'delete_row_data' in st.session_state:
-                            row = st.session_state.delete_row_data
-                            st.warning(f"To delete prediction for {row['home_team']} vs {row['away_team']}, check the Apply box.")
-                            # Clear the delete_row_data after displaying the warning
-                            del st.session_state.delete_row_data
+                            # Process delete rows first (rows with both delete and apply checked)
+                            delete_rows = apply_rows[apply_rows['delete'] == True]
                             
-                        # Process Apply button actions - SIMPLIFIED APPROACH
-                        try:
-                            # Find rows with both Delete and Apply checked
-                            delete_rows = edited_df[(edited_df['delete'] == True) & (edited_df['apply'] == True)]
                             if not delete_rows.empty:
                                 for idx, row in delete_rows.iterrows():
                                     row_id = row['id']
@@ -1430,21 +1427,37 @@ def show_history_page():
                                             # Clear session state to force data reload
                                             if 'history_df' in st.session_state:
                                                 del st.session_state.history_df
-                                            if 'edit_state' in st.session_state:
-                                                del st.session_state.edit_state
-                                            if 'original_edit_df' in st.session_state:
-                                                del st.session_state.original_edit_df
-                                            
-                                            # Don't refresh immediately - let the user decide when to refresh
-                                            # We'll refresh when they click Apply again
+                                            # Set flag to refresh the page after processing
+                                            st.session_state['refresh_needed'] = True
                                         else:
                                             st.error(f"Failed to delete prediction ID: {row_id}")
                                     except Exception as delete_error:
                                         st.error(f"Error deleting prediction: {str(delete_error)}")
                                         logger.error(f"Delete error: {str(delete_error)}")
                             
-                            # For rows with just Apply checked (but not Delete)
-                            apply_only_rows = edited_df[(edited_df['apply'] == True) & (edited_df['delete'] == False)]
+                            # Then process edit rows (rows with apply checked but not delete)
+                            edit_rows = apply_rows[apply_rows['delete'] != True]
+                            if not edit_rows.empty:
+                                # Process the changes for rows with Apply checked but not Delete
+                                handle_edit_click(edited_df)
+                            
+                        # Display delete confirmation if a row was selected for deletion
+                        if 'delete_row_data' in st.session_state:
+                            row = st.session_state.delete_row_data
+                            st.warning(f"To delete prediction for {row['home_team']} vs {row['away_team']}, check the Apply box.")
+                            # Clear the delete_row_data after displaying the warning
+                            del st.session_state.delete_row_data
+                            
+                        # Check if we need to refresh the page after processing deletions
+                        if 'refresh_needed' in st.session_state and st.session_state['refresh_needed']:
+                            # Clear the flag
+                            del st.session_state['refresh_needed']
+                            # Refresh the page to show updated data
+                            st.rerun()
+                            
+                        # For rows with just Apply checked (but not Delete)
+                        try:
+                            apply_only_rows = edited_df[(edited_df['apply'] == True) & (edited_df['delete'] == False)] if 'apply' in edited_df.columns else pd.DataFrame()
                             if not apply_only_rows.empty:
                                 for idx, row in apply_only_rows.iterrows():
                                     # Clear the apply checkbox after processing
