@@ -14,11 +14,12 @@ def login_and_wait():
     
     with sync_playwright() as p:
         try:
-            # Launch browser in non-headless mode to see the browser
-            log_message("Launching browser...")
+            # Launch browser in headless mode for CI/CD
+            log_message("Launching browser in headless mode...")
             browser = p.chromium.launch(
-                headless=False,
-                slow_mo=100  # Slow down operations by 100ms to make them more visible
+                headless=True,  # Run in headless mode for CI/CD
+                args=['--no-sandbox', '--disable-dev-shm-usage'],  # Add these flags for better stability in CI
+                slow_mo=100  # Slow down operations by 100ms to make them more reliable
             )
             context = browser.new_context(viewport={'width': 1280, 'height': 800})
             page = context.new_page()
