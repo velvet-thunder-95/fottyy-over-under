@@ -2048,5 +2048,3 @@ def show_history_page():
                 st.rerun()
         
     add_navigation_buttons()
-
-
