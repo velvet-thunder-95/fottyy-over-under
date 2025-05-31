@@ -27,6 +27,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          python -m playwright install --with-deps
       
       # Fix for running in container
       - name: Setup user for browser
@@ -40,8 +41,12 @@ jobs:
           
       - name: Run login script
         run: |
-          # Run as non-root user
-          su pwuser -c 'python login_script.py'
+          # Run the script directly since we're already in a container
+          python login_script.py
+          
+          # Keep the container alive for a while to ensure logs are captured
+          echo "Script execution completed. Waiting for logs to be captured..."
+          sleep 10
         timeout-minutes: 20
         
       - name: Upload logs
