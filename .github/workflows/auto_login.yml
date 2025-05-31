@@ -19,13 +19,13 @@ jobs:
     
     - name: Install Python dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install playwright==1.42.0
+        python3 -m pip install --upgrade pip
+        pip3 install playwright==1.42.0
         
     - name: Run login script
       run: |
         # Run the login script with a 20-minute timeout (1200 seconds)
-        timeout 1200 python login_script.py
+        timeout 1200 python3 login_script.py
         
         # Check if the script ran successfully
         if [ $? -eq 124 ]; then
