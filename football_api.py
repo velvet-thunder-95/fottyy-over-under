@@ -28,7 +28,7 @@ LEAGUE_IDS = {
     'Uruguay - Primera Division': 11209,
 
     # Ukraine leagues
-    'Ukraine - Premier League': 12483,
+    'Ukraine - Premier League': 14951,
 
     # Uganda leagues
     'Uganda - Premier League': 13320,
@@ -37,7 +37,7 @@ LEAGUE_IDS = {
     'Honduras - Liga Nacional de Fútbol Profesional de Honduras': 12650,
 
     # Wales leagues
-    'Wales - Welsh Premier League': 12339,
+    'Wales - Welsh Premier League': 15226,
 
     # USA leagues
     'USA - MLS': 13973,
@@ -53,12 +53,12 @@ LEAGUE_IDS = {
 
     # Turkey leagues
     'Turkey - 1. Lig': 12928,
-    'Turkey Süper Lig': 12641,
+    'Turkey Süper Lig': 14972,
     'Turkey - Turkish Cup': 13549,
 
     # Switzerland leagues
     'Switzerland - Super League': 15047,
-    'Switzerland - Challenge League': 12277,
+    'Switzerland - Challenge League': 14974,
     'Switzerland - Swiss Cup': 12688,
     'Switzerland - Nationalliga A Women': 12596,
 
@@ -76,7 +76,7 @@ LEAGUE_IDS = {
     'South Korea - K League 1': 26861,
 
     # Uzbekistan leagues
-    'Uzbekistan - Uzbekistan Super League': 11210,
+    'Uzbekistan - Uzbekistan Super League': 14186,
 
     # Venezuela leagues
     'Venezuela - Primera División': 11063,
@@ -127,7 +127,7 @@ LEAGUE_IDS = {
     'Cyprus - First Division': 12541,
 
     # Lithuania leagues
-    'Lithuania - A Lyga': 11246,
+    'Lithuania - A Lyga': 14291,
 
     # Malta leagues
     'Malta - Premier League': 12538,
@@ -136,7 +136,7 @@ LEAGUE_IDS = {
     'Iran - Persian Gulf Pro League': 12915,
 
     # Jordan leagues
-    'Jordan - Jordanian Pro League': 12919,
+    'Jordan - Jordanian Pro League': 15248,
 
     # Scotland leagues
     'Scotland - Premiership': 12455,
@@ -147,19 +147,19 @@ LEAGUE_IDS = {
     'Saudi Arabia - Professional League': 12772,
 
     # Romania leagues
-    'Romania - Liga 1': 12782,
+    'Romania - Liga 1': 15015,
 
     # Qatar leagues
     'Qatar - Stars League': 12587,
 
     # Portugal leagues
     'Portugal - Primeira Liga': 12931,
-    'Portugal - Liga NOS': 12931,
+    'Portugal - Liga NOS': 15115,
     'Portugal - Portuguese Super Cup': 12050,
     'Portugal - LigaPro': 12585,
     
     # Poland leagues
-    'Poland - Ekstraklasa': 12120,
+    'Poland - Ekstraklasa': 15031,
 
     # Norway leagues
     'Norway - Eliteserien': 13987,
@@ -191,10 +191,10 @@ LEAGUE_IDS = {
     'WC Qualification Europe': 12311,
 
     # Iceland leagues
-    'Iceland - Úrvalsdeild': 10975,
+    'Iceland - Úrvalsdeild': 14017,
 
     # Hungary leagues
-    'Hungary - NB I': 12334,
+    'Hungary - NB I': 14963,
 
     # Greece
     'Greece - Super League 1': 12734,
@@ -202,19 +202,19 @@ LEAGUE_IDS = {
 
     # Germany
     'Germany - Bundesliga': 12529,
-    'Germany 2. Bundesliga': 12528,
+    'Germany 2. Bundesliga': 14931,
     'Germany - DFB-Pokal': 12057,
-    'Germany - 3. Liga': 12623,
+    'Germany - 3. Liga': 14977,
     'Germany - Frauen Bundesliga': 12934,
     
     # France
     'France - Ligue 1': 12337, 
-    'France - Ligue 2': 12338,
+    'France - Ligue 2': 14954,
     'France - Coupe de France': 13729,
     'France - Feminine Division 1': 12789,
 
     # Finland
-    'Finland - Veikkausliiga': 12397,
+    'Finland - Veikkausliiga': 14089,
 
     # European Competitions
     'Europe - UEFA Champions League': 14924,
@@ -229,7 +229,7 @@ LEAGUE_IDS = {
     'Georgia - Erovnuli Liga': 11233,
 
     # England
-    'England - Championship': 12451,
+    'England - Championship': 14930,
     'England - FA Cup': 15238,
     'England - EFL League One': 12446,
     'England - EFL League Two': 12422,
@@ -238,18 +238,17 @@ LEAGUE_IDS = {
     'England - FA Womens Championship': 12802,
 
     # Czech Republic
-    'Czech Republic - First League': 12336, 
+    'Czech Republic - First League': 12336,
     'Czech Republic - Czech Cup': 12522,
     'Czech Republic - 1. Liga U19': 12978,
-    'Czech Republic - FNL': 12349,
+    'Czech Republic - FNL': 15222,
 
     # Colombian leagues
     'Colombia - Categoria Primera A': 14086,
     'Colombia - Categoria Primera B':14090,
 
-
     # Croatian leagues
-    'Croatia - Prva HNL':12121,
+    'Croatia - Prva HNL': 15053,
     'Croatia - Druga HNL':12471,
 
     # Argentine leagues
@@ -259,26 +258,22 @@ LEAGUE_IDS = {
     'AFC Champions League': 13356,
 
     # Belgium
-    'Belgium Pro League': 12137,
-    'Belgium - First Division B': 12141,
+    'Belgium Pro League': 14937,
+    'Belgium - First Division B': 15196,
     'Belgium - Belgian Cup': 13012,
     
     # Egypt leagues
-    'Egypt - Egyptian Premier League': 13704,
-
-
+    'Egypt - Egyptian Premier League': 15544,
     # Russia
     'Russia - Premier League': 12335,
-    
     # Austria
     'Austria - Bundesliga': 12472,
-    
-    
     # Denmark
-    'Denmark - Superliga': 12132,
+    'Denmark - Superliga': 15055,
     
     #Bulgaria
     'Bulgaria - First League': 13863,
+    'Bulgaria - Second League': 15056,
 
     # Bolivia leagues
     'Bolivia - LFPB': 11072,
@@ -297,7 +292,7 @@ LEAGUE_IDS = {
     'Algeria - Ligue 1': 12665,
     
     # Chile
-    'Chile - Primera Division': 12364,
+    'Chile - Primera Division': 14116,
     
     # Armenia
     'Armenia - Armenian Premier League': 12638,
@@ -311,7 +306,7 @@ LEAGUE_IDS = {
     # Indonesia leagues
     'Indonesia - Liga 1': 13046,
     
-    # China
+    # China's leagues
     'China - Super League': 12506,
     
     # Australia
@@ -320,38 +315,9 @@ LEAGUE_IDS = {
     # Other Continental Competitions
     'CONCACAF Champions League': 13925,
 
-    # Unknown league not tracked
-    
+    # Unknown leagues
+    'unknown - league 25 ': 15031,
 
-
-'Iceland - Úrvalsdeild': 14017,
-
-
-'Ukraine - Ukrainian Premier League ': 14951,
-'Uzbekistan - Uzbekistan Super League ': 14186,
-'unknown - league 9 ': 14089,
-'unknown - league 10 ': 14954,
-'unknown - league 11 ': 15222,
-'Jordan - Jordanian Pro League ': 15248,
-'unknown - league 13 ': 15544,
-'unknown - league 14 ': 14291,
-'unknown - league 15 ': 15031,
-'unknown - league 16 ': 15055,
-'unknown - league 17 ': 15056,
-'unknown - league 18 ': 14931,
-'unknown - league 19 ': 14977,
-'unknown - league 20 ': 14974,
-'unknown - league 21 ': 14963,
-'unknown - league 22 ': 15196,
-'unknown - league 23 ': 14972,
-'unknown - league 24 ': 15015,
-'unknown - league 25 ': 15031,
-'unknown - league 26 ': 14937,
-'unknown - league 27 ': 15226,
-'unknown - league 28 ': 14116,
-'unknown - league 29 ': 14930,
-'unknown - league 30 ': 15053,
-'unknown - league 31 ': 15115,
     
 }
 
