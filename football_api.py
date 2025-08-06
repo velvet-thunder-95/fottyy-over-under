@@ -57,7 +57,7 @@ LEAGUE_IDS = {
     'Turkey - Turkish Cup': 13549,
 
     # Switzerland leagues
-    'Switzerland - Super League': 12326,
+    'Switzerland - Super League': 15047,
     'Switzerland - Challenge League': 12277,
     'Switzerland - Swiss Cup': 12688,
     'Switzerland - Nationalliga A Women': 12596,
@@ -120,7 +120,8 @@ LEAGUE_IDS = {
 
     # Slovakia leagues
     'Slovakia - Super Liga': 12944,
-    'Slovakia - Slovakia Cup': 12687,
+    'Slovakia - Slovakia Cup 2': 12687,
+    'Slovakia - Slovakia Cup': 15168,
 
     # Cyprus leagues
     'Cyprus - First Division': 12541,
@@ -216,8 +217,8 @@ LEAGUE_IDS = {
     'Finland - Veikkausliiga': 12397,
 
     # European Competitions
-    'Europe - UEFA Champions League': 12321,
-    'Europe - UEFA Europa League':12327,
+    'Europe - UEFA Champions League': 14924,
+    'Europe - UEFA Europa League': 15002,
     'Europe - UEFA Europa Conference League': 12278,
     'Europe - World Championship':13964,
     'Europe - UEFA Youth League' :13497,
@@ -229,7 +230,7 @@ LEAGUE_IDS = {
 
     # England
     'England - Championship': 12451,
-    'England - FA Cup': 13698,
+    'England - FA Cup': 15238,
     'England - EFL League One': 12446,
     'England - EFL League Two': 12422,
     'England - Premier League ': 12325,  
@@ -321,18 +322,17 @@ LEAGUE_IDS = {
 
     # Unknown league not tracked
     
-'unknown - league 1 ': 15168,
-'unknown - league 2 ': 14924,
-'unknown - league 3 ': 15002,
-'unknown - league 4 ': 14017,
-'unknown - league 5 ': 15047,
-'unknown - league 6 ': 15238,
-'unknown - league 7 ': 14951,
-'unknown - league 8 ': 14186,
+
+
+'Iceland - Úrvalsdeild': 14017,
+
+
+'Ukraine - Ukrainian Premier League ': 14951,
+'Uzbekistan - Uzbekistan Super League ': 14186,
 'unknown - league 9 ': 14089,
 'unknown - league 10 ': 14954,
 'unknown - league 11 ': 15222,
-'unknown - league 12 ': 15248,
+'Jordan - Jordanian Pro League ': 15248,
 'unknown - league 13 ': 15544,
 'unknown - league 14 ': 14291,
 'unknown - league 15 ': 15031,
