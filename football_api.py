@@ -318,7 +318,40 @@ LEAGUE_IDS = {
     
     # Other Continental Competitions
     'CONCACAF Champions League': 13925,
+
+    # Unknown league not tracked
     
+'unknown - league 1 ': 15168,
+'unknown - league 2 ': 14924,
+'unknown - league 3 ': 15002,
+'unknown - league 4 ': 14017,
+'unknown - league 5 ': 15047,
+'unknown - league 6 ': 15238,
+'unknown - league 7 ': 14951,
+'unknown - league 8 ': 14186,
+'unknown - league 9 ': 14089,
+'unknown - league 10 ': 14954,
+'unknown - league 11 ': 15222,
+'unknown - league 12 ': 15248,
+'unknown - league 13 ': 15544,
+'unknown - league 14 ': 14291,
+'unknown - league 15 ': 15031,
+'unknown - league 16 ': 15055,
+'unknown - league 17 ': 15056,
+'unknown - league 18 ': 14931,
+'unknown - league 19 ': 14977,
+'unknown - league 20 ': 14974,
+'unknown - league 21 ': 14963,
+'unknown - league 22 ': 15196,
+'unknown - league 23 ': 14972,
+'unknown - league 24 ': 15015,
+'unknown - league 25 ': 15031,
+'unknown - league 26 ': 14937,
+'unknown - league 27 ': 15226,
+'unknown - league 28 ': 14116,
+'unknown - league 29 ': 14930,
+'unknown - league 30 ': 15053,
+'unknown - league 31 ': 15115,
     
 }
 
