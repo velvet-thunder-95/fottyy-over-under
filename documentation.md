@@ -179,8 +179,8 @@ def adjust_probabilities(home_prob, draw_prob, away_prob, match_data):
 ```
 
 This approach combines:
-- Model predictions (50% weight)
-- Market odds (30% weight)
+- Model predictions (60% weight)
+- Market odds (20% weight)
 - Team form indicators (20% weight)
 
 The adjustment process ensures that the final probabilities incorporate both the machine learning model's predictions and market knowledge embedded in the odds.
