@@ -48,7 +48,7 @@ sys.path.insert(0, src_dir)
 
 # Set page title and favicon
 st.set_page_config(
-    page_title="Fottyy - Football Prediction",
+    page_title="Fottyy Over/Under - Goal Prediction",
     page_icon="assets/favicon.png"
 )
 
