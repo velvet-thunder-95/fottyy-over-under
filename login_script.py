@@ -9,8 +9,8 @@ def log_message(message):
 
 def login_and_wait():
     # Hardcoded credentials
-    USERNAME = "matchday_wizard"
-    PASSWORD = "GoalMaster"
+    USERNAME = "overunder_admin"
+    PASSWORD = "Goals2025!"
     
     with sync_playwright() as p:
         try:
@@ -27,7 +27,7 @@ def login_and_wait():
             # Navigate to the login page
             log_message("Navigating to login page...")
             try:
-                page.goto("https://fottyygit.streamlit.app/?page=login", timeout=60000)
+                page.goto("https://fottyy-over-under-nrgcxgneyiwmawctco5wvp.streamlit.app/?page=login", timeout=60000)
                 log_message("Page loaded successfully")
             except PlaywrightTimeoutError:
                 log_message("Timeout while loading the page")
