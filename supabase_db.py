@@ -9,8 +9,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Supabase configuration
-SUPABASE_URL = "https://uaihjkawqvhrcozxvvpd.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVhaWhqa2F3cXZocmNvenh2dnBkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzkzMTA4MTUsImV4cCI6MjA1NDg4NjgxNX0.mM1QqSxDbJt8LChJYJDlvXGqHMM22ZvvvodkdtuSqsc"
+SUPABASE_URL = "https://notrnzottwviwtdyrnzf.supabase.co"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vdHJuem90dHd2aXd0ZHlybnpmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc0Mjk3NzQsImV4cCI6MjA3MzAwNTc3NH0.czBv4fk9yjm0tAMZ6eCN-cic689jKH-njd3MPcyFN4I"
 
 class SupabaseDB:
     def __init__(self):
