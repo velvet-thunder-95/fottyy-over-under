@@ -370,7 +370,7 @@ class PredictionHistory:
         logging.basicConfig(level=logging.INFO)
         logger = logging.getLogger(__name__)
         
-        analyzer = MatchAnalyzer("633379bdd5c4c3eb26919d8570866801e1c07f399197ba8c5311446b8ea77a49")
+        analyzer = MatchAnalyzer("1eac22f8ec8e6da731a49adeae1148f14d6ceca13db5a9ffba65618f97406f4e")
         
         # Get only pending predictions that have a match_id
         result = self.db.supabase.table('predictions') \
