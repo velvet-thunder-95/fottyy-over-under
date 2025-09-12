@@ -27,6 +27,7 @@ from sklearn.impute import SimpleImputer
 from transfermarkt_api import TransfermarktAPI
 from odds_generator import OddsGenerator
 from odds_fetcher import OddsFetcher
+from azure_sync import azure_sync
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -1997,10 +1998,17 @@ def process_match_prediction(match):
             
             # Check if prediction already exists for this match
             match_exists = len(existing_predictions.data) > 0
-            
+
             # Only add if prediction doesn't exist
             if not match_exists:
                 history.db.add_prediction(prediction_data)
+
+                # Sync to Azure PostgreSQL
+                try:
+                    logger.info(f"Azure sync started ...")
+                    azure_sync.sync_prediction(prediction_data)
+                except Exception as e:
+                    logger.error(f"Azure sync failed: {str(e)}")
         
         return prediction_data, confidence
         

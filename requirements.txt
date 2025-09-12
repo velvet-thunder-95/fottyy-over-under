@@ -14,3 +14,4 @@ unidecode>=1.3.0
 supabase==1.0.3
 thefuzz==0.20.0
 playwright==1.42.0
+psycopg2-binary>=2.9.0
