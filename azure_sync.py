@@ -120,5 +120,56 @@ class AzureSync:
             logger.error(f"Error syncing prediction to Azure: {str(e)}")
             return False
 
-# Global instance
+    def update_match_result(self, home_team, away_team, date, league, actual_outcome, profit_loss, predicted_outcome):
+        """Update match result in Azure PostgreSQL"""
+        try:
+            conn = self.get_connection()
+            if not conn:
+                logger.error("Could not connect to Azure PostgreSQL")
+                return False
+
+            cursor = conn.cursor()
+
+            result_value = "Won" if actual_outcome == predicted_outcome else "Lost"
+
+            update_sql = """
+            UPDATE soccer_predictions_data 
+            SET "Actual Outcome" = %s,
+                "Profit/Loss" = %s,
+                "Status" = %s,
+                "Result" = %s
+            WHERE "Home Team" = %s 
+            AND "Away Team" = %s 
+            AND "Date" = %s 
+            AND "League" = %s
+            """
+            
+            values = (
+                actual_outcome,
+                float(profit_loss),
+                'Completed',
+                result_value,
+                home_team,
+                away_team,
+                date,
+                league
+            )
+            
+            cursor.execute(update_sql, values)
+            rows_updated = cursor.rowcount
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            if rows_updated > 0:
+                logger.info(f"Azure: Updated {home_team} vs {away_team} -> {actual_outcome} ({result_value})")
+                return True
+            else:
+                logger.warning(f"Azure: No match found for {home_team} vs {away_team} on {date}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Error updating Azure: {str(e)}")
+            return False
+
 azure_sync = AzureSync()

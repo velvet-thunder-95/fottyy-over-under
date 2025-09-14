@@ -358,6 +358,24 @@ class PredictionHistory:
                         .eq('match_id', match_id)\
                         .execute()
                     print(f"Successfully updated match {match_id} with fields: {list(update_data.keys())}")
+                    
+                    # Sync to Azure
+                    if actual_outcome and status == 'Completed':
+                        try:
+                            from azure_sync import azure_sync
+                            
+                            azure_sync.update_match_result(
+                                match_data['home_team'],
+                                match_data['away_team'],
+                                match_data['date'],
+                                match_data.get('league', ''),
+                                actual_outcome,
+                                profit_loss,
+                                predicted_outcome
+                            )
+                            print(f"Azure sync completed for {match_data['home_team']} vs {match_data['away_team']}")
+                        except Exception as e:
+                            print(f"Azure sync failed for match {match_id}: {str(e)}")
             except Exception as e:
                 print(f"Error updating match {match_id}: {str(e)}")
             

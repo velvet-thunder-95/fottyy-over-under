@@ -1899,6 +1899,20 @@ def update_match_results():
                         home_score,
                         away_score
                     )
+                    
+                    # Sync the update to Azure
+                    try:
+                        azure_sync.update_match_result(
+                            pred['home_team'],
+                            pred['away_team'],
+                            pred['date'], 
+                            pred.get('league', ''),
+                            actual_outcome,
+                            profit,
+                            pred['predicted_outcome']
+                        )
+                    except Exception as e:
+                        logger.error(f"Azure sync failed: {str(e)}")
                 except (ValueError, TypeError) as e:
                     logger.error(f"Error processing scores for match {match['id']}: {str(e)}")
                     continue
