@@ -373,9 +373,9 @@ class PredictionHistory:
                                 profit_loss,
                                 predicted_outcome
                             )
-                            print(f"Azure sync completed for {match_data['home_team']} vs {match_data['away_team']}")
+                            logger.info(f"Azure sync completed for {match_data['home_team']} vs {match_data['away_team']}")
                         except Exception as e:
-                            print(f"Azure sync failed for match {match_id}: {str(e)}")
+                            logger.info(f"Azure sync failed for match {match_id}: {str(e)}")
             except Exception as e:
                 print(f"Error updating match {match_id}: {str(e)}")
             
