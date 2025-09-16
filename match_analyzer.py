@@ -504,7 +504,16 @@ class MatchAnalyzer:
 
 def main():
     """Main function to analyze matches"""
-    API_KEY = "1eac22f8ec8e6da731a49adeae1148f14d6ceca13db5a9ffba65618f97406f4e"
+    import os
+    from dotenv import load_dotenv
+    
+    # Load environment variables
+    load_dotenv()
+    
+    API_KEY = os.getenv('FOOTBALL_API_KEY')
+    if not API_KEY:
+        raise ValueError("FOOTBALL_API_KEY not found in environment variables")
+        
     analyzer = MatchAnalyzer(API_KEY)
     
     # Get all match IDs from database
