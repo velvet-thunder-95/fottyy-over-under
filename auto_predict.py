@@ -1,7 +1,6 @@
 import requests
 import time
 import logging
-import streamlit as st
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -9,8 +8,8 @@ logger = logging.getLogger(__name__)
 def keep_alive(wait_time=600):  # Default to 10 minutes
     """Login to Streamlit app and keep it alive by waiting"""
     BASE_URL = "https://fottyy-over-under.streamlit.app/?page=login"
-    USERNAME = st.secrets["auth"]["username_1"]
-    PASSWORD = st.secrets["auth"]["password_1"]
+    USERNAME = "admin"
+    PASSWORD = "Goals2025!"
     
     try:
         # Create a session to maintain cookies
