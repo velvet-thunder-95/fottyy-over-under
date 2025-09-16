@@ -3,14 +3,24 @@ import os
 import pandas as pd
 from datetime import datetime
 import logging
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Supabase configuration
-SUPABASE_URL = "https://notrnzottwviwtdyrnzf.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vdHJuem90dHd2aXd0ZHlybnpmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc0Mjk3NzQsImV4cCI6MjA3MzAwNTc3NH0.czBv4fk9yjm0tAMZ6eCN-cic689jKH-njd3MPcyFN4I"
+# Supabase configuration from environment variables
+SUPABASE_URL = os.getenv('SUPABASE_URL')
+SUPABASE_KEY = os.getenv('SUPABASE_KEY')
+
+# Validate required environment variables
+if not SUPABASE_URL:
+    raise ValueError("SUPABASE_URL not found in environment variables. Please check your .env file.")
+if not SUPABASE_KEY:
+    raise ValueError("SUPABASE_KEY not found in environment variables. Please check your .env file.")
 
 class SupabaseDB:
     def __init__(self):
