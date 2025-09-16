@@ -641,13 +641,21 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Hardcoded credentials
-VALID_USERNAME = "overunder_admin"
-VALID_PASSWORD = "Goals2025!"
+# Load environment variables for authentication
+from dotenv import load_dotenv
+load_dotenv()
+
+# Get credentials from environment variables
+VALID_USERNAME = os.getenv('APP_USERNAME_1', 'admin')
+VALID_PASSWORD = os.getenv('APP_PASSWORD_1', 'defaultpass')
 
 # Additional user
-VALID_USERNAME_2 = "ou_predictor"
-VALID_PASSWORD_2 = "TotalGoals123"
+VALID_USERNAME_2 = os.getenv('APP_USERNAME_2', 'user') 
+VALID_PASSWORD_2 = os.getenv('APP_PASSWORD_2', 'defaultpass')
+
+# Validate that credentials are set
+if VALID_PASSWORD == 'defaultpass' or VALID_PASSWORD_2 == 'defaultpass':
+    st.warning("⚠️ Using default passwords. Please set APP_PASSWORD_1 and APP_PASSWORD_2 in your .env file.")
 
 # Initialize session state
 if 'logged_in' not in st.session_state:
