@@ -3,21 +3,15 @@
 import requests
 from datetime import datetime, timedelta
 import json
-import os
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv()
+import streamlit as st
 
 # At the top of app.py
 print("Loading app.py")
 import sys
 print(f"Python path: {sys.path}")
 
-# Get API key from environment variables
-API_KEY = os.getenv('FOOTBALL_API_KEY')
-if not API_KEY:
-    raise ValueError("FOOTBALL_API_KEY not found in environment variables. Please check your .env file.")
+# Get API key from Streamlit secrets
+API_KEY = st.secrets["football_api"]["api_key"]
 
 # Base URL for the Football Data API
 BASE_URL = "https://api.football-data-api.com"

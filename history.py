@@ -389,12 +389,8 @@ class PredictionHistory:
         logging.basicConfig(level=logging.INFO)
         logger = logging.getLogger(__name__)
         
-        # Get API key from environment variables
-        from dotenv import load_dotenv
-        load_dotenv()
-        api_key = os.getenv('FOOTBALL_API_KEY')
-        if not api_key:
-            raise ValueError("FOOTBALL_API_KEY not found in environment variables")
+        # Get API key from Streamlit secrets
+        api_key = st.secrets["football_api"]["api_key"]
             
         analyzer = MatchAnalyzer(api_key)
         

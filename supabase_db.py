@@ -1,26 +1,16 @@
 from supabase import create_client
-import os
 import pandas as pd
 from datetime import datetime
 import logging
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv()
+import streamlit as st
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Supabase configuration from environment variables
-SUPABASE_URL = os.getenv('SUPABASE_URL')
-SUPABASE_KEY = os.getenv('SUPABASE_KEY')
-
-# Validate required environment variables
-if not SUPABASE_URL:
-    raise ValueError("SUPABASE_URL not found in environment variables. Please check your .env file.")
-if not SUPABASE_KEY:
-    raise ValueError("SUPABASE_KEY not found in environment variables. Please check your .env file.")
+# Supabase configuration from Streamlit secrets
+SUPABASE_URL = st.secrets["supabase"]["url"]
+SUPABASE_KEY = st.secrets["supabase"]["key"]
 
 class SupabaseDB:
     def __init__(self):

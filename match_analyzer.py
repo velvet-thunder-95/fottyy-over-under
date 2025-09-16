@@ -2,6 +2,7 @@ import requests
 import json
 from datetime import datetime
 from supabase_db import SupabaseDB
+import streamlit as st
 import logging
 
 class MatchAnalyzer:
@@ -504,15 +505,9 @@ class MatchAnalyzer:
 
 def main():
     """Main function to analyze matches"""
-    import os
-    from dotenv import load_dotenv
     
-    # Load environment variables
-    load_dotenv()
-    
-    API_KEY = os.getenv('FOOTBALL_API_KEY')
-    if not API_KEY:
-        raise ValueError("FOOTBALL_API_KEY not found in environment variables")
+    # Get API key from Streamlit secrets
+    API_KEY = st.secrets["football_api"]["api_key"]
         
     analyzer = MatchAnalyzer(API_KEY)
     

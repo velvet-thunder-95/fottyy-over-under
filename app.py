@@ -642,20 +642,11 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Load environment variables for authentication
-from dotenv import load_dotenv
-load_dotenv()
-
-# Get credentials from environment variables
-VALID_USERNAME = os.getenv('APP_USERNAME_1', 'admin')
-VALID_PASSWORD = os.getenv('APP_PASSWORD_1', 'defaultpass')
-
-# Additional user
-VALID_USERNAME_2 = os.getenv('APP_USERNAME_2', 'user') 
-VALID_PASSWORD_2 = os.getenv('APP_PASSWORD_2', 'defaultpass')
-
-# Validate that credentials are set
-if VALID_PASSWORD == 'defaultpass' or VALID_PASSWORD_2 == 'defaultpass':
-    st.warning("⚠️ Using default passwords. Please set APP_PASSWORD_1 and APP_PASSWORD_2 in your .env file.")
+# Get credentials from Streamlit secrets
+VALID_USERNAME = st.secrets["auth"]["username_1"]
+VALID_PASSWORD = st.secrets["auth"]["password_1"]
+VALID_USERNAME_2 = st.secrets["auth"]["username_2"]
+VALID_PASSWORD_2 = st.secrets["auth"]["password_2"]
 
 # Initialize session state
 if 'logged_in' not in st.session_state:

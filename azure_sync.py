@@ -1,30 +1,21 @@
 import psycopg2
 import logging
 from datetime import datetime
-import os
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv()
+import streamlit as st
 
 logger = logging.getLogger(__name__)
 
 class AzureSync:
     def __init__(self):
+        # Get Azure PostgreSQL configuration from Streamlit secrets
         self.connection_params = {
-            'host': os.getenv('AZURE_PG_HOST'),
-            'user': os.getenv('AZURE_PG_USER'),
-            'port': int(os.getenv('AZURE_PG_PORT', 5432)),
-            'database': os.getenv('AZURE_PG_DATABASE'),
-            'password': os.getenv('AZURE_PG_PASSWORD'),
+            'host': st.secrets["azure_postgres"]["host"],
+            'user': st.secrets["azure_postgres"]["user"],
+            'port': int(st.secrets["azure_postgres"]["port"]),
+            'database': st.secrets["azure_postgres"]["database"],
+            'password': st.secrets["azure_postgres"]["password"],
             'sslmode': 'require'
         }
-        
-        # Validate required environment variables
-        required_vars = ['AZURE_PG_HOST', 'AZURE_PG_USER', 'AZURE_PG_PASSWORD', 'AZURE_PG_DATABASE']
-        missing_vars = [var for var in required_vars if not os.getenv(var)]
-        if missing_vars:
-            raise ValueError(f"Missing required Azure environment variables: {', '.join(missing_vars)}")
     
     def get_connection(self):
         """Get Azure PostgreSQL connection"""
