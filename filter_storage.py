@@ -3,10 +3,18 @@ from datetime import datetime
 from supabase import create_client, Client
 import os
 import streamlit as st
+from dotenv import load_dotenv
 
-# Supabase configuration
-SUPABASE_URL = "https://notrnzottwviwtdyrnzf.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vdHJuem90dHd2aXd0ZHlybnpmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc0Mjk3NzQsImV4cCI6MjA3MzAwNTc3NH0.czBv4fk9yjm0tAMZ6eCN-cic689jKH-njd3MPcyFN4I"
+# Load environment variables
+load_dotenv()
+
+# Supabase configuration from environment variables
+SUPABASE_URL = os.getenv('SUPABASE_URL')
+SUPABASE_KEY = os.getenv('SUPABASE_KEY')
+
+# Validate required environment variables
+if not SUPABASE_URL or not SUPABASE_KEY:
+    raise ValueError("SUPABASE_URL and SUPABASE_KEY must be set in environment variables")
 
 # Initialize Supabase client
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
