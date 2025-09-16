@@ -3,16 +3,22 @@
 import requests
 from datetime import datetime, timedelta
 import json
+import os
+from dotenv import load_dotenv
 
+# Load environment variables
+load_dotenv()
 
 # At the top of app.py
 print("Loading app.py")
 import sys
 print(f"Python path: {sys.path}")
 
+# Get API key from environment variables
+API_KEY = os.getenv('FOOTBALL_API_KEY')
+if not API_KEY:
+    raise ValueError("FOOTBALL_API_KEY not found in environment variables. Please check your .env file.")
 
-
-API_KEY = '1eac22f8ec8e6da731a49adeae1148f14d6ceca13db5a9ffba65618f97406f4e'
 # Base URL for the Football Data API
 BASE_URL = "https://api.football-data-api.com"
 
