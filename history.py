@@ -10,6 +10,7 @@ from supabase_db import SupabaseDB
 import logging
 import sys
 import time
+import os
 sys.path.append('.')
 import importlib
 from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
@@ -388,7 +389,14 @@ class PredictionHistory:
         logging.basicConfig(level=logging.INFO)
         logger = logging.getLogger(__name__)
         
-        analyzer = MatchAnalyzer("1eac22f8ec8e6da731a49adeae1148f14d6ceca13db5a9ffba65618f97406f4e")
+        # Get API key from environment variables
+        from dotenv import load_dotenv
+        load_dotenv()
+        api_key = os.getenv('FOOTBALL_API_KEY')
+        if not api_key:
+            raise ValueError("FOOTBALL_API_KEY not found in environment variables")
+            
+        analyzer = MatchAnalyzer(api_key)
         
         # Get only pending predictions that have a match_id
         result = self.db.supabase.table('predictions') \
