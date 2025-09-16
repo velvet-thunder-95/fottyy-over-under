@@ -31,9 +31,37 @@ pip install -r requirements.txt
 ```
 
 4. Set up environment variables:
-Create a `.env` file in the root directory and add:
+Copy the example environment file and configure your secrets:
+```bash
+cp .env.example .env
 ```
-FOOTBALL_API_KEY=your_api_key_here
+
+Edit `.env` and add your actual credentials:
+```env
+# Football API Configuration
+FOOTBALL_API_KEY=your_football_api_key_here
+
+# Supabase Configuration  
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_KEY=your_supabase_anon_key_here
+
+# Azure PostgreSQL Configuration
+AZURE_PG_HOST=your-azure-host.postgres.database.azure.com
+AZURE_PG_USER=your_username
+AZURE_PG_PASSWORD=your_password
+AZURE_PG_DATABASE=your_database_name
+AZURE_PG_PORT=5432
+
+# Application Authentication
+APP_USERNAME_1=your_username_1
+APP_PASSWORD_1=your_password_1
+APP_USERNAME_2=your_username_2
+APP_PASSWORD_2=your_password_2
+```
+
+5. Verify your setup:
+```bash
+python setup_check.py
 ```
 
 ## Usage
