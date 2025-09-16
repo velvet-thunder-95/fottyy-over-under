@@ -728,6 +728,15 @@ def show_history_page():
         if 'history_df' not in st.session_state:
             # Initialize PredictionHistory
             history = PredictionHistory()
+            
+            try:
+                from azure_sync import azure_sync
+                reconciled_count = azure_sync.reconcile_with_supabase(history.db)
+                if reconciled_count > 0:
+                    logging.info(f"History page: Reconciled {reconciled_count} predictions between Supabase and Azure")
+            except Exception as e:
+                logging.error(f"Error during history page data reconciliation: {str(e)}")
+            
             # Get initial data with default filters
             df = history.get_predictions()
             st.session_state.history_df = df

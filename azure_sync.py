@@ -172,4 +172,93 @@ class AzureSync:
             logger.error(f"Error updating Azure: {str(e)}")
             return False
 
+    def get_pending_predictions(self):
+        """Get all pending predictions from Azure PostgreSQL"""
+        try:
+            conn = self.get_connection()
+            if not conn:
+                logger.error("Could not connect to Azure PostgreSQL")
+                return []
+            
+            cursor = conn.cursor()
+            
+            # Get all pending predictions
+            select_sql = """
+            SELECT "Home Team", "Away Team", "Date", "League", "Status"
+            FROM soccer_predictions_data 
+            WHERE "Status" = 'PENDING'
+            """
+            
+            cursor.execute(select_sql)
+            results = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            
+            pending_predictions = []
+            for row in results:
+                pending_predictions.append({
+                    'home_team': row[0],
+                    'away_team': row[1], 
+                    'date': row[2],
+                    'league': row[3],
+                    'status': row[4]
+                })
+            
+            logger.info(f"Found {len(pending_predictions)} pending predictions in Azure")
+            return pending_predictions
+            
+        except Exception as e:
+            logger.error(f"Error getting pending predictions from Azure: {str(e)}")
+            return []
+
+    def reconcile_with_supabase(self, supabase_db):
+        """Reconcile Azure pending predictions with Supabase completed ones"""
+        try:
+            azure_pending = self.get_pending_predictions()
+            if not azure_pending:
+                logger.info("No pending predictions in Azure to reconcile")
+                return 0
+            
+            reconciled_count = 0
+            
+            for azure_pred in azure_pending:
+                try:
+                    supabase_result = supabase_db.supabase.table('predictions')\
+                        .select('*')\
+                        .eq('home_team', azure_pred['home_team'])\
+                        .eq('away_team', azure_pred['away_team'])\
+                        .eq('date', azure_pred['date'])\
+                        .eq('status', 'Completed')\
+                        .execute()
+                    
+                    if supabase_result.data:
+                        supabase_pred = supabase_result.data[0]
+                        
+                        logger.info(f"Reconciling: {azure_pred['home_team']} vs {azure_pred['away_team']} on {azure_pred['date']}")
+                        
+                        success = self.update_match_result(
+                            supabase_pred['home_team'],
+                            supabase_pred['away_team'],
+                            supabase_pred['date'],
+                            supabase_pred.get('league', azure_pred['league']),
+                            supabase_pred['actual_outcome'],
+                            supabase_pred['profit_loss'],
+                            supabase_pred['predicted_outcome']
+                        )
+                        
+                        if success:
+                            reconciled_count += 1
+                            logger.info(f"Successfully reconciled {azure_pred['home_team']} vs {azure_pred['away_team']}")
+                        
+                except Exception as e:
+                    logger.error(f"Error reconciling prediction {azure_pred['home_team']} vs {azure_pred['away_team']}: {str(e)}")
+                    continue
+            
+            logger.info(f"Reconciliation complete: {reconciled_count} predictions updated in Azure")
+            return reconciled_count
+            
+        except Exception as e:
+            logger.error(f"Error in reconcile_with_supabase: {str(e)}")
+            return 0
+
 azure_sync = AzureSync()

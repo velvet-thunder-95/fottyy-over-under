@@ -2517,6 +2517,19 @@ def show_main_app():
     # Update results automatically
     update_match_results()
     
+    # Reconcile Azure with Supabase
+    try:
+        from supabase_db import SupabaseDB
+        supabase_db = SupabaseDB()
+        reconciled_count = azure_sync.reconcile_with_supabase(supabase_db)
+        if reconciled_count > 0:
+            logger.info(f"Reconciled {reconciled_count} predictions between Supabase and Azure")
+        else:
+            logger.info("Reconciled 0 predictions between Supabase and Azure")
+
+    except Exception as e:
+        logger.error(f"Error during data reconciliation: {str(e)}")
+    
     # Add navigation buttons and back to top button
     add_navigation_buttons()
     add_back_to_top_button()
