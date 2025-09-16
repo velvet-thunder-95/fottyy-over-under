@@ -1,6 +1,7 @@
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
 import time
 import sys
+import streamlit as st
 
 def log_message(message):
     """Helper function to log messages with timestamp"""
@@ -8,9 +9,8 @@ def log_message(message):
     print(f"[{timestamp}] {message}")
 
 def login_and_wait():
-    # Hardcoded credentials
-    USERNAME = "overunder_admin"
-    PASSWORD = "Goals2025!"
+    USERNAME = st.secrets["auth"]["username_1"]
+    PASSWORD = st.secrets["auth"]["password_1"]
     
     with sync_playwright() as p:
         try:

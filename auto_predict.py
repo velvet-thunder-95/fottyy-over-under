@@ -1,15 +1,16 @@
 import requests
 import time
 import logging
+import streamlit as st
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def keep_alive(wait_time=600):  # Default to 10 minutes
     """Login to Streamlit app and keep it alive by waiting"""
-    BASE_URL = "https://fottyygit.streamlit.app/?page=login"  # Direct login URL
-    USERNAME = "matchday_wizard"
-    PASSWORD = "GoalMaster"
+    BASE_URL = "https://fottyy-over-under.streamlit.app/?page=login"
+    USERNAME = st.secrets["auth"]["username_1"]
+    PASSWORD = st.secrets["auth"]["password_1"]
     
     try:
         # Create a session to maintain cookies
@@ -39,7 +40,7 @@ def keep_alive(wait_time=600):  # Default to 10 minutes
             login_data['csrf_token'] = csrf_token
         
         # Submit login
-        login_url = f"https://fottyygit.streamlit.app/_stcore/authenticate"
+        login_url = f"https://fottyy-over-under.streamlit.app/_stcore/authenticate"  # Use consistent URL
         logger.info("Submitting login...")
         login_response = session.post(login_url, data=login_data, allow_redirects=True)
         logger.info(f"Login response status: {login_response.status_code}")

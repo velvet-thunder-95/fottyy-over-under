@@ -32,32 +32,35 @@ pip install -r requirements.txt
 
 4. Set up environment variables:
 Copy the example environment file and configure your secrets:
-```bash
-cp .env.example .env
-```
+Configure your local secrets by editing `.streamlit/secrets.toml`:
 
-Edit `.env` and add your actual credentials:
-```env
+```toml
 # Football API Configuration
-FOOTBALL_API_KEY=your_football_api_key_here
+[football_api]
+api_key = "your_football_api_key_here"
 
-# Supabase Configuration  
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_KEY=your_supabase_anon_key_here
+# Supabase Configuration
+[supabase]
+url = "https://your-project.supabase.co"
+key = "your_supabase_anon_key_here"
 
 # Azure PostgreSQL Configuration
-AZURE_PG_HOST=your-azure-host.postgres.database.azure.com
-AZURE_PG_USER=your_username
-AZURE_PG_PASSWORD=your_password
-AZURE_PG_DATABASE=your_database_name
-AZURE_PG_PORT=5432
+[azure_postgres]
+host = "your-azure-host.postgres.database.azure.com"
+user = "your_username"
+password = "your_password"
+database = "your_database_name"
+port = 5432
 
 # Application Authentication
-APP_USERNAME_1=your_username_1
-APP_PASSWORD_1=your_password_1
-APP_USERNAME_2=your_username_2
-APP_PASSWORD_2=your_password_2
+[auth]
+username_1 = "your_username_1"
+password_1 = "your_password_1"
+username_2 = "your_username_2"
+password_2 = "your_password_2"
 ```
+
+**Note:** The `.streamlit/secrets.toml` file is gitignored and should never be committed to the repository. Automation scripts will use the same `auth` credentials for consistency.
 
 5. Verify your setup:
 ```bash
