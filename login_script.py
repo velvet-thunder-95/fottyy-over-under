@@ -28,7 +28,6 @@ def login_and_wait():
             log_message("Navigating to login page...")
             try:
                 page.goto("https://fottyy-over-under.streamlit.app/?page=login", timeout=60000)
-                log_message("Page loaded successfully")
             except PlaywrightTimeoutError:
                 log_message("Timeout while loading the page")
                 raise
@@ -109,8 +108,32 @@ def login_and_wait():
                 page.wait_for_load_state("networkidle")
                 log_message("Successfully logged in!")
                 
-                # Wait for 10 minutes (600 seconds)
-                wait_minutes = 10
+                # Visit main page to trigger match updates
+                log_message("Navigating to main page...")
+                page.goto("https://fottyy-over-under.streamlit.app/?page=main", timeout=30000)
+                page.wait_for_load_state("networkidle")
+                log_message("Main page loaded - match updates triggered")
+                
+                # Wait a bit for the main page functions to complete
+                time.sleep(30)
+                
+                # Visit history page to trigger history-related functions
+                log_message("Navigating to history page...")
+                page.goto("https://fottyy-over-under.streamlit.app/?page=history", timeout=30000)
+                page.wait_for_load_state("networkidle")
+                log_message("History page loaded - history functions triggered")
+                
+                # Wait a bit for the history page functions to complete
+                time.sleep(30)
+                
+                # Return to main page
+                log_message("Returning to main page...")
+                page.goto("https://fottyy-over-under.streamlit.app/?page=main", timeout=30000)
+                page.wait_for_load_state("networkidle")
+                log_message("Back on main page")
+                
+                # Wait for remaining time (8 minutes since we used ~2 minutes for navigation)
+                wait_minutes = 8
                 log_message(f"Waiting for {wait_minutes} minutes...")
                 for remaining in range(wait_minutes * 60, 0, -1):
                     if remaining % 60 == 0:

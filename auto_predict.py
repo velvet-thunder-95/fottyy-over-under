@@ -50,9 +50,26 @@ def keep_alive(wait_time=600):  # Default to 10 minutes
             
         logger.info("Login successful")
         
-        # Wait for specified time
-        logger.info(f"Waiting for {wait_time} seconds to keep app alive...")
-        time.sleep(wait_time)
+        # Visit main page to trigger match updates
+        logger.info("Visiting main page...")
+        main_response = session.get("https://fottyy-over-under.streamlit.app/?page=main")
+        logger.info(f"Main page status: {main_response.status_code}")
+        time.sleep(30)  # Wait for functions to execute
+        
+        # Visit history page to trigger history functions
+        logger.info("Visiting history page...")
+        history_response = session.get("https://fottyy-over-under.streamlit.app/?page=history")
+        logger.info(f"History page status: {history_response.status_code}")
+        time.sleep(30)  # Wait for functions to execute
+        
+        # Return to main page
+        logger.info("Returning to main page...")
+        session.get("https://fottyy-over-under.streamlit.app/?page=main")
+        
+        # Wait for remaining time (adjusted for page visits)
+        remaining_time = wait_time - 60  # Subtract time used for page visits
+        logger.info(f"Waiting for {remaining_time} seconds to keep app alive...")
+        time.sleep(remaining_time)
         
         logger.info("Keep-alive completed successfully")
         return True
